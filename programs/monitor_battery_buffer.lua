@@ -21,7 +21,6 @@ local UPDATE_INTERVAL_TICKS = 5
 local Metrics = class(
     --- @param self table  The Metrics object to initialize
     --- @param eu number  The amount of EU this Metrics object should represent
-    --- @return table
     function(self, eu)
         self.eu = eu
         self.tier = tiers.get_tier(eu)
@@ -32,6 +31,13 @@ local Metrics = class(
 --- Returns the amps and EU tier for the given Metrics table
 function Metrics:report()
     return self.amps .. " A (" .. self.tier .. " )"
+end
+
+--- Adjusts the amps and EU tier of this Metrics object to match the given target tier, keeping the same total EU
+--- @param target_tier string  The name of the tier to convert to
+function Metrics:rescale(target_tier)
+    self.amps = tiers.get_amps(self.eu, target_tier)
+    self.tier = target_tier
 end
 
 local function display_to_monitors(current, trend, in_metrics, out_metrics, net_metrics)
@@ -155,10 +161,15 @@ loop_forever(
 
         local eu_in = BATTERY.getInputPerSec() / 20.0
         local eu_out = BATTERY.getOutputPerSec() / 20.0
+        local eu_net = eu_in - eu_out
 
         local in_metrics = Metrics(eu_in)
         local out_metrics = Metrics(eu_out)
-        local net_metrics = Metrics(eu_in - eu_out)
+        local net_metrics = Metrics(eu_net)
+
+        in_metrics:rescale(BATTERY_TYPE)
+        out_metrics:rescale(BATTERY_TYPE)
+        net_metrics:rescale(BATTERY_TYPE)
 
         local rounded_current = round(percentage * 100, PRECISION_DISPLAYED)
         local rounded_trend = round(trend * 100, PRECISION_DISPLAYED)
