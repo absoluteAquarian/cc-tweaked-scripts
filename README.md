@@ -3,7 +3,7 @@ A collection of Lua scripts for the Minecraft mod, CC: Tweaked.
 
 The general-purpose installer for this repository's scripts can be executed using the following in a Computer's shell:
 ```
-wget https://raw.githubusercontent.com/absoluteAquarian/cc-tweaked-scripts/main/installer.lua installer
+wget https://raw.githubusercontent.com/absoluteAquarian/cc-tweaked-scripts/main/installer.lua installer.lua
 ```
 
 ## Development
