@@ -1,5 +1,5 @@
-require "monitor"
-require "try-catch"
+require "util.cc.monitor"
+require "util.try-catch"
 
 --- A utility function to loop forever, with optional logic to run when quitting or restarting the program.
 --- @param wait_interval number  The number of ticks to wait between iterations.  Forced to be at least 1.

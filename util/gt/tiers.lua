@@ -1,5 +1,5 @@
-require "class"
-require "string"
+require "util.class"
+require "util.string"
 
 Tier = class(
     --- @param self table  The tier being initialized
