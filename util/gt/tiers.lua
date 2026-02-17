@@ -6,7 +6,6 @@ Tier = class(
     --- @param name string  The name of this tier (e.g. "ULV")
     --- @param volts number  The voltage per amp for this tier
     --- @param color number  The color to use for this tier (see: colors)
-    --- @return table
     function(self, name, volts, color)
         self.name = name
         self.volts_per_amp = volts
@@ -35,7 +34,7 @@ for index, tier in ipairs(def) do
 end
 
 --- Returns whether the given EU is within this tier
---- @self table  The tier to check
+--- @param self table  The tier to check
 --- @param eu number  The EU to check
 --- @return boolean
 function Tier:within_tier(eu)
@@ -86,7 +85,7 @@ local tier_max = __internal_get_tier("MAX") or def[#def]
 --- @return table
 local function __internal_eu_tier(eu)
     for _, tier in pairs(def) do
-        if tier.within_tier(eu) then return tier end
+        if tier:within_tier(eu) then return tier end
     end
     return tier_max
 end
