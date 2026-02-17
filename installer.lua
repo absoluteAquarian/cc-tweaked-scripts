@@ -10,35 +10,53 @@ local function ends_with(str, text)
     return text == "" or str:sub(-#text) == text
 end
 
-local json = http.get(REPOSITORY).readAll()
+local function load_files(root, subroot)
+    local path = REPOSITORY .. "/" .. root
+    if subroot then
+        path = path .. "/" .. subroot
+    end
+    local json = http.get(path).readAll()
 
-if not json then
+    if not json then
+        error("Could not connect to " .. path)
+        return nil
+    end
+
+    local files = textutils.unserialiseJSON(json)
+    local result = {}
+
+    for _, file in pairs(files) do
+        local type = file['type']
+        local name = file['name']
+        -- If the "file" is a Lua file, add it to the result
+        if type == 'file' and ends_with(name, '.lua') then
+            table.insert(result, {name = name, url = file['download_url']})
+        -- Otherwise, if it's a directory, recursively load files from it
+        elseif type == 'dir' then
+            local subsubroot = subroot and (subroot .. "/" .. name) or name
+            local subfiles = load_files(root, subsubroot)
+
+            if subfiles then
+                for _, subfile in pairs(subfiles) do
+                    subfile.name = subsubroot .. "/" .. subfile.name  -- Prepend the directory name
+                    table.insert(result, subfile)
+                end
+            end
+        end
+    end
+
+    return result
+end
+
+if not http.get(REPOSITORY) then
     error("Could not connect to " .. REPOSITORY)
 end
 
-local files = textutils.unserialiseJSON(json)
+local available = load_files("programs")
+local util = load_files("util")
 
-local available = {}
-local util = {}
-
-for _, file in pairs(files) do
-    if file['type'] == 'file' and ends_with(file['name'], '.lua') then
-        local download = file['download_url']
-        
-        local target
-
-        if contains(file['name'], "/util/") then
-            target = util
-        elseif contains(file['name'], "/programs/") then
-            target = available
-        else
-            goto skip
-        end
-
-        table.insert(target, {name = file['name'], url = download})
-    end
-
-    ::skip::
+if not available or not util then
+    error("Failed to load file list from repository")
 end
 
 print("Available Scripts (type number to download):")
