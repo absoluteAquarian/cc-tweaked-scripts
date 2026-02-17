@@ -8,6 +8,8 @@ require "util.gt.machine"
 local tiers = require "util.gt.tiers"
 
 require "util.class"
+require "util.exec"
+require "util.math"
 require "util.string"
 require "util.try-catch"
 
