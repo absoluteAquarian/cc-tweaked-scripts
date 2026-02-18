@@ -18,28 +18,39 @@ local ALARM_THRESHOLD = 0.3
 local PRECISION_DISPLAYED = 3
 local UPDATE_INTERVAL_TICKS = 5
 
+--- @alias Metrics_Report fun(self: Metrics) : string
+--- @alias Metrics_Rescale fun(self: Metrics, target_tier: string)
+--- @alias Metrics { eu: number, tier: string, amps: number, report: Metrics_Report, rescale: Metrics_Rescale }
+
 local Metrics = class(
-    --- @param self table  The Metrics object to initialize
-    --- @param eu number  The amount of EU this Metrics object should represent
-    function(self, eu)
-        self.eu = eu
-        self.tier = tiers.get_tier(eu)
-        self.amps = tiers.get_amps(eu, self.tier)
+    nil,
+    function(klass)
+        -- Redefine the constructor to take named parameters
+
+        --- @param instance Metrics
+        --- @param eu number  The amount of EU this Metrics instance should represent
+        function klass:ctor(instance, eu)
+            instance.eu = eu
+            instance.tier = tiers.get_tier(eu)
+            instance.amps = tiers.get_amps(eu, instance.tier)
+
+            function instance:report()
+                return self.amps .. " A (" .. self.tier .. " )"
+            end
+
+            function instance:rescale(target_tier)
+                self.amps = tiers.get_amps(self.eu, target_tier)
+                self.tier = target_tier
+            end
+        end
     end
 )
 
---- Returns the amps and EU tier for the given Metrics table
-function Metrics:report()
-    return self.amps .. " A (" .. self.tier .. " )"
-end
-
---- Adjusts the amps and EU tier of this Metrics object to match the given target tier, keeping the same total EU
---- @param target_tier string  The name of the tier to convert to
-function Metrics:rescale(target_tier)
-    self.amps = tiers.get_amps(self.eu, target_tier)
-    self.tier = target_tier
-end
-
+--- @param current number
+--- @param trend number
+--- @param in_metrics Metrics
+--- @param out_metrics Metrics
+--- @param net_metrics Metrics
 local function display_to_monitors(current, trend, in_metrics, out_metrics, net_metrics)
     foreach_monitor(
         function(monitor)
@@ -104,6 +115,11 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
     )
 end
 
+--- @param current number
+--- @param trend number
+--- @param in_metrics Metrics
+--- @param out_metrics Metrics
+--- @param net_metrics Metrics
 local function display_to_terminal(current, trend, in_metrics, out_metrics, net_metrics, max_hint)
     reset_terminal()
 
@@ -150,22 +166,27 @@ end
 -- Check for connection (for example on server startup)
 
 local BATTERY, BATTERY_TYPE = wait_for_battery()
-local LAST_PERCENTAGE = 0
+local LAST_PERCENTAGE = 0.0
 
 loop_forever(
     UPDATE_INTERVAL_TICKS,
     -- body
     function()
+        --- @type number
         local percentage = BATTERY.getEnergyStored() / BATTERY.getEnergyCapacity()
+        --- @type number
         local trend = percentage - LAST_PERCENTAGE
 
         local eu_in = BATTERY.getInputPerSec() / 20.0
         local eu_out = BATTERY.getOutputPerSec() / 20.0
         local eu_net = eu_in - eu_out
 
-        local in_metrics = Metrics(eu_in)
-        local out_metrics = Metrics(eu_out)
-        local net_metrics = Metrics(eu_net)
+        --- @type Metrics
+        local in_metrics = Metrics:new(eu_in)
+        --- @type Metrics
+        local out_metrics = Metrics:new(eu_out)
+        --- @type Metrics
+        local net_metrics = Metrics:new(eu_net)
 
         in_metrics:rescale(BATTERY_TYPE)
         out_metrics:rescale(BATTERY_TYPE)

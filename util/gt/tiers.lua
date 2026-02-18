@@ -1,78 +1,90 @@
 require "util.class"
 require "util.string"
 
+--- @alias Tier_WithinTier fun(self: Tier, eu: number) : boolean
+--- @alias Tier_Amps fun(self: Tier, eu: number) : number
+--- @alias Tier_MatchesPeripheral fun(self: Tier, p: string) : boolean
+--- @alias Tier_ConversionFactorTo fun(self: Tier, other: Tier) : number
+--- @alias Tier { name: string, volts_per_amp: number, color: number, index: number, within_tier: Tier_WithinTier, amps: Tier_Amps, matches_peripheral: Tier_MatchesPeripheral, conversion_factor_to: Tier_ConversionFactorTo }
+
 Tier = class(
-    --- @param self table  The tier being initialized
-    --- @param name string  The name of this tier (e.g. "ULV")
-    --- @param volts number  The voltage per amp for this tier
-    --- @param color number  The color to use for this tier (see: colors)
-    function(self, name, volts, color)
-        self.name = name
-        self.volts_per_amp = volts
-        self.color = color
-        self.index = 0
+    nil,
+    function(klass)
+        -- Redefine the constructor to take named parameters
+
+        --- @param instance Tier
+        --- @param name string  The name of this tier
+        --- @param volts number  The voltage per amp for this tier
+        --- @param color number  The color corresponding to this tier
+        function klass:ctor(instance, name, volts, color)
+            instance.name = name
+            instance.volts_per_amp = volts
+            instance.color = color
+            instance.index = 0
+
+            --- Returns whether the given EU is within this tier
+            --- @param self Tier  The tier to check
+            --- @param eu number  The EU to check
+            --- @return boolean
+            function instance:within_tier(eu)
+                if self.name == "MAX" then return true end
+                local low = self.volts_per_amp
+                return eu <= low and eu < 4 * low
+            end
+
+            --- Returns how many amps of this tier are needed to send the given EU
+            --- @param self Tier  The tier to check
+            --- @param eu number  The EU to convert
+            --- @return number
+            function instance:amps(eu)
+                return eu / self.volts_per_amp
+            end
+
+            --- Returns whether the given peripheral name matches this tier (e.g. "gtceu:ulv_assembler" matches the "ULV" tier)
+            --- @param self Tier  The tier to check
+            --- @param p string  The name of the peripheral to check
+            --- @return boolean
+            function instance:matches_peripheral(p)
+                return contains(p, ":" .. string.lower(self.name))
+            end
+
+            --- Returns the conversion factor to convert voltage from this tier to another tier
+            --- @param self Tier  The tier to convert from
+            --- @param other Tier  The tier to convert to
+            --- @return number
+            function instance:conversion_factor_to(other)
+                if self.index == 0 or other.index == 0 then return 1 end
+                return math.pow(4, self.index - other.index)
+            end
+        end
     end
 )
 
+--- @type Tier[]
 local def = {
-    Tier("ULV", 8, colors.gray),
-    Tier("LV", 32, colors.lightGray),
-    Tier("MV", 128, colors.cyan),
-    Tier("HV", 512, colors.orange),
-    Tier("EV", 2048, colors.purple),
-    Tier("IV", 8192, colors.blue),
-    Tier("LuV", 32768, colors.magenta),
-    Tier("ZPM", 131072, colors.red),
-    Tier("UV", 524288, colors.green),
-    Tier("UHV", 2097152, colors.purple),
-    Tier("UEV", 8388608, colors.lime),
-    Tier("MAX", 2147483648, colors.red)
+    Tier:new("ULV", 8, colors.gray),
+    Tier:new("LV", 32, colors.lightGray),
+    Tier:new("MV", 128, colors.cyan),
+    Tier:new("HV", 512, colors.orange),
+    Tier:new("EV", 2048, colors.purple),
+    Tier:new("IV", 8192, colors.blue),
+    Tier:new("LuV", 32768, colors.magenta),
+    Tier:new("ZPM", 131072, colors.red),
+    Tier:new("UV", 524288, colors.green),
+    Tier:new("UHV", 2097152, colors.purple),
+    Tier:new("UEV", 8388608, colors.lime),
+    Tier:new("MAX", 2147483648, colors.red)
 }
 
 for index, tier in ipairs(def) do
    tier.index = index
 end
 
---- Returns whether the given EU is within this tier
---- @param self table  The tier to check
---- @param eu number  The EU to check
---- @return boolean
-function Tier:within_tier(eu)
-    if self.name == "MAX" then return true end
-    local low = self.volts_per_amp
-    return eu <= low and eu < 4 * low
-end
-
---- Returns how many amps of this tier are needed to send the given EU
---- @param self table  The tier to check
---- @param eu number  The EU to convert
---- @return number
-function Tier:amps(eu)
-    return eu / self.volts_per_amp
-end
-
---- Returns whether the given peripheral name matches this tier (e.g. "gtceu:ulv_assembler" matches the "ULV" tier)
---- @param self table  The tier to check
---- @param name string  The name of the peripheral to check
---- @return boolean
-function Tier:matches_peripheral(name)
-    return contains(name, ":" .. string.lower(self.name))
-end
-
---- Returns the conversion factor to convert voltage from this tier to another tier
---- @param self table  The tier to convert from
---- @param other table  The tier to convert to
---- @return number
-function Tier:conversion_factor_to(other)
-    if self.index == 0 or other.index == 0 then return 1 end 
-    return math.pow(4, self.index - other.index)
-end
-
 --- Gets the table representing the tier with the given name, or nil if no such tier exists
 --- @param name string  The name of the tier to get
---- @return table?
+--- @return Tier?
 local function __internal_get_tier(name)
-    for _, tier in pairs(def) do
+    for _, tier in ipairs(def) do
         if tier.name == name then return tier end
     end
     return nil
@@ -82,9 +94,9 @@ local tier_max = __internal_get_tier("MAX") or def[#def]
 
 --- Gets the tier corresponding to the given EU
 --- @param eu number  The EU to get the tier for
---- @return table
+--- @return Tier
 local function __internal_eu_tier(eu)
-    for _, tier in pairs(def) do
+    for _, tier in ipairs(def) do
         if tier:within_tier(eu) then return tier end
     end
     return tier_max
@@ -94,7 +106,7 @@ end
 --- @param name string  The name of the peripheral to get the tier for
 --- @return string?
 function peripheral_tier(name)
-    for _, tier in pairs(def) do
+    for _, tier in ipairs(def) do
         if tier:matches_peripheral(name) then return tier.name end
     end
     return nil
