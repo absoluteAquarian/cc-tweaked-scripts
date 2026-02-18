@@ -5,9 +5,9 @@ local monitor_ex = require "util.cc.monitor"
 require "util.cc.terminal"
 
 require "util.gt.machine"
-local tiers = require "util.gt.tiers"
+local Tiers = require "util.gt.tiers"
 
-require "util.class"
+local Class = require "util.class"
 require "util.exec"
 require "util.math"
 require "util.string"
@@ -18,33 +18,45 @@ local ALARM_THRESHOLD = 0.3
 local PRECISION_DISPLAYED = 3
 local UPDATE_INTERVAL_TICKS = 5
 
---- @alias Metrics_Report fun(self: Metrics) : string
---- @alias Metrics_Rescale fun(self: Metrics, target_tier: string)
---- @alias Metrics { eu: number, tier: string, amps: number, report: Metrics_Report, rescale: Metrics_Rescale }
+--- @class MetricsDefinition : ClassDefinition
+--- (Overrides)
+--- @field __make_instance fun(self: MetricsDefinition, eu: number) : Metrics  Creates a new class instance, converted to a Metrics object
+--- @field new fun(self: MetricsDefinition, eu: number) : Metrics  Creates a new Metrics instance with the given EU value
+local MetricsClass = {}
 
-local Metrics = class(
+--- @class Metrics : ClassInstance
+--- (Defines)
+--- @field eu number  The amount of EU this Metrics instance represents
+--- @field tier string  The tier that supports the provided EU
+--- @field amps number  The number of Amperes needed to send the provided EU at the provided tier
+--- @field report fun(self: Metrics) : string  A function to generate a human-readable report of this Metrics instance
+--- @field rescale fun(self: Metrics, target_tier: string)  A function to adjust the amperage of this Metrics instance to match a different tier
+local MetricsInstance = {}
+
+local Metrics = Class.class(
     nil,
+    --- @param klass MetricsDefinition
     function(klass)
-        -- Redefine the constructor to take named parameters
+        function klass:new(eu)
+            local instance = klass:__make_instance(eu)
 
-        --- @param instance Metrics
-        --- @param eu number  The amount of EU this Metrics instance should represent
-        function klass:ctor(instance, eu)
             instance.eu = eu
-            instance.tier = tiers.get_tier(eu)
-            instance.amps = tiers.get_amps(eu, instance.tier)
+            instance.tier = Tiers.get_tier(eu)
+            instance.amps = Tiers.get_amps(eu, instance.tier)
 
             function instance:report()
                 return self.amps .. " A (" .. self.tier .. " )"
             end
 
             function instance:rescale(target_tier)
-                self.amps = tiers.get_amps(self.eu, target_tier)
+                self.amps = Tiers.get_amps(self.eu, target_tier)
                 self.tier = target_tier
             end
+
+            return instance
         end
     end
-)
+) --[[@as MetricsDefinition]]
 
 --- @param current number
 --- @param trend number
@@ -73,9 +85,9 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
             local trend_fmt, color_trend = signed_and_color(trend)
             local net_fmt, color_net = signed_and_color(net_metrics.amps)
 
-            local tier_in = tiers.get_color(in_metrics.tier)
-            local tier_out = tiers.get_color(out_metrics.tier)
-            local tier_net = tiers.get_color(net_metrics.tier)
+            local tier_in = Tiers.get_color(in_metrics.tier)
+            local tier_out = Tiers.get_color(out_metrics.tier)
+            local tier_net = Tiers.get_color(net_metrics.tier)
 
             monitor.setTextScale(0.5)
 
@@ -102,7 +114,7 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
             monitor.write(out_metrics.amps .. " A (")
             monitor_ex.write(monitor, tier_out, out_metrics.tier)
             monitor.write(")")
-            
+
             monitor.setCursorPos(1, 7)
             monitor.write("Net:")
 

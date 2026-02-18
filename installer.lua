@@ -2,14 +2,21 @@
 
 local REPOSITORY = "https://api.github.com/repos/absoluteAquarian/cc-tweaked-scripts/contents/"
 
-local function contains(str, text, plain)
-    return string.find(str, text, 1, plain or true) ~= nil
-end
+--- @class GitHubFile
+--- @field name string  The name of the file, used to determine where to save it locally
+--- @field url string  The URL to download the file from
+local GitHubFile = {}
 
+--- @param str string
+--- @param text string
+--- @return boolean
 local function ends_with(str, text)
     return text == "" or str:sub(-#text) == text
 end
 
+--- @param root string
+--- @param subroot string?
+--- @return GitHubFile[]?
 local function load_files(root, subroot)
     local path = REPOSITORY .. "/" .. root
     if subroot then
@@ -23,6 +30,7 @@ local function load_files(root, subroot)
     end
 
     local files = textutils.unserialiseJSON(json)
+    --- @type GitHubFile[]
     local result = {}
 
     for _, file in pairs(files) do
@@ -46,6 +54,13 @@ local function load_files(root, subroot)
     end
 
     return result
+end
+
+--- @param url string
+--- @param destination string
+local function download_and_overwrite(url, destination)
+    if fs.exists(destination) then fs.delete(destination) end
+    shell.run("wget", url, destination)
 end
 
 if not http.get(REPOSITORY) then
@@ -75,23 +90,14 @@ print("Target directory: ")
 
 local directory = read()
 
-if not fs.exists(directory) then
-    fs.makeDir(directory)
-end
-
 local program = selection['name']
 
-shell.run("wget", selection['url'], directory .. "/" .. program)
+download_and_overwrite(selection['url'], directory .. "/" .. program)
 
--- Check for utility files and download them if they don't exist
 for _, file in pairs(util) do
-    local name = file['name']
-    local path = directory .. "/util/" .. name
-
-    if not fs.exists(path) then
-        print("Downloading utility file: " .. name)
-        shell.run("wget", file['url'], path)
-    end
+    download_and_overwrite(file['url'], directory .. "/util/" .. file['name'])
 end
 
+print()
 print("Script has been downloaded: " .. program)
+print()

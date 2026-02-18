@@ -3,49 +3,48 @@
 -- class.lua
 -- Compatible with Lua 5.1 (not 5.0).
 
---- @alias ClassPopulator fun(class: PublicClassDefinition, ...)
---- @alias ClassFunctionNew fun(self: PublicClassDefinition, ...) : PublicClassInstance
---- @alias ClassFunctionInstanceCtor fun(self: PublicClassDefinition, instance: PublicClassInstance, ...)
---- @alias ClassFunctionInstanceof fun(self: PublicClassDefinition, klass: PublicClassDefinition) : boolean
---- @alias ClassFunctionBase fun(self: PublicClassDefinition) : PublicClassDefinition?
+--- @class __Classlike
+--- @field __fields { [string] : boolean }  A set of field names that are defined on this class-like object
+--- @field base __Classlike?  The base class-like object
+--- @field class ClassDefinition  The class definition for this class-like object
+--- @field instanceof fun(self: __Classlike, other: ClassDefinition) : boolean  A function to check if this class-like object's class definition is the same as or inherits from another class definition
+local __Classlike = {}
 
---- @alias ClassInstanceFunctionInstanceof fun(self: PublicClassInstance, klass: PublicClassDefinition) : boolean
---- @alias ClassInstanceFunctionBase fun(self: PublicClassInstance) : PublicClassDefinition?
+--- @class ClassDefinition : __Classlike
+--- (Overrides)
+--- @field base ClassDefinition?  The base class definition
+--- (Defines)
+--- @field __make_instance fun(self: ClassDefinition, ...) : ClassInstance  A function to create a new class instance from the class definition
+--- @field new fun(self: ClassDefinition, ...) : ClassInstance  A function to create a new class instance from the class definition
+local __ClassDefinition = {}
 
---- @alias FieldNames table<string, boolean>
-
---- @alias BaseClassDefinition { __fields: FieldNames, new: ClassFunctionNew }
---- @alias ClassDefinition { __base: BaseClassDefinition?, __fields: FieldNames, new: ClassFunctionNew, ctor: ClassFunctionInstanceCtor, instanceof: ClassFunctionInstanceof, base: ClassFunctionBase }
-
---- @alias PublicClassDefinition { new: ClassFunctionNew, ctor: ClassFunctionInstanceCtor, instanceof: ClassFunctionInstanceof, base: ClassFunctionBase, [any]: any }
-
---- @alias BaseClassInstance { __fields: FieldNames }
---- @alias ClassInstance { class: ClassDefinition, __base: BaseClassInstance?, __fields: FieldNames, instanceof: ClassInstanceFunctionInstanceof, base: ClassInstanceFunctionBase }
-
---- @alias PublicClassInstance { instanceof: ClassInstanceFunctionInstanceof, base: ClassInstanceFunctionBase, [any]: any }
+--- @class ClassInstance : __Classlike
+--- (Overrides)
+--- @field base ClassInstance?  The class instance of the class definition's base class definition
+local __ClassInstance = {}
 
 --- Attempts to find the class that defines the given field, or returns nil if no such class exists
---- @param klass ClassDefinition|ClassInstance  The class to start searching from
+--- @param klass __Classlike  The class to start searching from
 --- @param name string  The name of the field to find
---- @return ClassDefinition|BaseClassDefinition|ClassInstance|BaseClassInstance|nil
+--- @return __Classlike|nil
 local function find_field_in_class(klass, name)
     if klass.__fields[name] then
         return klass
-    elseif klass.__base then
-        local current = klass.__base
+    elseif klass.base then
+        local current = klass.base
         while current do
             if current.__fields[name] then return current end
-            current = current.__base
+            current = current.base
         end
     end
 end
 
 --- Attempts to assign a value to a field on an object, following the rules for field assignment
---- @param obj ClassDefinition|ClassInstance  The object to assign the field on
+--- @param obj __Classlike  The object to assign the field on
 --- @param name string  The name of the field to assign
 --- @param value any  The value to assign to the field
 local function assign_field(obj, name, value)
-    if obj.__base then
+    if obj.base then
         local defining_class = find_field_in_class(obj, name)
         if defining_class then
             -- The field is defined either on the class or a base class, so modify it directly
@@ -63,11 +62,11 @@ local function assign_field(obj, name, value)
 end
 
 --- Attempts to read a field from an object, following the rules for field access
---- @param obj ClassDefinition|ClassInstance  The object to read the field from
+--- @param obj __Classlike  The object to read the field from
 --- @param name string  The name of the field to read
 --- @return any
 local function get_field(obj, name)
-    if obj.__base then
+    if obj.base then
         local defining_class = find_field_in_class(obj, name)
         return defining_class and rawget(defining_class, name) or nil
     else
@@ -76,25 +75,25 @@ local function get_field(obj, name)
 end
 
 --- Returns whether the given class inherits from another class (or is the same class)
---- @param klass ClassDefinition  The class to check
+--- @param klass __Classlike  The class-like object to check
 --- @param other ClassDefinition  The class to check against
 --- @return boolean
 local function instanceof(klass, other)
-    if klass == other then return true end
-    if klass.__base then
-        local current = klass.__base
+    if klass.class == other then return true end
+    if klass.base then
+        local current = klass.base.class
         while current do
             if current == other then return true end
-            current = current.__base
+            current = current.base
         end
     end
     return false
 end
 
 --- Defines a table representing an object-oriented class, which can be instantiated by calling it like a function.
---- @param base BaseClassDefinition?  An optional base class to inherit from
---- @param def ClassPopulator? An optional function to add additional fields or methods to the class definition
---- @return PublicClassDefinition
+--- @param base ClassDefinition?  An optional base class to inherit from
+--- @param def fun(klass: ClassDefinition)? An optional function to add additional fields or methods to the class definition
+--- @return ClassDefinition
 function class(base, def)
     --- @param name string  The name of the field being accessed
     --- @param action string  The type of action being attempted on the field
@@ -111,35 +110,37 @@ function class(base, def)
     --- @return ClassInstance
     local function create_instance(klass, ...)
         local instance = {
-            class = klass,
             __fields = {
                 ["class"] = true,
-                ["__base"] = true,
+                ["base"] = true,
                 ["__fields"] = true
-            }
+            },
+            class = klass
         }
 
-        if klass.__base then
-            instance.__base = (klass.__base --[[@as ClassDefinition]]):new(...)
+        if klass.base then
+            instance.base = klass.base:new(...)
         end
 
         return instance
     end
 
-    --- @param klass ClassDefinition  The class definition to create the metatable from
+    --- @param klass ClassDefinition
     local function create_instance_metatable(klass)
         return {
-            --- @param self table
+            --- @param self ClassInstance
             --- @param name string
-            __index = function (self, name)
-                if klass[name] ~= nil then error_field_defined_on_class(name, "get") end
+            __index = function(self, name)
+                if klass[name] ~= nil then
+                    error_field_defined_on_class(name, "get")
+                end
                 return get_field(self, name)
             end,
-            --- @param self table
+            --- @param self ClassInstance
             --- @param name string
             --- @param value any
-            __newindex = function (self, name, value)
-                if name == "class" or name == "__base" or name == "__fields" then
+            __newindex = function(self, name, value)
+                if name == "class" or name == "base" or name == "__fields" then
                     error_field_readonly(name)
                 elseif klass[name] ~= nil then
                     error_field_defined_on_class(name, "set")
@@ -152,32 +153,32 @@ function class(base, def)
 
     --- @return ClassDefinition
     local function create_definition()
-        return {
-            --- @type BaseClassDefinition?
-            __base = base,
-            --- @type FieldNames
+        local definition = {
             __fields = {
-                ["__base"] = true,
                 ["__fields"] = true,
-                ["new"] = true,
-                ["ctor"] = true
+                ["__make_instance"] = true,
+                ["base"] = true,
+                ["new"] = true
             },
-            --- @param self ClassDefinition
-            --- @param ... any
-            --- @return ClassInstance
-            new = function(self, ...)
-                --- @type ClassInstance
-                local instance = setmetatable(create_instance(self, ...), create_instance_metatable(self));
-
-                function instance:instanceof(klass) return instanceof(self.class, klass) end
-
-                function instance:base() return self.__base --[[@as PublicClassDefinition]] end
-
-                self:ctor(instance --[[@as PublicClassInstance]], ...)
-                
-                return instance
-            end
+            base = base
         }
+
+        --- @cast definition ClassDefinition
+        
+        function definition:__make_instance(...)
+            --- @type ClassInstance
+            local instance = setmetatable(create_instance(self, ...), create_instance_metatable(self));
+
+            function instance:instanceof(klass) return instanceof(self, klass) end
+            
+            return instance
+        end
+
+        function definition:new(...) return self:__make_instance(...) end
+
+        function definition:instanceof(klass) return instanceof(self, klass) end
+
+        return definition
     end
 
     local function create_definition_metatable()
@@ -189,7 +190,7 @@ function class(base, def)
             --- @param name string
             --- @param value any
             __newindex = function(self, name, value)
-                if name == "__base" or name == "__fields" or name == "new" then
+                if name == "base" or name == "__fields" or name == "__instance" then
                     error_field_readonly(name)
                 else
                     assign_field(self, name, value)
@@ -198,27 +199,12 @@ function class(base, def)
         }
     end
 
-    -- The new class definition
     --- @type ClassDefinition
     local class = setmetatable(create_definition(), create_definition_metatable())
 
-    --- @param self PublicClassDefinition
-    --- @param instance PublicClassInstance  The instance to initialize
-    --- @param ... any  The arguments to pass to the initializer function
-    function class:ctor(instance, ...) end
-
-    --- @param self PublicClassDefinition
-    --- @param klass PublicClassDefinition The class to check against
-    --- @return boolean
-    function class:instanceof(klass) return instanceof(self, klass) end
-
-    --- @param self PublicClassDefinition
-    --- @return PublicClassDefinition?
-    function class:base() return self.__base end
-
     if def then def(class) end
 
-    return class --[[@as PublicClassDefinition]]
+    return class
 end
 
 return {
