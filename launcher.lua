@@ -2,7 +2,9 @@ local completion = require "cc.completion"
 
 local R_table = require "util.table"
 
-local programs = fs.list(".") --[[@as string[]=]]
+local directory = fs.getDir(shell.getRunningProgram())
+
+local programs = fs.list(directory) --[[@as string[]=]]
 
 R_table.remove_values(programs, "launcher.lua", "util")
 
@@ -19,6 +21,6 @@ if not R_table.has_value(programs, program) then
     error("Unknown program")
 end
 
-local pid = multishell.launch({}, shell.dir() .. "/" .. program)
+local pid = multishell.launch({}, directory .. "/" .. program)
 multishell.setTitle(pid, program)
 multishell.setFocus(pid)
