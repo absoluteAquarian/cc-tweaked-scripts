@@ -11,7 +11,9 @@ local TryBlock = {}
 --- <br/>
 --- Example usage:
 --- ```lua
---- try {
+--- local handler = require "util.handler"
+--- ...
+--- handler.try {
 ---     -- try
 ---     function()
 ---         -- code to try goes here
@@ -22,7 +24,7 @@ local TryBlock = {}
 ---     end
 --- }
 --- ```
-function try(what)
+local function try(what)
     --- @type table<boolean, ...>
     local results = { pcall(what[1]) }
 

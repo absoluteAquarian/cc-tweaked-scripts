@@ -1,17 +1,15 @@
 -- Based on: https://github.com/Poeschl/computercraft-scripts/blob/main/simple_energy_monitor.lua
 
-require "util.cc.fmt"
-local monitor_ex = require "util.cc.monitor"
-require "util.cc.terminal"
+local fmt = require "util.cc.fmt"
+local R_monitor = require "util.cc.monitor"
+local R_terminal = require "util.cc.terminal"
 
-require "util.gt.machine"
-local Tiers = require "util.gt.tiers"
+local machine = require "util.gt.machine"
+local tiers = require "util.gt.tiers"
 
-local Class = require "util.class"
-require "util.exec"
-require "util.math"
-require "util.string"
-require "util.try-catch"
+local class = require "util.class"
+local exec = require "util.exec"
+local R_math = require "util.math"
 
 local CHARGE_THRESHOLD = 0.6
 local ALARM_THRESHOLD = 0.3
@@ -33,7 +31,7 @@ local MetricsClass = {}
 --- @field rescale fun(self: Metrics, target_tier: string)  A function to adjust the amperage of this Metrics instance to match a different tier
 local MetricsInstance = {}
 
-local Metrics = Class.class(
+local Metrics = class.class(
     nil,
     --- @param klass MetricsDefinition
     function(klass)
@@ -41,15 +39,15 @@ local Metrics = Class.class(
             local instance = klass:__make_instance(eu)
 
             instance.eu = eu
-            instance.tier = Tiers.get_tier(eu)
-            instance.amps = Tiers.get_amps(eu, instance.tier)
+            instance.tier = tiers.get_tier(eu)
+            instance.amps = tiers.get_amps(eu, instance.tier)
 
             function instance:report()
-                return self.amps .. " A (" .. self.tier .. " )"
+                return self.amps .. " A (" .. self.tier .. ")"
             end
 
             function instance:rescale(target_tier)
-                self.amps = Tiers.get_amps(self.eu, target_tier)
+                self.amps = tiers.get_amps(self.eu, target_tier)
                 self.tier = target_tier
             end
 
@@ -64,7 +62,7 @@ local Metrics = Class.class(
 --- @param out_metrics Metrics
 --- @param net_metrics Metrics
 local function display_to_monitors(current, trend, in_metrics, out_metrics, net_metrics)
-    foreach_monitor(
+    R_monitor.foreach_monitor(
         function(monitor)
             monitor.setBackgroundColor(colors.black)
             monitor.setTextColor(colors.white)
@@ -82,29 +80,29 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
             monitor.clear()
         --    monitor.setTextScale(1)  -- Reset text scale
 
-            local trend_fmt, color_trend = signed_and_color(trend)
-            local net_fmt, color_net = signed_and_color(net_metrics.amps)
+            local trend_fmt, color_trend = fmt.signed_and_color(trend)
+            local net_fmt, color_net = fmt.signed_and_color(net_metrics.amps)
 
-            local tier_in = Tiers.get_color(in_metrics.tier)
-            local tier_out = Tiers.get_color(out_metrics.tier)
-            local tier_net = Tiers.get_color(net_metrics.tier)
+            local tier_in = tiers.get_color(in_metrics.tier)
+            local tier_out = tiers.get_color(out_metrics.tier)
+            local tier_net = tiers.get_color(net_metrics.tier)
 
             monitor.setTextScale(0.5)
 
             monitor.setCursorPos(1, 1)
             monitor.write("Current: ")
-            monitor_ex.write(monitor, color_current, current .. "%")
+            R_monitor.write(monitor, color_current, current .. "%")
 
             monitor.setCursorPos(1, 2)
             monitor.write("Trend: ")
-            monitor_ex.write(monitor, color_trend, trend_fmt .. "%")
+            R_monitor.write(monitor, color_trend, trend_fmt .. "%")
 
             monitor.setCursorPos(1, 3)
             monitor.write("Input:")
 
             monitor.setCursorPos(1, 4)
             monitor.write(in_metrics.amps .. " A (")
-            monitor_ex.write(monitor, tier_in, in_metrics.tier)
+            R_monitor.write(monitor, tier_in, in_metrics.tier)
             monitor.write(")")
 
             monitor.setCursorPos(1, 5)
@@ -112,16 +110,16 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
 
             monitor.setCursorPos(1, 6)
             monitor.write(out_metrics.amps .. " A (")
-            monitor_ex.write(monitor, tier_out, out_metrics.tier)
+            R_monitor.write(monitor, tier_out, out_metrics.tier)
             monitor.write(")")
 
             monitor.setCursorPos(1, 7)
             monitor.write("Net:")
 
             monitor.setCursorPos(1, 8)
-            monitor_ex.write(monitor, color_net, net_fmt)
+            R_monitor.write(monitor, color_net, net_fmt)
             monitor.write(" A (")
-            monitor_ex.write(monitor, tier_net, net_metrics.tier)
+            R_monitor.write(monitor, tier_net, net_metrics.tier)
             monitor.write(")")
         end
     )
@@ -133,9 +131,9 @@ end
 --- @param out_metrics Metrics
 --- @param net_metrics Metrics
 local function display_to_terminal(current, trend, in_metrics, out_metrics, net_metrics, max_hint)
-    reset_terminal()
+    R_terminal.reset_terminal()
 
-    local trend_fmt, _ = signed_and_color(trend)
+    local trend_fmt, _ = fmt.signed_and_color(trend)
 
     print("Current percentage: " .. current .. "%")
     print("Trend: " .. trend_fmt .. "%")
@@ -155,13 +153,13 @@ local function wait_for_battery()
     local battery, battery_tier
 
     while battery == nil do
-        local temp_battery, temp_tier = find_machine("battery_buffer")
+        local temp_battery, temp_tier = machine.find_machine("battery_buffer")
 
         if temp_battery ~= nil and pcall(temp_battery.getEnergyStored) then
             battery = temp_battery
             battery_tier = temp_tier
         else
-            reset_terminal()
+            R_terminal.reset_terminal()
 
             io.stdout:write("Detecting battery .")
             sleep(1)
@@ -177,11 +175,15 @@ end
 
 -- Check for connection (for example on server startup)
 
-local BATTERY, BATTERY_TYPE = wait_for_battery()
+local BATTERY, BATTERY_TYPE
 local LAST_PERCENTAGE = 0.0
 
-loop_forever(
+exec.loop_forever(
     UPDATE_INTERVAL_TICKS,
+    -- init
+    function()
+        BATTERY, BATTERY_TYPE = wait_for_battery()
+    end,
     -- body
     function()
         --- @type number
@@ -204,12 +206,12 @@ loop_forever(
         out_metrics:rescale(BATTERY_TYPE)
         net_metrics:rescale(BATTERY_TYPE)
 
-        local rounded_current = round(percentage * 100, PRECISION_DISPLAYED)
-        local rounded_trend = round(trend * 100, PRECISION_DISPLAYED)
+        local rounded_current = R_math.round(percentage * 100, PRECISION_DISPLAYED)
+        local rounded_trend = R_math.round(trend * 100, PRECISION_DISPLAYED)
 
-        in_metrics.amps = round(in_metrics.amps, PRECISION_DISPLAYED)
-        out_metrics.amps = round(out_metrics.amps, PRECISION_DISPLAYED)
-        net_metrics.amps = round(net_metrics.amps, PRECISION_DISPLAYED)
+        in_metrics.amps = R_math.round(in_metrics.amps, PRECISION_DISPLAYED)
+        out_metrics.amps = R_math.round(out_metrics.amps, PRECISION_DISPLAYED)
+        net_metrics.amps = R_math.round(net_metrics.amps, PRECISION_DISPLAYED)
 
         display_to_monitors(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics)
         display_to_terminal(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics, BATTERY.getEnergyCapacity() == 2147483647)
@@ -217,9 +219,5 @@ loop_forever(
         LAST_PERCENTAGE = percentage
     end,
     -- quit
-    nil,
-    -- restart
-    function()
-        BATTERY, BATTERY_TYPE = wait_for_battery()
-    end
+    nil
 )

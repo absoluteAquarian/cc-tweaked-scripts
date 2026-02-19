@@ -1,5 +1,5 @@
-local Class = require "util.class"
-require "util.string"
+local class = require "util.class"
+local R_string = require "util.string"
 
 --- @class TierDefinition : ClassDefinition
 --- (Overrides)
@@ -19,7 +19,7 @@ local TierClass = {}
 --- @field conversion_factor_to fun(self: Tier, other: Tier) : number  The conversion factor to convert voltage from this tier to another tier
 local TierInstance = {}
 
-local Tier = Class.class(
+local Tier = class.class(
     nil,
     --- @param klass TierDefinition
     function(klass)
@@ -45,7 +45,7 @@ local Tier = Class.class(
 
             --- @param peripheral_name string  The name of the peripheral to check
             function instance:matches_peripheral(peripheral_name)
-                return contains(peripheral_name, ":" .. string.lower(self.name))
+                return R_string.contains(peripheral_name, ":" .. string.lower(self.name))
             end
 
             --- @param other Tier  The tier to convert to

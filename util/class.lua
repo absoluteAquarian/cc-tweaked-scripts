@@ -101,7 +101,7 @@ end
 --- @param base ClassDefinition?  An optional base class to inherit from
 --- @param def fun(klass: ClassDefinition)? An optional function to add additional fields or methods to the class definition
 --- @return ClassDefinition
-function class(base, def)
+local function class(base, def)
     --- @param name string  The name of the field being accessed
     --- @param action string  The type of action being attempted on the field
     local function error_field_defined_on_class(name, action)

@@ -1,5 +1,7 @@
 -- Based on: https://github.com/Poeschl/computercraft-scripts/blob/main/installer.lua
 
+local completion = require "cc.completion"
+
 local REPOSITORY = "https://api.github.com/repos/absoluteAquarian/cc-tweaked-scripts/contents/"
 
 --- @class GitHubFile
@@ -69,22 +71,36 @@ end
 
 local available = load_files("programs")
 local util = load_files("util")
+local launcher = { name = "launcher.lua", url = "https://raw.githubusercontent.com/absoluteAquarian/cc-tweaked-scripts/main/launcher.lua" }
 
 if not available or not util then
     error("Failed to load file list from repository")
 end
 
-print("Available Scripts (type number to download):")
-
+print("Choose a script:")
 local options = {}
-
-for index, script in ipairs(available) do
-    print(index .. ') ' .. script['name'])
-    table.insert(options, index)
+for _, script in ipairs(available) do
+    print("  " .. script.name)
+    table.insert(options, script.name)
 end
+print()
+write("? ")
 
-local index = tonumber(read(nil, options))
-local selection = available[index]
+local request = read(nil, nil, function(text) return completion.choice(text, options) end)
+
+if not request then
+    error("Unknown script")
+end
+local selection
+for _, script in pairs(available) do
+    if script.name == request then
+        selection = script
+        break
+    end
+end
+if not selection then
+    error("Unknown script")
+end
 
 print()
 print("Target directory: ")
@@ -93,14 +109,17 @@ local directory = read()
 
 print()
 
-local program = selection['name']
+local program = selection.name
 
-download_and_overwrite(selection['url'], directory .. "/" .. program)
+download_and_overwrite(selection.url, directory .. "/" .. program)
 
 for _, file in pairs(util) do
-    download_and_overwrite(file['url'], directory .. "/util/" .. file['name'])
+    download_and_overwrite(file.url, directory .. "/util/" .. file.name)
 end
 
+download_and_overwrite(launcher.url, directory .. "/" .. launcher.name)
+
 print()
-print("Script has been downloaded: " .. program)
+print("Script has been downloaded.")
+print("Programs can be launched via the launcher application in the same directory.")
 print()
