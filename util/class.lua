@@ -23,8 +23,8 @@ local __ClassDefinition = {}
 --- @field base ClassInstance?  The class instance of the class definition's base class definition
 local __ClassInstance = {}
 
---- Attempts to find the class that defines the given field, or returns nil if no such class exists
---- @param klass __Classlike  The class to start searching from
+--- Attempts to find the class-like object that defines the given field, or returns nil if no such object exists
+--- @param klass __Classlike  The class-like object to start searching from
 --- @param name string  The name of the field to find
 --- @return __Classlike|nil
 local function find_field_in_class(klass, name)
@@ -66,6 +66,13 @@ end
 --- @param name string  The name of the field to read
 --- @return any
 local function get_field(obj, name)
+    -- Since this function indexes the object, it will trigger the __index metamethod
+    -- This will result in a stack overflow because the metamethod will call this function again
+    -- To fix this, certain indices must bypass the special code
+    if name == "class" or name == "base" or name == "__fields" then
+        return rawget(obj, name)
+    end
+
     if obj.base then
         local defining_class = find_field_in_class(obj, name)
         return defining_class and rawget(defining_class, name) or nil
@@ -106,6 +113,12 @@ function class(base, def)
         error("Attempted to modify read-only field '" .. name .. "'.")
     end
 
+    --- @param name string
+    --- @return boolean
+    local function is_classlike(name)
+        return name == "class" or name == "base" or name == "__fields" or name == "instanceof"
+    end
+
     --- @param klass ClassDefinition
     --- @return ClassInstance
     local function create_instance(klass, ...)
@@ -131,7 +144,7 @@ function class(base, def)
             --- @param self ClassInstance
             --- @param name string
             __index = function(self, name)
-                if klass[name] ~= nil then
+                if (not is_classlike(name)) and self.class[name] ~= nil then
                     error_field_defined_on_class(name, "get")
                 end
                 return get_field(self, name)
@@ -142,7 +155,7 @@ function class(base, def)
             __newindex = function(self, name, value)
                 if name == "class" or name == "base" or name == "__fields" then
                     error_field_readonly(name)
-                elseif klass[name] ~= nil then
+                elseif (not is_classlike(name)) and self.class[name] ~= nil then
                     error_field_defined_on_class(name, "set")
                 else
                     assign_field(self, name, value)
