@@ -86,9 +86,12 @@ end
 local index = tonumber(read(nil, options))
 local selection = available[index]
 
+print()
 print("Target directory: ")
 
 local directory = read()
+
+print()
 
 local program = selection['name']
 

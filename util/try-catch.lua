@@ -1,15 +1,14 @@
 -- Based on: https://github.com/Poeschl/computercraft-scripts/blob/main/try-catch.lua
 
--- This is a utility class to add try - catch functionality
--- include it by downloading to your computer and import it with 'require "util.try-catch"'
-
---- @alias _CatchBody fun(error: any) : ...
---- @alias _TryBody fun() : ...
---- @alias TryBlock { [1]: _TryBody, [2]: _CatchBody? }
+--- @class TryBlock
+--- @field [1] fun(...) : ...  The function to be called as the "try" block
+--- @field [2] (fun(error: any) : ...)?  An optional function to be called as the "catch" block if an error occurs, with the error passed as an argument
+local TryBlock = {}
 
 --- Implements try-catch functionality by wrapping a call to pcall and invoking the appropriate function based on success or failure
---- @param what TryBlock  A table containing a function to be called as the "try" block and an optional function to be called as the "catch" block if an error occurs
+--- @param what TryBlock
 --- @return ...
+--- <br/>
 --- Example usage:
 --- ```lua
 --- try {
