@@ -104,7 +104,7 @@ end
 --- Gets the name of the EU tier corresponding to the given peripheral name, or nil if no matching tier is found
 --- @param name string  The name of the peripheral to get the tier for
 --- @return string?
-function peripheral_tier(name)
+local function peripheral_tier(name)
     for _, tier in ipairs(def) do
         if tier:matches_peripheral(name) then return tier.name end
     end
@@ -114,7 +114,7 @@ end
 --- Gets the name of the tier corresponding to the given EU
 --- @param eu number  The EU to get the tier for
 --- @return string
-function get_tier(eu)
+local function get_tier(eu)
     return __internal_eu_tier(eu).name
 end
 
@@ -122,21 +122,21 @@ end
 --- @param eu number  The EU to convert
 --- @param tier string  The name of the tier
 --- @return number
-function get_amps(eu, tier)
+local function get_amps(eu, tier)
     return __internal_get_tier(tier):amps(eu)
 end
 
 --- Gets the color corresponding to the given tier
 --- @param tier string  The name of the tier
 --- @return number
-function get_color(tier)
+local function get_color(tier)
     return __internal_get_tier(tier).color
 end
 
 --- Returns the voltage per amp for the given tier
 --- @param tier string  The name of the tier
 --- @return number
-function voltage_per_amp(tier)
+local function voltage_per_amp(tier)
     return __internal_get_tier(tier).volts_per_amp
 end
 
@@ -145,7 +145,7 @@ end
 --- @param current_tier string  The name of the current tier
 --- @param target_tier string  The name of the target tier
 --- @return number?
-function transform(value, current_tier, target_tier)
+local function transform(value, current_tier, target_tier)
     local current = __internal_get_tier(current_tier)
     local target = __internal_get_tier(target_tier)
 
