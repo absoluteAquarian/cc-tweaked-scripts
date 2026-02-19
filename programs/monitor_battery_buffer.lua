@@ -92,11 +92,11 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
             monitor.setTextScale(0.5)
 
             monitor.setCursorPos(1, 1)
-            monitor.write("Current:")
+            monitor.write("Current: ")
             monitor_ex.write(monitor, color_current, current .. "%")
 
             monitor.setCursorPos(1, 2)
-            monitor.write("Trend:")
+            monitor.write("Trend: ")
             monitor_ex.write(monitor, color_trend, trend_fmt .. "%")
 
             monitor.setCursorPos(1, 3)
