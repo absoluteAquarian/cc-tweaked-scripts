@@ -40,6 +40,12 @@ function loop_forever(wait_interval, body, quit, restart)
                         valid = true
                         if restart then restart() end
                     end
+
+                    if valid then
+                        -- Flush the event queue so that the entered key is consumed
+                        os.queueEvent("FAKE_EVENT")
+                        os.pullEvent("FAKE_EVENT")
+                    end
                 end
             end
         }
