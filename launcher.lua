@@ -21,6 +21,6 @@ if not R_table.has_value(programs, program) then
     error("Unknown program")
 end
 
-local pid = multishell.launch(_G, directory .. "/" .. program)
+local pid = shell.openTab(directory .. "/" .. program)
 multishell.setTitle(pid, program)
 multishell.setFocus(pid)
