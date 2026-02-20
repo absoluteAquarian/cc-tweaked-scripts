@@ -1,0 +1,132 @@
+{
+    "programs":
+    [
+        {
+            "name": "launcher",
+            "version": 1,
+            "url": "$REPO$/launcher.lua",
+            "install": "launcher.lua",
+            "deps":
+            [
+                "lib.table"
+            ]
+        },
+        {
+            "name": "monitor_battery_buffer",
+            "version": 1,
+            "url": "$REPO$/programs/monitor_battery_buffer.lua",
+            "install": "monitor_battery_buffer.lua",
+            "deps":
+            [
+                "lib.cc.fmt",
+                "lib.cc.monitor",
+                "lib.cc.terminal",
+                "lib.gt.machine",
+                "lib.gt.tiers",
+                "lib.class",
+                "lib.exec",
+                "lib.math"
+            ]
+        }
+    ],
+    "lib":
+    [
+        {
+            "name": "lib.cc.fmt",
+            "version": 1,
+            "url": "$REPO$/lib/cc/fmt.lua",
+            "install": "lib/cc/fmt.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.cc.monitor",
+            "version": 1,
+            "url": "$REPO$/lib/cc/monitor.lua",
+            "install": "lib/cc/monitor.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.cc.terminal",
+            "version": 1,
+            "url": "$REPO$/lib/cc/terminal.lua",
+            "install": "lib/cc/terminal.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.gt.machine",
+            "version": 1,
+            "url": "$REPO$/lib/gt/machine.lua",
+            "install": "lib/gt/machine.lua",
+            "deps":
+            [
+                "lib.gt.tiers",
+                "lib.string"
+            ]
+        },
+        {
+            "name": "lib.gt.tiers",
+            "version": 1,
+            "url": "$REPO$/lib/gt/tiers.lua",
+            "install": "lib/gt/tiers.lua",
+            "deps":
+            [
+                "lib.class",
+                "lib.string"
+            ]
+        },
+        {
+            "name": "lib.class",
+            "version": 1,
+            "url": "$REPO$/lib/class.lua",
+            "install": "lib/class.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.exec",
+            "version": 1,
+            "url": "$REPO$/lib/exec.lua",
+            "install": "lib/exec.lua",
+            "deps":
+            [
+                "lib.cc.monitor",
+                "lib.cc.terminal",
+                "lib.handler"
+            ]
+        },
+        {
+            "name": "lib.handler",
+            "version": 1,
+            "url": "$REPO$/lib/handler.lua",
+            "install": "lib/handler.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.math",
+            "version": 1,
+            "url": "$REPO$/lib/math.lua",
+            "install": "lib/math.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.string",
+            "version": 1,
+            "url": "$REPO$/lib/string.lua",
+            "install": "lib/string.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.table",
+            "version": 1,
+            "url": "$REPO$/lib/table.lua",
+            "install": "lib/table.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.tp.pixelbox_lite",
+            "version": 1,
+            "url": "https://raw.githubusercontent.com/9551-Dev/pixelbox_lite/refs/heads/master/minified/pixelbox_lite.lua",
+            "install": "lib/tp/pixelbox_lite/pixelbox_lite.lua",
+            "deps": []
+        }
+    ]
+}
