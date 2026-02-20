@@ -18,24 +18,19 @@ local UPDATE_INTERVAL_TICKS = 5
 
 --- @class MetricsDefinition : ClassDefinition
 --- (Overrides)
---- @field __make_instance fun(self: MetricsDefinition, eu: number) : Metrics  Creates a new class instance, converted to a Metrics object
 --- @field new fun(self: MetricsDefinition, eu: number) : Metrics  Creates a new Metrics instance with the given EU value
-local MetricsClass = {}
-
---- @class Metrics : ClassInstance
---- (Defines)
---- @field eu number  The amount of EU this Metrics instance represents
---- @field tier string  The tier that supports the provided EU
---- @field amps number  The number of Amperes needed to send the provided EU at the provided tier
---- @field report fun(self: Metrics) : string  A function to generate a human-readable report of this Metrics instance
---- @field rescale fun(self: Metrics, target_tier: string)  A function to adjust the amperage of this Metrics instance to match a different tier
-local MetricsInstance = {}
-
 local Metrics = class.class(
     nil,
     --- @param klass MetricsDefinition
     function(klass)
         function klass:new(eu)
+            --- @class Metrics : ClassInstance
+            --- (Defines)
+            --- @field eu number  The amount of EU this Metrics instance represents
+            --- @field tier string  The tier that supports the provided EU
+            --- @field amps number  The number of Amperes needed to send the provided EU at the provided tier
+            --- @field report fun(self: Metrics) : string  A function to generate a human-readable report of this Metrics instance
+            --- @field rescale fun(self: Metrics, target_tier: string)  A function to adjust the amperage of this Metrics instance to match a different tier
             local instance = klass:__make_instance(eu)
 
             instance.eu = eu
@@ -54,7 +49,7 @@ local Metrics = class.class(
             return instance
         end
     end
-) --[[@as MetricsDefinition]]
+)
 
 --- @param current number
 --- @param trend number
