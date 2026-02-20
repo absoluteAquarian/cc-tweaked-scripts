@@ -1,5 +1,5 @@
-local tiers = require "util.gt.tiers"
-local R_string = require "util.string"
+local tiers = require "lib.gt.tiers"
+local R_string = require "lib.string"
 
 --- Finds a GTCE machine matching the given name and returns it along with its tier, or nil for both if no matching machine is found
 --- @param machine string  The name of the machine to find.  Can be a whole name or substring (e.g. "assembler" will match "gtceu:ulv_assembler" and "gtceu:mv_assembler")

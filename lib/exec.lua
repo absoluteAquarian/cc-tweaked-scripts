@@ -1,6 +1,6 @@
-local R_monitor = require "util.cc.monitor"
-local R_terminal = require "util.cc.terminal"
-local handler = require "util.handler"
+local R_monitor = require "lib.cc.monitor"
+local R_terminal = require "lib.cc.terminal"
+local handler = require "lib.handler"
 
 --- A utility function to loop forever, with optional logic to run when quitting or restarting the program.
 --- @param wait_interval number  The number of ticks to wait between iterations.  Forced to be at least 1.

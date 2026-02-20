@@ -1,15 +1,15 @@
 -- Based on: https://github.com/Poeschl/computercraft-scripts/blob/main/simple_energy_monitor.lua
 
-local fmt = require "util.cc.fmt"
-local R_monitor = require "util.cc.monitor"
-local R_terminal = require "util.cc.terminal"
+local fmt = require "lib.cc.fmt"
+local R_monitor = require "lib.cc.monitor"
+local R_terminal = require "lib.cc.terminal"
 
-local machine = require "util.gt.machine"
-local tiers = require "util.gt.tiers"
+local machine = require "lib.gt.machine"
+local tiers = require "lib.gt.tiers"
 
-local class = require "util.class"
-local exec = require "util.exec"
-local R_math = require "util.math"
+local class = require "lib.class"
+local exec = require "lib.exec"
+local R_math = require "lib.math"
 
 local CHARGE_THRESHOLD = 0.6
 local ALARM_THRESHOLD = 0.3

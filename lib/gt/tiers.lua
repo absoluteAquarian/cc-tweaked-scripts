@@ -1,5 +1,5 @@
-local class = require "util.class"
-local R_string = require "util.string"
+local class = require "lib.class"
+local R_string = require "lib.string"
 
 --- @class TierDefinition : ClassDefinition
 --- (Overrides)
