@@ -1,0 +1,3 @@
+[submodule "lib/tp/pixelbox_lite"]
+	path = lib/tp/pixelbox_lite
+	url = https://github.com/9551-Dev/pixelbox_lite
