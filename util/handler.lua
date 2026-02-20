@@ -3,7 +3,7 @@
 --- @class TryBlock
 --- @field [1] fun(...) : ...  The function to be called as the "try" block
 --- @field [2] (fun(error: any) : ...)?  An optional function to be called as the "catch" block if an error occurs, with the error passed as an argument
-local TryBlock = {}
+local __TryBlock = nil
 
 --- Implements try-catch functionality by wrapping a call to pcall and invoking the appropriate function based on success or failure
 --- @param what TryBlock

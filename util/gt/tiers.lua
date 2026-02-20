@@ -3,27 +3,22 @@ local R_string = require "util.string"
 
 --- @class TierDefinition : ClassDefinition
 --- (Overrides)
---- @field __make_instance fun(self: TierDefinition, name: string, volts: number, color: number) : Tier  Creates a new class instance, converted to a Tier object
 --- @field new fun(self: TierDefinition, name: string, volts: number, color: number) : Tier  Creates a new Tier instance with the given parameters
-local TierClass = {}
-
---- @class Tier : ClassInstance
---- (Defines)
---- @field name string  The name of this tier (e.g. "ULV", "LV", etc.)
---- @field volts_per_amp number  The voltage per Ampere for this tier
---- @field color number  The color corresponding to this tier when displayed on a monitor
---- @field index number  The index of this tier in the definition list
---- @field within_tier fun(self: Tier, eu: number) : boolean  Whether the given EU value is within this tier
---- @field amps fun(self: Tier, eu: number) : number  How many Amperes of this tier are needed to send the given EU
---- @field matches_peripheral fun(self: Tier, peripheral_name: string) : boolean  Whether the given peripheral name matches this tier (e.g. "gtceu:ulv_assembler" matches the "ULV" tier)
---- @field conversion_factor_to fun(self: Tier, other: Tier) : number  The conversion factor to convert voltage from this tier to another tier
-local TierInstance = {}
-
 local Tier = class.class(
     nil,
     --- @param klass TierDefinition
     function(klass)
         function klass:new(name, volts, color)
+            --- @class Tier : ClassInstance
+            --- (Defines)
+            --- @field name string  The name of this tier (e.g. "ULV", "LV", etc.)
+            --- @field volts_per_amp number  The voltage per Ampere for this tier
+            --- @field color number  The color corresponding to this tier when displayed on a monitor
+            --- @field index number  The index of this tier in the definition list
+            --- @field within_tier fun(self: Tier, eu: number) : boolean  Whether the given EU value is within this tier
+            --- @field amps fun(self: Tier, eu: number) : number  How many Amperes of this tier are needed to send the given EU
+            --- @field matches_peripheral fun(self: Tier, peripheral_name: string) : boolean  Whether the given peripheral name matches this tier (e.g. "gtceu:ulv_assembler" matches the "ULV" tier)
+            --- @field conversion_factor_to fun(self: Tier, other: Tier) : number  The conversion factor to convert voltage from this tier to another tier
             local instance = klass:__make_instance(name, volts, color)
 
             instance.name = name
@@ -57,7 +52,7 @@ local Tier = class.class(
             return instance
         end
     end
-) --[[@as TierDefinition]]
+)
 
 --- @type Tier[]
 local def = {

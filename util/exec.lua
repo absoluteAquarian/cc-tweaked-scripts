@@ -7,7 +7,7 @@ local handler = require "util.handler"
 --- @param init fun()?  An optional function to run once before the loop starts or when the program is restarted after an error
 --- @param body fun()  The function to run every loop iteration
 --- @param quit fun()?  An optional function to run when the program is quitting after an error
-local function loop_forever(wait_interval, init, body, quit, restart)
+local function loop_forever(wait_interval, init, body, quit)
     wait_interval = (wait_interval and wait_interval >= 1) and wait_interval or 1
 
     local running = true
