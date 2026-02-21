@@ -93,6 +93,7 @@ local function save_local_versions(dir, file)
 
     local handle = fs.open(path, "w")
     handle.write(textutils.serialise(file, { compact = true, allow_repetitions = false }))
+    handle.flush()
     handle.close()
 end
 
@@ -261,7 +262,7 @@ elseif arg[1] == "refresh" then
     local installed = {}
 
     for _, file in pairs(fs.list(directory) --[[@as string[]=]]) do
-        if ends_with(file, ".lua") then table.insert(installed, file) end
+        if ends_with(file, ".lua") then table.insert(installed, file:sub(1, -5)) end
     end
 
     for _, program in ipairs(installed) do
