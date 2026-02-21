@@ -123,10 +123,17 @@
             "deps": []
         },
         {
-            "name": "lib.tp.pixelbox_lite",
+            "name": "lib.tp.pixelbox_lite.pixelbox_lite",
             "version": 1,
             "url": "https://raw.githubusercontent.com/9551-Dev/pixelbox_lite/refs/heads/master/minified/pixelbox_lite.lua",
             "install": "lib/tp/pixelbox_lite/pixelbox_lite.lua",
+            "deps": []
+        },
+        {
+            "name": "lib.tp.pixelbox_lite.bixelbox_lite",
+            "version": 1,
+            "url": "https://raw.githubusercontent.com/9551-Dev/pixelbox_lite/refs/heads/master/minified/bixelbox_lite.lua",
+            "install": "lib/tp/pixelbox_lite/bixelbox_lite.lua",
             "deps": []
         }
     ]
