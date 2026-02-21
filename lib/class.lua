@@ -1,8 +1,5 @@
 -- Based on: http://lua-users.org/wiki/SimpleLuaClasses
 
--- class.lua
--- Compatible with Lua 5.1 (not 5.0).
-
 --- @class __Classlike
 --- @field __fields { [string] : boolean }  A set of field names that are defined on this class-like object
 --- @field base __Classlike?  The base class-like object
@@ -20,18 +17,47 @@
 --- (Overrides)
 --- @field base ClassInstance?  The class instance of the class definition's base class definition
 
+--- Returns whether the given class-like object has a field with the given name defined on it (not including base classes)
+--- @param klass __Classlike  The class-like object to check
+--- @param name string  The name of the field to check for
+--- @return boolean
+local function __has_field(klass, name)
+    return rawget(klass, "__fields")[name]
+end
+
+--- Marks the given field name as being defined on the given class-like object
+--- @param klass __Classlike  The class-like object to mark the field as being defined on
+--- @param name string  The name of the field to mark as being defined on the class-like object
+local function __define_field(klass, name)
+    rawget(klass, "__fields")[name] = true
+end
+
+--- Returns the base class-like object for the given class-like object
+--- @param klass __Classlike  The class-like object to get the base of
+--- @return __Classlike?
+local function __get_base(klass)
+    return rawget(klass, "base")
+end
+
+--- Returns the class definition for the given class-like object
+--- @param klass __Classlike  The class-like object to get the class definition of
+--- @return ClassDefinition
+local function __get_class(klass)
+    return rawget(klass, "class")
+end
+
 --- Attempts to find the class-like object that defines the given field, or returns nil if no such object exists
 --- @param klass __Classlike  The class-like object to start searching from
 --- @param name string  The name of the field to find
 --- @return __Classlike|nil
 local function find_field_in_class(klass, name)
-    if klass.__fields[name] then
+    if __has_field(klass, name) then
         return klass
-    elseif klass.base then
-        local current = klass.base
+    elseif __get_base(klass) then
+        local current = __get_base(klass)
         while current do
-            if current.__fields[name] then return current end
-            current = current.base
+            if __has_field(current, name) then return current end
+            current = __get_base(current)
         end
     end
 end
@@ -41,19 +67,19 @@ end
 --- @param name string  The name of the field to assign
 --- @param value any  The value to assign to the field
 local function assign_field(obj, name, value)
-    if obj.base then
+    if __get_base(obj) then
         local defining_class = find_field_in_class(obj, name)
         if defining_class then
             -- The field is defined either on the class or a base class, so modify it directly
             rawset(defining_class, name, value)
         else
             -- The field is not defined on any base class, so add it to this instance
-            obj.__fields[name] = true
+            __define_field(obj, name)
             rawset(obj, name, value)
         end
     else
         -- No base class, so any new field must be added to this instance
-        obj.__fields[name] = true
+        __define_field(obj, name)
         rawset(obj, name, value)
     end
 end
@@ -63,18 +89,11 @@ end
 --- @param name string  The name of the field to read
 --- @return any
 local function get_field(obj, name)
-    -- Since this function indexes the object, it will trigger the __index metamethod
-    -- This will result in a stack overflow because the metamethod will call this function again
-    -- To fix this, certain indices must bypass the special code
-    if name == "class" or name == "base" or name == "__fields" then
-        return rawget(obj, name)
-    end
-
-    if obj.base then
+    if __get_base(obj) then
         local defining_class = find_field_in_class(obj, name)
         return defining_class and rawget(defining_class, name) or nil
     else
-        return obj.__fields[name] and rawget(obj, name) or nil
+        return __has_field(obj, name) and rawget(obj, name) or nil
     end
 end
 
@@ -83,12 +102,13 @@ end
 --- @param other ClassDefinition  The class to check against
 --- @return boolean
 local function instanceof(klass, other)
-    if klass.class == other then return true end
-    if klass.base then
-        local current = klass.base.class
+    if __get_class(klass) == other then return true end
+    if __get_base(klass) then
+        --- @type __Classlike?
+        local current = __get_class(__get_base(klass) --[[@as __Classlike]])
         while current do
             if current == other then return true end
-            current = current.base
+            current = __get_base(current)
         end
     end
     return false
@@ -123,6 +143,7 @@ local function class(base, def)
             __fields = {
                 ["class"] = true,
                 ["base"] = true,
+                ["instanceof"] = true,
                 ["__fields"] = true
             },
             class = klass
@@ -143,7 +164,9 @@ local function class(base, def)
             --- @param self ClassInstance
             --- @param name string
             __index = function(self, name)
-                if (not is_classlike(name)) and self.class[name] ~= nil then
+                if is_classlike(name) then
+                    error_field_readonly(name)
+                elseif __get_class(self)[name] ~= nil then
                     error_field_defined_on_class(name, "get")
                 end
                 return get_field(self, name)
@@ -152,9 +175,9 @@ local function class(base, def)
             --- @param name string
             --- @param value any
             __newindex = function(self, name, value)
-                if name == "class" or name == "base" or name == "__fields" then
+                if is_classlike(name) then
                     error_field_readonly(name)
-                elseif (not is_classlike(name)) and self.class[name] ~= nil then
+                elseif __get_class(self)[name] ~= nil then
                     error_field_defined_on_class(name, "set")
                 else
                     assign_field(self, name, value)
@@ -167,22 +190,26 @@ local function class(base, def)
     local function create_definition()
         local definition = {
             __fields = {
-                ["__fields"] = true,
-                ["__make_instance"] = true,
                 ["base"] = true,
-                ["new"] = true
+                ["class"] = true,
+                ["instanceof"] = true,
+                ["new"] = true,
+                ["__fields"] = true,
+                ["__make_instance"] = true
             },
             base = base
         }
 
         --- @cast definition ClassDefinition
-        
+
+        definition.class = definition
+
         function definition:__make_instance(...)
             --- @type ClassInstance
             local instance = setmetatable(create_instance(self, ...), create_instance_metatable(self));
 
             function instance:instanceof(klass) return instanceof(self, klass) end
-            
+
             return instance
         end
 
@@ -202,7 +229,7 @@ local function class(base, def)
             --- @param name string
             --- @param value any
             __newindex = function(self, name, value)
-                if name == "base" or name == "__fields" or name == "__instance" then
+                if is_classlike(name) or name == "__make_instance" then
                     error_field_readonly(name)
                 else
                     assign_field(self, name, value)
