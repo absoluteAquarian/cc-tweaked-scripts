@@ -183,7 +183,7 @@ local function download_program_and_dependencies(program, meta, directory)
         function(file)
             if (not meta.__versions[file.install]) or meta.__versions[file.install] < file.version then
                 -- Allow files from this repository to have shorter URLs
-                local url = starts_with(file.url, "$REPO$") and file.url:gsub("%$REPO%$", REPOSITORY) or file.url
+                local url = starts_with(file.url, "$REPO$/") and (REPOSITORY .. file.url:sub(8)) or file.url
                 download_and_overwrite(url, directory .. "/" .. file.install)
                 meta.__versions[file.install] = file.version
             end
