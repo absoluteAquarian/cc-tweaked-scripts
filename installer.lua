@@ -284,6 +284,7 @@ elseif arg[1] == "install" then
     foreach_program(
         meta,
         function(file)
+            if file.name == "launcher" then return end  -- Don't show the launcher in the list of options
             print("  " .. file.name)
             table.insert(options, file.name)
         end
