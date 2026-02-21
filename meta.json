@@ -14,7 +14,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "deps":
@@ -55,7 +55,7 @@
         },
         {
             "name": "lib.gt.machine",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/gt/machine.lua",
             "install": "lib/gt/machine.lua",
             "deps":

@@ -125,7 +125,7 @@ end
 --- @param in_metrics Metrics
 --- @param out_metrics Metrics
 --- @param net_metrics Metrics
-local function display_to_terminal(current, trend, in_metrics, out_metrics, net_metrics, max_hint)
+local function display_to_terminal(current, trend, in_metrics, out_metrics, net_metrics)
     R_terminal.reset_terminal()
 
     local trend_fmt, _ = fmt.signed_and_color(trend)
@@ -136,19 +136,22 @@ local function display_to_terminal(current, trend, in_metrics, out_metrics, net_
     print("Input: " .. in_metrics:report())
     print("Output: " .. out_metrics:report())
     print("Net: " .. net_metrics:report())
-
-    if max_hint then
-        print()
-        print("The max energy capacity is MAX_INT!")
-        print("There might be more energy left as it can be displayed")
-    end
 end
 
+--- @class GTCEu_BatteryBuffer : GTCEu_EnergyInfoPeripheral, GTCEu_WorkablePeripheral
+local GTCEu_BatteryBuffer = {}
+
+--- @return GTCEu_BatteryBuffer
+--- @return string
 local function wait_for_battery()
-    local battery, battery_tier
+    --- @type GTCEu_BatteryBuffer?
+    local battery
+    --- @type string?
+    local battery_tier
 
     while battery == nil do
-        local temp_battery, temp_tier = machine.find_machine("battery_buffer")
+        --- @type GTCEu_BatteryBuffer?, string?
+        local temp_battery, temp_tier = machine.find_machine("battery_buffer", GTCEu_BatteryBuffer)
 
         if temp_battery ~= nil and pcall(temp_battery.getEnergyStored) then
             battery = temp_battery
@@ -156,28 +159,31 @@ local function wait_for_battery()
         else
             R_terminal.reset_terminal()
 
-            io.stdout:write("Detecting battery .")
+            write("Detecting battery .")
             sleep(1)
-            io.stdout:write(".")
+            write(".")
             sleep(1)
-            io.stdout:write(".")
+            write(".")
             sleep(1)
         end
     end
 
-    return battery, battery_tier
+    return battery, battery_tier --[[@as string]]
 end
 
 -- Check for connection (for example on server startup)
 
-local BATTERY, BATTERY_TYPE
+--- @type GTCEu_BatteryBuffer
+local BATTERY
+--- @type string
+local BATTERY_TIER
 local LAST_PERCENTAGE = 0.0
 
 exec.loop_forever(
     UPDATE_INTERVAL_TICKS,
     -- init
     function()
-        BATTERY, BATTERY_TYPE = wait_for_battery()
+        BATTERY, BATTERY_TIER = wait_for_battery()
     end,
     -- body
     function()
@@ -186,8 +192,8 @@ exec.loop_forever(
         --- @type number
         local trend = percentage - LAST_PERCENTAGE
 
-        local eu_in = BATTERY.getInputPerSec() / 20.0
-        local eu_out = BATTERY.getOutputPerSec() / 20.0
+        local eu_in = BATTERY.getInputPerSec() / 20
+        local eu_out = BATTERY.getOutputPerSec() / 20
         local eu_net = eu_in - eu_out
 
         --- @type Metrics
@@ -197,9 +203,9 @@ exec.loop_forever(
         --- @type Metrics
         local net_metrics = Metrics:new(eu_net)
 
-        in_metrics:rescale(BATTERY_TYPE)
-        out_metrics:rescale(BATTERY_TYPE)
-        net_metrics:rescale(BATTERY_TYPE)
+        in_metrics:rescale(BATTERY_TIER)
+        out_metrics:rescale(BATTERY_TIER)
+        net_metrics:rescale(BATTERY_TIER)
 
         local rounded_current = R_math.round(percentage * 100, PRECISION_DISPLAYED)
         local rounded_trend = R_math.round(trend * 100, PRECISION_DISPLAYED)
@@ -209,7 +215,7 @@ exec.loop_forever(
         net_metrics.amps = R_math.round(net_metrics.amps, PRECISION_DISPLAYED)
 
         display_to_monitors(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics)
-        display_to_terminal(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics, BATTERY.getEnergyCapacity() == 2147483647)
+        display_to_terminal(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics)
 
         LAST_PERCENTAGE = percentage
     end,
