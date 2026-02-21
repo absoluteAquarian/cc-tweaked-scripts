@@ -77,7 +77,7 @@
         },
         {
             "name": "lib.class",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "deps": []
@@ -96,7 +96,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "deps": []

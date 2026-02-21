@@ -8,7 +8,6 @@
 --- @field base __Classlike?  The base class-like object
 --- @field class ClassDefinition  The class definition for this class-like object
 --- @field instanceof fun(self: __Classlike, other: ClassDefinition) : boolean  A function to check if this class-like object's class definition is the same as or inherits from another class definition
-local __Classlike = nil
 
 --- @class ClassDefinition : __Classlike
 --- (Overrides)
@@ -16,12 +15,10 @@ local __Classlike = nil
 --- (Defines)
 --- @field __make_instance fun(self: ClassDefinition, ...) : ClassInstance  A function to create a new class instance from the class definition
 --- @field new fun(self: ClassDefinition, ...) : ClassInstance  A function to create a new class instance from the class definition
-local __ClassDefinition = nil
 
 --- @class ClassInstance : __Classlike
 --- (Overrides)
 --- @field base ClassInstance?  The class instance of the class definition's base class definition
-local __ClassInstance = nil
 
 --- Attempts to find the class-like object that defines the given field, or returns nil if no such object exists
 --- @param klass __Classlike  The class-like object to start searching from
@@ -131,6 +128,8 @@ local function class(base, def)
             class = klass
         }
 
+        --- @cast instance ClassInstance
+
         if klass.base then
             instance.base = klass.base:new(...)
         end
@@ -213,11 +212,11 @@ local function class(base, def)
     end
 
     --- @type ClassDefinition
-    local class = setmetatable(create_definition(), create_definition_metatable())
+    local klass = setmetatable(create_definition(), create_definition_metatable())
 
-    if def then def(class) end
+    if def then def(klass) end
 
-    return class
+    return klass
 end
 
 return {
