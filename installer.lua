@@ -280,6 +280,7 @@ elseif arg[1] == "refresh" then
 elseif arg[1] == "install" then
     print("Choose a script:")
 
+    --- @type string[]
     local options = {}
     foreach_program(
         meta,
@@ -296,8 +297,8 @@ elseif arg[1] == "install" then
     local request = read(nil, nil, function(text) return completion.choice(text, options) end) or error("Unknown script")
 
     local selection
-    for _, script in pairs(options) do
-        if script.name == request then
+    for _, script in ipairs(options) do
+        if script == request then
             selection = script
             break
         end
@@ -306,7 +307,7 @@ elseif arg[1] == "install" then
 
     print()
 
-    download_program_and_dependencies(selection.name, meta, directory)
+    download_program_and_dependencies(selection, meta, directory)
 
     -- Ensure that the launcher is also installed
     download_program_and_dependencies("launcher", meta, directory)
