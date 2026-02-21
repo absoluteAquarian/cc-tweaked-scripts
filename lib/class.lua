@@ -49,7 +49,7 @@ end
 --- Attempts to find the class-like object that defines the given field, or returns nil if no such object exists
 --- @param klass __Classlike  The class-like object to start searching from
 --- @param name string  The name of the field to find
---- @return __Classlike|nil
+--- @return __Classlike?
 local function find_field_in_class(klass, name)
     if __has_field(klass, name) then
         return klass
@@ -103,14 +103,17 @@ end
 --- @return boolean
 local function instanceof(klass, other)
     if __get_class(klass) == other then return true end
-    if __get_base(klass) then
+
+    local base = __get_base(klass)
+    if base then
         --- @type __Classlike?
-        local current = __get_class(__get_base(klass) --[[@as __Classlike]])
+        local current = __get_class(base)
         while current do
             if current == other then return true end
             current = __get_base(current)
         end
     end
+
     return false
 end
 
@@ -133,7 +136,7 @@ local function class(base, def)
     --- @param name string
     --- @return boolean
     local function is_classlike(name)
-        return name == "class" or name == "base" or name == "__fields" or name == "instanceof"
+        return name == "base" or name == "class" or name == "__fields" or name == "instanceof"
     end
 
     --- @param klass ClassDefinition
@@ -141,8 +144,8 @@ local function class(base, def)
     local function create_instance(klass, ...)
         local instance = {
             __fields = {
-                ["class"] = true,
                 ["base"] = true,
+                ["class"] = true,
                 ["instanceof"] = true,
                 ["__fields"] = true
             },
@@ -166,7 +169,7 @@ local function class(base, def)
             __index = function(self, name)
                 if is_classlike(name) then
                     error_field_readonly(name)
-                elseif __get_class(self)[name] ~= nil then
+                elseif not not get_field(__get_class(self), name) then
                     error_field_defined_on_class(name, "get")
                 end
                 return get_field(self, name)
@@ -177,7 +180,7 @@ local function class(base, def)
             __newindex = function(self, name, value)
                 if is_classlike(name) then
                     error_field_readonly(name)
-                elseif __get_class(self)[name] ~= nil then
+                elseif not not get_field(__get_class(self), name) then
                     error_field_defined_on_class(name, "set")
                 else
                     assign_field(self, name, value)
