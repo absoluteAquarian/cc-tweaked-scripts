@@ -1,5 +1,6 @@
 local completion = require "cc.completion"
 
+local R_string = require "lib.string"
 local R_table = require "lib.table"
 
 local directory = fs.getDir(shell.getRunningProgram())
@@ -7,6 +8,7 @@ local directory = fs.getDir(shell.getRunningProgram())
 local programs = fs.list(directory) --[[@as string[]=]]
 
 R_table.remove_values(programs, "launcher.lua", "lib")
+R_table.remove_values_where(programs, function(file) return not R_string.ends_with(file, ".lua") end)
 
 if #programs == 0 then
     print("No programs were installed, aborting")

@@ -3,11 +3,12 @@
     [
         {
             "name": "launcher",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/launcher.lua",
             "install": "launcher.lua",
             "deps":
             [
+                "lib.string",
                 "lib.table"
             ]
         },
@@ -116,7 +117,7 @@
         },
         {
             "name": "lib.table",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
             "deps": []
