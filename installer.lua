@@ -120,50 +120,44 @@ end
 --- @return string[]
 local function get_dependencies(name, meta)
     --- @type { [string]: boolean }
-    local seen = {}
+    local visited = {}
+    --- @type string[]
+    local dependencies = {}
 
     --- @param current string
     local function visit(current)
-        if seen[current] then return end
-        seen[current] = true
+        local file = meta.__lookup_programs[current] or meta.__lookup_libs[current]
+        if not file then error("Unknown program or library: " .. current) end
 
-        local deps = get_dependencies(current, meta)
-        for _, dep in pairs(deps) do
+        if visited[current] then return end
+        visited[current] = true
+
+        for _, dep in ipairs(file.deps) do
+            if not visited[dep] then table.insert(dependencies, dep) end
             visit(dep)
         end
     end
 
     visit(name)
 
-    local files = {}
-    for dep, _ in pairs(seen) do
-        table.insert(files, dep)
-    end
-    return files
+    return dependencies
 end
 
 --- @param name string
 --- @param meta MetaTable
 --- @param callback fun(file: MetaFile)
 local function foreach_file_and_dependency(name, meta, callback)
-    --- @type { [string]: boolean }
-    local seen = {}
-
-    --- @param current string
     local function visit(current)
-        if seen[current] then return end
-        seen[current] = true
-
         local file = meta.__lookup_programs[current] or meta.__lookup_libs[current]
-        if file then callback(file) end
-
-        local deps = get_dependencies(current, meta)
-        for _, dep in pairs(deps) do
-            visit(dep)
-        end
+        if not file then error("Unknown program or library: " .. current) end
+        callback(file)
     end
 
     visit(name)
+
+    for _, dep in ipairs(get_dependencies(name, meta)) do
+        visit(dep)
+    end
 end
 
 --- @param meta MetaTable
