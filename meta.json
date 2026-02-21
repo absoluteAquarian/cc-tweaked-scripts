@@ -110,7 +110,7 @@
         },
         {
             "name": "lib.string",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/string.lua",
             "install": "lib/string.lua",
             "deps": []
