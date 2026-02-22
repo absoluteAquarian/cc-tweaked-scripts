@@ -1,21 +1,44 @@
 -- Based on: http://lua-users.org/wiki/SimpleLuaClasses
 
+--- @class StringSet : { [string] : boolean }
+
 --- @class __Classlike
---- @field __fields { [string] : boolean }  A set of field names that are defined on this class-like object
+--- @field __fields StringSet  A set of field names that are defined on this class-like object
 --- @field base __Classlike?  The base class-like object
 --- @field class ClassDefinition  The class definition for this class-like object
 --- @field instanceof fun(self: __Classlike, other: ClassDefinition) : boolean  A function to check if this class-like object's class definition is the same as or inherits from another class definition
+
+--- @class __ClassDefinitionCache
+--- @field mt_instance table
 
 --- @class ClassDefinition : __Classlike
 --- (Overrides)
 --- @field base ClassDefinition?  The base class definition
 --- (Defines)
+--- @field __cache __ClassDefinitionCache  A general-purpose cache table
 --- @field __make_instance fun(self: ClassDefinition, ...) : ClassInstance  A function to create a new class instance from the class definition
 --- @field new fun(self: ClassDefinition, ...) : ClassInstance  A function to create a new class instance from the class definition
 
 --- @class ClassInstance : __Classlike
 --- (Overrides)
 --- @field base ClassInstance?  The class instance of the class definition's base class definition
+
+--- @param name string  The name of the field being accessed
+--- @param action string  The type of action being attempted on the field
+local function error_field_defined_on_class(name, action)
+    error("Attempted to " .. action .. " field '" .. name .. "' on a class instance when it is defined on the class definition instead.")
+end
+
+--- @param name string  The name of the field being accessed
+local function error_field_readonly(name)
+    error("Attempted to modify read-only field '" .. name .. "'.")
+end
+
+--- @param name string
+--- @return boolean
+local function is_readonly_class_field(name)
+    return name == "base" or name == "class" or name == "__fields" or name == "instanceof"
+end
 
 --- Returns whether the given class-like object has a field with the given name defined on it (not including base classes)
 --- @param klass __Classlike  The class-like object to check
@@ -44,6 +67,22 @@ end
 --- @return ClassDefinition
 local function __get_class(klass)
     return rawget(klass, "class")
+end
+
+--- @param klass ClassDefinition
+--- @param name string
+--- @return any
+local function __get_cache(klass, name)
+    local cache = rawget(klass, "__cache")
+    return cache and rawget(cache, name) or nil
+end
+
+--- @param klass ClassDefinition
+--- @param name string
+--- @param value any
+local function __set_cache(klass, name, value)
+    local cache = rawget(klass, "__cache")
+    rawset(cache, name, value)
 end
 
 --- Attempts to find the class-like object that defines the given field, or returns nil if no such object exists
@@ -122,23 +161,6 @@ end
 --- @param def fun(klass: ClassDefinition)? An optional function to add additional fields or methods to the class definition
 --- @return ClassDefinition
 local function class(base, def)
-    --- @param name string  The name of the field being accessed
-    --- @param action string  The type of action being attempted on the field
-    local function error_field_defined_on_class(name, action)
-        error("Attempted to " .. action .. " field '" .. name .. "' on a class instance when it is defined on the class definition instead.")
-    end
-
-    --- @param name string  The name of the field being accessed
-    local function error_field_readonly(name)
-        error("Attempted to modify read-only field '" .. name .. "'.")
-    end
-
-    --- @param name string
-    --- @return boolean
-    local function is_classlike(name)
-        return name == "base" or name == "class" or name == "__fields" or name == "instanceof"
-    end
-
     --- @param klass ClassDefinition
     --- @return ClassInstance
     local function create_instance(klass, ...)
@@ -158,27 +180,33 @@ local function class(base, def)
             instance.base = klass.base:new(...)
         end
 
+        function instance:instanceof(_klass) return instanceof(self, _klass) end
+
         return instance
     end
 
     --- @param klass ClassDefinition
     local function create_instance_metatable(klass)
-        return {
+        local tbl = __get_cache(klass, "mt_instance")
+        if tbl then return tbl end
+
+        __set_cache(klass, "mt_instance", {
             --- @param self ClassInstance
             --- @param name string
             __index = function(self, name)
-                if is_classlike(name) then
+                if is_readonly_class_field(name) then
                     error_field_readonly(name)
                 elseif not not get_field(__get_class(self), name) then
                     error_field_defined_on_class(name, "get")
+                else
+                    return get_field(self, name)
                 end
-                return get_field(self, name)
             end,
             --- @param self ClassInstance
             --- @param name string
             --- @param value any
             __newindex = function(self, name, value)
-                if is_classlike(name) then
+                if is_readonly_class_field(name) then
                     error_field_readonly(name)
                 elseif not not get_field(__get_class(self), name) then
                     error_field_defined_on_class(name, "set")
@@ -186,17 +214,21 @@ local function class(base, def)
                     assign_field(self, name, value)
                 end
             end
-        }
+        })
+
+        return __get_cache(klass, "mt_instance")
     end
 
     --- @return ClassDefinition
     local function create_definition()
         local definition = {
+            __cache = {},
             __fields = {
                 ["base"] = true,
                 ["class"] = true,
                 ["instanceof"] = true,
                 ["new"] = true,
+                ["__cache"] = true,
                 ["__fields"] = true,
                 ["__make_instance"] = true
             },
@@ -207,14 +239,7 @@ local function class(base, def)
 
         definition.class = definition
 
-        function definition:__make_instance(...)
-            --- @type ClassInstance
-            local instance = setmetatable(create_instance(self, ...), create_instance_metatable(self));
-
-            function instance:instanceof(klass) return instanceof(self, klass) end
-
-            return instance
-        end
+        function definition:__make_instance(...) return setmetatable(create_instance(self, ...), create_instance_metatable(self)) end
 
         function definition:new(...) return self:__make_instance(...) end
 
@@ -232,7 +257,7 @@ local function class(base, def)
             --- @param name string
             --- @param value any
             __newindex = function(self, name, value)
-                if is_classlike(name) or name == "__make_instance" then
+                if is_readonly_class_field(name) or name == "__make_instance" or name == "__cache" then
                     error_field_readonly(name)
                 else
                     assign_field(self, name, value)
