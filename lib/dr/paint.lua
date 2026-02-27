@@ -16,7 +16,8 @@ function Painter:new(target)
     instance.anchor_pos = nil
     --- @private
     --- A cache of information related to the target terminal
-    instance.cache = {
+    instance.cache =
+    {
         --- @type number  The original foreground color of the terminal before painting began
         fg = target.getTextColor(),
         --- @type number  The original background color of the terminal before painting began

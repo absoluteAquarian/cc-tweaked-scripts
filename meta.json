@@ -93,7 +93,7 @@
         },
         {
             "name": "lib.dr.ui.button",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/dr/ui/button.lua",
             "install": "lib/dr/ui/button.lua",
             "config": "",
@@ -119,7 +119,7 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
@@ -166,7 +166,7 @@
         },
         {
             "name": "lib.class",
-            "version": 11,
+            "version": 12,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",

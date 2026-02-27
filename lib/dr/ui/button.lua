@@ -38,7 +38,8 @@ function Button:new(terminal, params)
     instance.label = params.label
 
     --- A table containing the colors used for different parts of the button
-    instance.color = {
+    instance.color =
+    {
         --- The foreground color to use for the button (see: colors)
         fg = params.color.fg,
         --- The background color to use for the button (see: colors)
@@ -53,6 +54,14 @@ function Button:new(terminal, params)
 
     --- @type boolean  Whether this Button is currently visible on the terminal
     instance.visible = false
+
+    --- @private
+    --- A cache of information related to the target terminal
+    instance.cache =
+    {
+        --- @type boolean  Whether the target terminal is a window in a terminal
+        window = pcall(terminal.isVisible) and pcall(terminal.setVisible, terminal.isVisible()),
+    }
 
     --- Draws this button and marks it as visible
     function instance:draw()
@@ -112,6 +121,17 @@ function Button:new(terminal, params)
         self.events.release = func
     end
 
+    --- @private
+    --- Converts the provided coordinates to coordinates relative to this button's terminal<br/>
+    --- Effectively does nothing for direct terminal drawing, but otherwise accounts for things like window position
+    function instance:resolve_absolute_coordinates(x, y)
+        if self.cache.window then
+            local window_x, window_y = self.terminal.getPosition()
+            return x - window_x + 1, y - window_y + 1
+        end
+        return x, y
+    end
+
     --- Returns whether the provided coordinates are within the clickable area of this Button
     --- @param event_x number  The X-coordinate of the click event
     --- @param event_y number  The Y-coordinate of the click event
@@ -123,8 +143,6 @@ function Button:new(terminal, params)
     --- Returns contexts for each event that this button should listen for
     --- @return EventContext[]
     function instance:get_event_watchers()
-        if not self.clickable then return {} end
-
         return
         {
             {
@@ -133,8 +151,12 @@ function Button:new(terminal, params)
                 --- @param event_x number
                 --- @param event_y number
                 predicate = function(button, event_x, event_y)
+                    if (not self.clickable) or (not self.visible) then return end
+
+                    local relative_x, relative_y = self:resolve_absolute_coordinates(event_x, event_y)
+
                     -- Check if the click was within the button's label
-                    if self.visible and self:clickable_area_contains(event_x, event_y) then
+                    if self:clickable_area_contains(relative_x, relative_y) then
                         if self.events.click then self.events.click(self, button) end
                         self.events.__clicking = true
                     end
@@ -145,8 +167,12 @@ function Button:new(terminal, params)
                 --- @param event_x number
                 --- @param event_y number
                 predicate = function(button, event_x, event_y)
+                    if (not self.clickable) or (not self.visible) then return end
+
+                    local relative_x, relative_y = self:resolve_absolute_coordinates(event_x, event_y)
+
                     -- Check if this is a release for a click that started within the button's label
-                    if self.visible and self.events.__clicking and self:clickable_area_contains(event_x, event_y) then
+                    if self.events.__clicking and self:clickable_area_contains(relative_x, relative_y) then
                         if self.events.release then self.events.release(self, button) end
                         self.events.__clicking = false
                     end
