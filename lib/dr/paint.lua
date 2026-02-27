@@ -47,8 +47,8 @@ function Painter:new(target)
     --- @return Painter
     function instance:begin()
         if self.cache.window then
-            self.cache.visible = self.terminal.isVisible()
-            self.terminal.setVisible(false)
+            --self.cache.visible = self.terminal.isVisible()
+            --self.terminal.setVisible(false)
         end
 
         self.anchor_pos = nil
@@ -220,7 +220,7 @@ function Painter:new(target)
     function instance:paint()
         if self.cache.window and self.cache.visible then
             -- Setting the window back to visible will trigger it to redraw with the new contents
-            self.terminal.setVisible(true)
+            --self.terminal.setVisible(true)
         end
 
         self.terminal.setTextColor(self.cache.fg)

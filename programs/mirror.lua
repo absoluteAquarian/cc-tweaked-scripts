@@ -290,8 +290,8 @@ local function init_window_canvas()
     --   x -   - -   - x
     --   x x   x x   x x
 
-    local was_visible = window_instance.isVisible()
-    window_instance.setVisible(false)
+    --local was_visible = window_instance.isVisible()
+    --window_instance.setVisible(false)
 
     global_painter:begin()
         :clean()
@@ -333,7 +333,7 @@ local function init_window_canvas()
 
     display_error(global_painter, actor_source:get_error() or actor_destination:get_error())
 
-    window_instance.setVisible(was_visible)
+    --window_instance.setVisible(was_visible)
 end
 
 exec.loop_forever(
@@ -365,14 +365,14 @@ exec.loop_forever(
             wait_cycle = 1
             tick = 0
 
-            window_instance.setVisible(false)
+            --window_instance.setVisible(false)
 
             init_window_canvas()
 
             button_start.visible = false
             button_start:set_release_listener(nil)
 
-            window_instance.setVisible(true)
+            --window_instance.setVisible(true)
 
             copy_stage = 0
             goto check_stage
@@ -392,7 +392,7 @@ exec.loop_forever(
                 copy_stage = 1
                 goto check_stage
             else
-                window_instance.setVisible(false)
+                --window_instance.setVisible(false)
                 
                 wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
 
@@ -417,7 +417,7 @@ exec.loop_forever(
                     display_error(global_painter, actor_source:get_error() or actor_destination:get_error())
                 end
 
-                window_instance.setVisible(true)
+                --window_instance.setVisible(true)
             end
         elseif copy_stage == 1 then
             -- Reinitialize the button
@@ -428,7 +428,7 @@ exec.loop_forever(
                     if copy_stage == 2 and btn == 1 then
                         -- Fade out the button
 
-                        window_instance.setVisible(false)
+                        --window_instance.setVisible(false)
 
                         self.color.fg = colors.lightGray
                         self.color.bg = colors.gray
@@ -443,7 +443,7 @@ exec.loop_forever(
                             :text("Collecting source files .   (total: -)")
                             :paint()
 
-                        window_instance.setVisible(true)
+                        --window_instance.setVisible(true)
 
                         wait_cycle = 1
                         iterator = filesystem.iterate_all_files(actor_source.mount)
@@ -485,7 +485,7 @@ exec.loop_forever(
 
                 -- Display the total file count
 
-                window_instance.setVisible(false)
+                --window_instance.setVisible(false)
 
                 global_painter:begin()
                     :move({ x = 2 + #"Collecting source files ... (total: " + 1, y = 9 })
@@ -505,7 +505,7 @@ exec.loop_forever(
                         :paint()
                 end
 
-                window_instance.setVisible(true)
+                --window_instance.setVisible(true)
             else
                 -- No more files to collect
                 iterator = R_table.yield_ipairs(buffer_fs)
@@ -534,7 +534,7 @@ exec.loop_forever(
                 goto check_stage
             end
 
-            window_instance.setVisible(false)
+            --window_instance.setVisible(false)
 
             local path, contents = iterator--[[@as fun():string?, string?]]()
 
@@ -568,7 +568,7 @@ exec.loop_forever(
                 copy_stage = 5
             end
 
-            window_instance.setVisible(true)
+            --window_instance.setVisible(true)
         elseif copy_stage == 5 then
             -- Reset if a disk was ejected
             if (not actor_source.ready) or (not actor_destination.ready) then

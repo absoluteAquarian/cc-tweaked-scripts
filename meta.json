@@ -38,7 +38,7 @@
         },
         {
             "name": "mirror",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/programs/mirror.lua",
             "install": "mirror.lua",
             "config": "{ SRC:\"left\", DEST:\"right\" }",
@@ -119,7 +119,7 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
