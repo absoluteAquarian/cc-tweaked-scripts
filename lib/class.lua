@@ -44,11 +44,7 @@ local function __find_defining_class(klass, field)
         return klass
     else
         local base = rawget(klass, "base")
-        while base do
-            if __has_field_directly(base, field) then return base end
-            base = rawget(base, "base")
-        end
-        return nil
+        return base and __find_defining_class(base, field) or nil
     end
 end
 
@@ -142,12 +138,7 @@ local function __instanceof(klass, other)
 
     --- @type Classlike?
     local base = rawget(klass, "base")
-    while base do
-        if base == other then return true end
-        base = rawget(base, "base")
-    end
-
-    return false
+    return (base and __instanceof(base, other)) == true
 end
 
 --- Defines a new table for tracking fields in a class-like object
