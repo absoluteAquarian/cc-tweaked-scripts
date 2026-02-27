@@ -2,7 +2,7 @@ local class = require "lib.class"
 local R_json = require "lib.json"
 
 local DIRECTORY = "configs"
-local EXTENSION = ".cfg"
+local EXTENSION = ".json"
 
 --- Gets the relative path to the config file for a given program
 --- @param program string  The name of the program to get the config path for

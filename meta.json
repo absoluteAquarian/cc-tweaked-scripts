@@ -3,7 +3,7 @@
     [
         {
             "name": "launcher",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/launcher.lua",
             "install": "launcher.lua",
             "config": "",
@@ -179,7 +179,7 @@
         },
         {
             "name": "lib.config",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/config.lua",
             "install": "lib/config.lua",
             "config": "",

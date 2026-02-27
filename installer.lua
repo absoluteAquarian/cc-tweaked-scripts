@@ -73,6 +73,52 @@ local function get_json(url)
     return tbl
 end
 
+--- Converts a compact JSON string into a more human-readable format with indentation, whitespace and newlines.
+--- @param json string  The JSON string to prettify.  Expected to be in a valid JSON format, though any whitespace not in quoted strings will be ignored.
+--- @return string
+local function prettify(json)
+    local prettified = ""
+    local indent = ""
+    local quoted = false
+    local c, prev = "", ""
+    for i = 1, #json do
+        prev = c
+        c = json:sub(i, i)
+
+        if not quoted then
+            -- Ignore whitespace in the original string; this logic injects its own whitespace
+            if c ~= " " and c ~= "\n" and c ~= "\r" and c ~= "\t" then
+                if c == "\"" and prev ~= "\\" then
+                    quoted = true
+                    prettified = prettified .. c
+                elseif c == "{" or c == "[" then
+                    if #prettified == 0 then
+                        -- Start of the file, don't prepend a newline
+                        prettified = prettified .. c .. "\n"
+                    else
+                        prettified = prettified .. "\n" .. indent .. c .. "\n"
+                    end
+
+                    indent = indent .. "  "
+                elseif c == "}" or c == "]" then
+                    if #indent > 0 then indent = indent:sub(1, -3) end
+                    prettified = prettified .. "\n" .. indent .. c
+                elseif c == "," then
+                    prettified = prettified .. c .. "\n" .. indent
+                else
+                    prettified = prettified .. c
+                end
+            end
+        else
+            -- Reading is in the middle of a quoted string, so just append characters until the end quote is reached
+            if c == "\"" and prev ~= "\\" then quoted = false end
+            prettified = prettified .. c
+        end
+    end
+
+    return prettified
+end
+
 --- @param dir string
 --- @return VersionFile
 local function load_local_versions(dir)
@@ -198,11 +244,13 @@ local function download_program_and_dependencies(program, meta, directory)
     -- If the program has default settings, apply them if the config doesn't already exist
     local program_file = meta.__lookup_programs[program]
     if program_file and program_file.config and #program_file.config > 0 then
-        local path = directory .. "/configs/" .. program_file.name .. ".tbl"
+        local path = directory .. "/configs/" .. program_file.name .. ".json"
         if not fs.exists(path) then
             local handle = fs.open(path, "w")
             -- Ensure that the config has the standard format, no matter how it's defined in the meta
-            handle.write(textutils.serialise(textutils.unserialise(program_file.config), { compact = false, allow_repetitions = false }))
+            local json_tbl = textutils.unserialiseJSON(program_file.config, { nbt_style = true, allow_repetitions = false })
+            local json = textutils.serialiseJSON(json_tbl, { nbt_style = false, allow_repetitions = false })
+            handle.write(prettify(json))
             handle.flush()
             handle.close()
         end

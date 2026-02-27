@@ -71,7 +71,7 @@ elseif action == "config" then
         return
     end
 
-    local pid = shell.openTab("edit", config)
+    local pid = shell.openTab("edit", path)
     multishell.setTitle(pid, program .. " [config]")
     multishell.setFocus(pid)
 else
