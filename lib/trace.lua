@@ -14,9 +14,31 @@ local function scall(func, ...)
         -- Forward the error message through nested scall() calls
         if type(err) == "table" and rawget(err, "__scall_message") then return err end
 
+        local message = debug.traceback(err or "Caught unspecified error via lib.trace.scall()", 3)
+
+        pcall(
+            function(msg)
+                -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
+                local program = shell.getRunningProgram()
+                local path = fs.getDir(program) .. "/logs/" .. fs.getName(program) .. "-" .. os.time()
+
+                local tries = 1
+                while fs.exists(path .. ".log") do
+                    tries = tries + 1
+                    path = path .. "-" .. tries
+                end
+
+                local handle = fs.open(path .. ".log", "w")
+                handle.write(msg)
+                handle.flush()
+                handle.close()
+            end,
+            message
+        )
+
         return setmetatable(
             {
-                __scall_message = debug.traceback(err or "Caught unspecified error via lib.trace.scall()", 3)
+                __scall_message = message
             },
             {
                 --- @param self TracedError

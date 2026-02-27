@@ -253,7 +253,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",
