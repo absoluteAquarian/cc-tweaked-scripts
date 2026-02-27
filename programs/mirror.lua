@@ -165,7 +165,7 @@ local tick = 0
 local w, h = term.current().getSize()
 
 --- @type table
-local window_instance = window.create(term.current(), 2, 2, w - 2, h - 2, false)
+local window_instance = window.create(term.current(), 2, 2, w - 2, h - 2, true)
 window_instance.setCursorBlink(false)
 
 local global_painter = paint.create(window_instance)
