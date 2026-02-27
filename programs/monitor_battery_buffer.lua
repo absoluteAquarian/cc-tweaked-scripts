@@ -271,7 +271,7 @@ exec.loop_forever(
                 monitor.setTextScale(0.5)
 
                 if (not painter) or (not new_painter) then
-                    painter = paint.create(monitor)
+                    painter = paint.class.Painter:new(monitor)
                     new_painter = true
                 end
 
