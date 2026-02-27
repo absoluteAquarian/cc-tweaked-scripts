@@ -117,7 +117,7 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",

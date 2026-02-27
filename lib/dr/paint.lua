@@ -82,16 +82,16 @@ function Painter:new(target)
     --- @param bg number|"reset"?  The color to set the background to (see: colors).<br/>If "reset", the background color will be reset to the original color before painting began.<br/>If nil, the background color will be left unchanged.
     --- @return Painter
     function instance:color(fg, bg)
-        if fg ~= nil then
-            self.terminal.setTextColor(fg)
-        elseif fg == "reset" then
+        if fg == "reset" then
             self.terminal.setTextColor(self.cache.fg)
+        elseif fg ~= nil then
+            self.terminal.setTextColor(fg)
         end
 
-        if bg ~= nil then
-            self.terminal.setBackgroundColor(bg)
-        elseif bg == "reset" then
+        if bg == "reset" then
             self.terminal.setBackgroundColor(self.cache.bg)
+        elseif bg ~= nil then
+            self.terminal.setBackgroundColor(bg)
         end
 
         return self
