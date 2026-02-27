@@ -4,9 +4,12 @@ local fmt = require "lib.cc.fmt"
 local R_monitor = require "lib.cc.monitor"
 local R_terminal = require "lib.cc.terminal"
 
+local paint = require "lib.dr.paint"
+
 local machine = require "lib.gt.machine"
 local tiers = require "lib.gt.tiers"
 
+local average_value = require "lib.average_value"
 local class = require "lib.class"
 local exec = require "lib.exec"
 local R_math = require "lib.math"
@@ -16,52 +19,73 @@ local ALARM_THRESHOLD = 0.3
 local PRECISION_DISPLAYED = 3
 local UPDATE_INTERVAL_TICKS = 5
 
+local eu_in = average_value.create(20)
+local eu_out = average_value.create(20)
+--- @type number
+local eu_net = 0.0
+
+--- @type Painter
+local painter = nil
+
 --- @class MetricsDefinition : ClassDefinition
---- (Overrides)
---- @field new fun(self: MetricsDefinition, eu: number) : Metrics  Creates a new Metrics instance with the given EU value
-local Metrics = class.class(
-    nil,
-    --- @param klass MetricsDefinition
-    function(klass)
-        function klass:new(eu)
-            --- @class Metrics : ClassInstance
-            --- (Defines)
-            --- @field eu number  The amount of EU this Metrics instance represents
-            --- @field tier string  The tier that supports the provided EU
-            --- @field amps number  The number of Amperes needed to send the provided EU at the provided tier
-            --- @field report fun(self: Metrics) : string  A function to generate a human-readable report of this Metrics instance
-            --- @field rescale fun(self: Metrics, target_tier: string)  A function to adjust the amperage of this Metrics instance to match a different tier
-            local instance = klass:__make_instance(eu)
+local Metrics = class.class("Metrics")
 
-            instance.eu = eu
-            instance.tier = tiers.get_tier(eu)
-            instance.amps = tiers.get_amps(eu, instance.tier)
+--- [override] Creates a new Metrics instance with the given parameters
+--- @param get_energy fun() : number  The function from which to get the measured EU
+--- @param tier string?  The tier of the machine being tracked, or nil to not rescale measured EU values
+--- @return Metrics
+function Metrics:new(get_energy, tier)
+    --- @class Metrics : ClassInstance
+    local instance = Metrics:create_instance()
 
-            function instance:report()
-                return self.amps .. " A (" .. self.tier .. ")"
-            end
+    --- @private
+    --- The object from which to get the measured EU
+    instance.get_energy = get_energy
+    --- The tier of the machine being tracked, or nil to not rescale measured EU values
+    instance.tier = tier
 
-            function instance:rescale(target_tier)
-                self.amps = tiers.get_amps(self.eu, target_tier)
-                self.tier = target_tier
-            end
+    --- Gets the Amperes and energy tier from the measured EU.<br/>
+    --- If self:tier is set, the Amperes are rescaled to that tier.
+    --- @return number
+    --- @return string
+    function instance:amps()
+        local eu = self.get_energy()
+        local amps, amps_tier
 
-            return instance
+        if self.tier then
+            amps, amps_tier = tiers.get_amps(eu, self.tier), self.tier --[[@as string]]
+        else
+            -- The tier needs to be calculated from the EU
+            local required_tier = tiers.get_tier(eu)
+            amps, amps_tier = tiers.get_amps(eu, required_tier), required_tier
         end
+
+        amps = R_math.round(amps, PRECISION_DISPLAYED)
+
+        return amps, amps_tier
     end
-)
+
+    --- Gets a string reporting the Amperes and energy tier
+    function instance:report()
+        local amps, amps_tier = self:amps()
+        return amps .. " A (" .. amps_tier .. ")"
+    end
+
+    return instance
+end
+
+--- @type Metrics
+local metrics_incoming
+--- @type Metrics
+local metrics_outgoing
+--- @type Metrics
+local metrics_net
 
 --- @param current number
 --- @param trend number
---- @param in_metrics Metrics
---- @param out_metrics Metrics
---- @param net_metrics Metrics
-local function display_to_monitors(current, trend, in_metrics, out_metrics, net_metrics)
+local function display_to_monitors(current, trend)
     R_monitor.foreach_monitor(
         function(monitor)
-            monitor.setBackgroundColor(colors.black)
-            monitor.setTextColor(colors.white)
-
             local color_current
 
             if current < (ALARM_THRESHOLD * 100) then
@@ -72,70 +96,99 @@ local function display_to_monitors(current, trend, in_metrics, out_metrics, net_
                 color_current = colors.green
             end
 
-            monitor.clear()
-        --    monitor.setTextScale(1)  -- Reset text scale
-
             local trend_fmt, color_trend = fmt.signed_and_color(trend)
-            local net_fmt, color_net = fmt.signed_and_color(net_metrics.amps)
 
-            local tier_in = tiers.get_color(in_metrics.tier)
-            local tier_out = tiers.get_color(out_metrics.tier)
-            local tier_net = tiers.get_color(net_metrics.tier)
+            local in_amps, in_tier = metrics_incoming:amps()
+            local out_amps, out_tier = metrics_outgoing:amps()
+            local net_amps, net_tier = metrics_net:amps()
 
-            monitor.setTextScale(0.5)
+            local net_fmt, color_net = fmt.signed_and_color(net_amps)
 
-            monitor.setCursorPos(1, 1)
-            monitor.write("Current: ")
-            R_monitor.write(monitor, color_current, current .. "%")
+            local AFTER_CURRENT = #"Current:" + 2
+            local STRIDE_CURRENT = #"--.---%"
+            local AFTER_TREND = #"Trend:" + 2
+            local STRIDE_TREND = #"+--.---%"
+            local OFFSET_INPUT = in_amps < 10 and 2 or 1
+            local STRIDE_INPUT = #"---.---"
+            local OFFSET_OUTPUT = out_amps < 10 and 2 or 1
+            local STRIDE_OUTPUT = #"---.---"
+            local OFFSET_NET = net_amps < 10 and 1 or nil
+            local STRIDE_NET = #"+---.---"
 
-            monitor.setCursorPos(1, 2)
-            monitor.write("Trend: ")
-            R_monitor.write(monitor, color_trend, trend_fmt .. "%")
+            painter.terminal = monitor
 
-            monitor.setCursorPos(1, 3)
-            monitor.write("Input:")
-
-            monitor.setCursorPos(1, 4)
-            monitor.write(in_metrics.amps .. " A (")
-            R_monitor.write(monitor, tier_in, in_metrics.tier)
-            monitor.write(")")
-
-            monitor.setCursorPos(1, 5)
-            monitor.write("Output:")
-
-            monitor.setCursorPos(1, 6)
-            monitor.write(out_metrics.amps .. " A (")
-            R_monitor.write(monitor, tier_out, out_metrics.tier)
-            monitor.write(")")
-
-            monitor.setCursorPos(1, 7)
-            monitor.write("Net:")
-
-            monitor.setCursorPos(1, 8)
-            R_monitor.write(monitor, color_net, net_fmt)
-            monitor.write(" A (")
-            R_monitor.write(monitor, tier_net, net_metrics.tier)
-            monitor.write(")")
+            painter:begin()
+                -- Current: --.---%
+                :move({ x = AFTER_CURRENT, y = 1 })
+                :erase(STRIDE_CURRENT)
+                :color(color_current, nil)
+                :text(current .. "%")
+                :color("reset", nil)
+                -- Trend: +--.---%
+                :move({ x = AFTER_TREND, y = 2 })
+                :erase(STRIDE_TREND)
+                :color(color_trend, nil)
+                :text(trend_fmt .. "%")
+                :color("reset", nil)
+                -- Input:
+                --  ---.--- A (---)
+                :move({ x = 2, y = 4 })
+                :anchor()
+                :erase(STRIDE_INPUT)
+                :offset(OFFSET_INPUT, nil)
+                :obj(in_amps)
+                :reset()
+                :offset(STRIDE_INPUT + 4, nil)
+                :color(tiers.get_color(in_tier), nil)
+                :text(in_tier)
+                :color("reset", nil)
+                :deanchor()
+                -- Output:
+                --  ---.--- A (---)
+                :move({ x = 2, y = 6 })
+                :anchor()
+                :erase(STRIDE_OUTPUT)
+                :offset(OFFSET_OUTPUT, nil)
+                :obj(out_amps)
+                :reset()
+                :offset(STRIDE_OUTPUT + 4, nil)
+                :color(tiers.get_color(out_tier), nil)
+                :text(out_tier)
+                :color("reset", nil)
+                :deanchor()
+                -- Net:
+                -- +---.--- A (---)
+                :move({ x = 1, y = 8 })
+                :anchor()
+                :erase(STRIDE_NET)
+                :offset(OFFSET_NET, nil)
+                :color(color_net, nil)
+                :text(net_fmt)
+                :color("reset", nil)
+                :reset()
+                :offset(STRIDE_NET + 4, nil)
+                :color(tiers.get_color(net_tier), nil)
+                :text(net_tier)
+                :color("reset", nil)
+                :deanchor()
+                :paint()
         end
     )
 end
 
 --- @param current number
 --- @param trend number
---- @param in_metrics Metrics
---- @param out_metrics Metrics
---- @param net_metrics Metrics
-local function display_to_terminal(current, trend, in_metrics, out_metrics, net_metrics)
+local function display_to_terminal(current, trend)
     R_terminal.reset_terminal()
 
-    local trend_fmt, _ = fmt.signed_and_color(trend)
+    local net, net_tier = metrics_net:amps()
 
     print("Current percentage: " .. current .. "%")
-    print("Trend: " .. trend_fmt .. "%")
+    print("Trend: " .. fmt.signed(trend) .. "%")
     print()
-    print("Input: " .. in_metrics:report())
-    print("Output: " .. out_metrics:report())
-    print("Net: " .. net_metrics:report())
+    print("Input: " .. metrics_incoming:report())
+    print("Output: " .. metrics_outgoing:report())
+    print("Net: " .. fmt.signed(net) .. " A (" .. net_tier .. ")")
 end
 
 --- @class GTCEu_BatteryBuffer : GTCEu_EnergyInfoPeripheral, GTCEu_WorkablePeripheral
@@ -179,46 +232,89 @@ local BATTERY
 local BATTERY_TIER
 local LAST_PERCENTAGE = 0.0
 
+local tick = 1
+
 exec.loop_forever(
-    UPDATE_INTERVAL_TICKS,
+    -- wait_interval
+    1,
     -- init
     function()
         BATTERY, BATTERY_TIER = wait_for_battery()
+
+        eu_in:clear()
+        eu_out:clear()
+        eu_net = 0.0
+
+        metrics_incoming = Metrics:new(function() return eu_in:get() end, BATTERY_TIER)
+        metrics_outgoing = Metrics:new(function() return eu_out:get() end, BATTERY_TIER)
+        metrics_net = Metrics:new(function() return eu_net end, BATTERY_TIER)
+
+        -- Initialize the monitors with the base template
+        
+        local new_painter = false
+        
+        R_monitor.foreach_monitor(
+            function(monitor)
+                monitor.setBackgroundColor(colors.black)
+                monitor.setTextColor(colors.white)
+                monitor.setTextScale(0.5)
+
+                if (not painter) or (not new_painter) then
+                    painter = paint.create(monitor)
+                    new_painter = true
+                end
+
+                painter.terminal = monitor
+
+                painter:begin()
+                    :clean()
+                    :reset()
+                    :text("Current: --.---%")
+                    :nextline()
+                    :text("Trend: +--.---%")
+                    :nextline()
+                    :text("Input:")
+                    :nextline()
+                    :offset(1, nil)
+                    :text("---.--- A (---)")
+                    :nextline()
+                    :text("Output:")
+                    :nextline()
+                    :offset(1, nil)
+                    :text("---.--- A (---)")
+                    :nextline()
+                    :text("Net:")
+                    :nextline()
+                    :offset(2, nil)
+                    :text("+---.--- A (---)")
+                    :paint()
+            end
+        )
     end,
     -- body
     function()
-        --- @type number
-        local percentage = BATTERY.getEnergyStored() / BATTERY.getEnergyCapacity()
-        --- @type number
-        local trend = percentage - LAST_PERCENTAGE
+        eu_in:measure(BATTERY.getInputPerSec() / 20)
+        eu_out:measure(BATTERY.getOutputPerSec() / 20)
 
-        local eu_in = BATTERY.getInputPerSec() / 20
-        local eu_out = BATTERY.getOutputPerSec() / 20
-        local eu_net = eu_in - eu_out
+        if tick == 1 then
+            eu_net = eu_in:get() - eu_out:get()
 
-        --- @type Metrics
-        local in_metrics = Metrics:new(eu_in)
-        --- @type Metrics
-        local out_metrics = Metrics:new(eu_out)
-        --- @type Metrics
-        local net_metrics = Metrics:new(eu_net)
+            local percentage = BATTERY.getEnergyStored() / BATTERY.getEnergyCapacity()
+            local trend = percentage - LAST_PERCENTAGE
 
-        in_metrics:rescale(BATTERY_TIER)
-        out_metrics:rescale(BATTERY_TIER)
-        net_metrics:rescale(BATTERY_TIER)
+            local rounded_current = R_math.round(percentage * 100, PRECISION_DISPLAYED)
+            local rounded_trend = R_math.round(trend * 100, PRECISION_DISPLAYED)
 
-        local rounded_current = R_math.round(percentage * 100, PRECISION_DISPLAYED)
-        local rounded_trend = R_math.round(trend * 100, PRECISION_DISPLAYED)
+            display_to_monitors(rounded_current, rounded_trend)
+            display_to_terminal(rounded_current, rounded_trend)
 
-        in_metrics.amps = R_math.round(in_metrics.amps, PRECISION_DISPLAYED)
-        out_metrics.amps = R_math.round(out_metrics.amps, PRECISION_DISPLAYED)
-        net_metrics.amps = R_math.round(net_metrics.amps, PRECISION_DISPLAYED)
+            LAST_PERCENTAGE = percentage
+        end
 
-        display_to_monitors(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics)
-        display_to_terminal(rounded_current, rounded_trend, in_metrics, out_metrics, net_metrics)
-
-        LAST_PERCENTAGE = percentage
+        tick = tick == UPDATE_INTERVAL_TICKS and 1 or tick + 1
     end,
+    -- sleep_watchers
+    nil,
     -- quit
     nil
 )

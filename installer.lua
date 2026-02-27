@@ -14,25 +14,27 @@ local REPOSITORY = "https://raw.githubusercontent.com/absoluteAquarian/cc-tweake
 --- (Defines)
 --- @field getResponseCode fun() : number, string
 --- @field getResponseHeaders fun() : { [string]: string }
-local __HttpResponse = nil
 
 --- @class MetaTable
 --- @field programs MetaFile[]
 --- @field lib MetaFile[]
---- @field __lookup_programs { [string]: MetaFile }
---- @field __lookup_libs { [string]: MetaFile }
+--- @field __lookup_programs MetaFileLookup
+--- @field __lookup_libs MetaFileLookup
 --- @field __versions VersionFile
-local __MetaTable = nil
 
 --- @class MetaFile
 --- @field name string
 --- @field version integer
 --- @field url string
 --- @field install string
+--- @field config string
 --- @field deps string[]
-local __MetaFile = nil
 
---- @alias VersionFile { [string]: integer }
+--- @class MetaFileLookup
+--- @field [string] MetaFile  The MetaFile with the given name, or nil if no such MetaFile exists
+
+--- @class VersionFile
+--- @field [string] integer  The version number for each installed file, indexed by the file path relative to the installation directory
 
 --- @param str string
 --- @param text string
@@ -92,7 +94,7 @@ local function save_local_versions(dir, file)
     if fs.exists(path) then fs.delete(path) end
 
     local handle = fs.open(path, "w")
-    handle.write(textutils.serialise(file, { compact = true, allow_repetitions = false }))
+    handle.write(textutils.serialise(file, { compact = false, allow_repetitions = false }))
     handle.flush()
     handle.close()
 end
@@ -176,6 +178,9 @@ local function download_and_overwrite(url, destination)
     shell.run("wget", url, destination)
 end
 
+--- @param program string
+--- @param meta MetaTable
+--- @param directory string
 local function download_program_and_dependencies(program, meta, directory)
     foreach_file_and_dependency(
         program,
@@ -189,6 +194,19 @@ local function download_program_and_dependencies(program, meta, directory)
             end
         end
     )
+
+    -- If the program has default settings, apply them if the config doesn't already exist
+    local program_file = meta.__lookup_programs[program]
+    if program_file and program_file.config and #program_file.config > 0 then
+        local path = directory .. "/configs/" .. program_file.name .. ".tbl"
+        if not fs.exists(path) then
+            local handle = fs.open(path, "w")
+            -- Ensure that the config has the standard format, no matter how it's defined in the meta
+            handle.write(textutils.serialise(textutils.unserialise(program_file.config), { compact = false, allow_repetitions = false }))
+            handle.flush()
+            handle.close()
+        end
+    end
 end
 
 local function print_installer_actions()
@@ -221,24 +239,31 @@ end
 ---
 ---  Start of program logic
 ---
+print()
 
-if #arg < 2 then
+if #arg ~= 2 then
     print_installer_actions()
+    print()
     return
 end
 
+local action = arg[1]
 local directory = arg[2]
 
 if starts_with(directory, "rom") then
     error("Installer does not support installing to ROM")
 end
 
-directory = ends_with(directory, "/") and directory:sub(1, -2) or directory
+if directory == "" then
+    directory = "."
+elseif ends_with(directory, "/") then
+    directory = directory:sub(1, -2)
+end
 
 local meta = load_meta()
 meta.__versions = load_local_versions(directory)
 
-if arg[1] == "clean" then
+if action == "clean" then
     --- @type { [string]: boolean }
     local keep = {}
     foreach_file_and_dependency(
@@ -246,6 +271,7 @@ if arg[1] == "clean" then
         meta,
         function(file) keep[file.install] = true end
     )
+    keep["installer.lua"] = true
 
     for _, file in pairs(list_all(directory)) do
         if not keep[file] then
@@ -256,14 +282,20 @@ if arg[1] == "clean" then
 
     save_local_versions(directory, meta.__versions)
 
+    print()
     print("Installed programs have been deleted.")
-elseif arg[1] == "refresh" then
+elseif action == "refresh" then
     --- @type string[]
     local installed = {}
 
     for _, file in pairs(fs.list(directory) --[[@as string[]=]]) do
-        if ends_with(file, ".lua") then table.insert(installed, file:sub(1, -5)) end
+        if ends_with(file, ".lua") and file ~= "installer.lua" then
+            table.insert(installed, file:sub(1, -5))
+        end
     end
+
+    -- Ensure that the launcher script is also installed
+    if not fs.exists(directory .. "/launcher.lua") then table.insert(installed, "launcher") end
 
     for _, program in ipairs(installed) do
         download_program_and_dependencies(program, meta, directory)
@@ -271,8 +303,9 @@ elseif arg[1] == "refresh" then
 
     save_local_versions(directory, meta.__versions)
 
+    print()
     print("Installed programs have been refreshed.")
-elseif arg[1] == "install" then
+elseif action == "install" then
     print("Choose a script:")
 
     --- @type string[]
@@ -280,7 +313,7 @@ elseif arg[1] == "install" then
     foreach_program(
         meta,
         function(file)
-            if file.name == "launcher" then return end  -- Don't show the launcher in the list of options
+            if file.name == "launcher" or file.name == "startup" then return end  -- Don't show the launcher/startup in the list of options
             print("  " .. file.name)
             table.insert(options, file.name)
         end
@@ -304,7 +337,7 @@ elseif arg[1] == "install" then
 
     download_program_and_dependencies(selection, meta, directory)
 
-    -- Ensure that the launcher is also installed
+    -- Ensure that the launcher script is also installed
     download_program_and_dependencies("launcher", meta, directory)
 
     save_local_versions(directory, meta.__versions)
@@ -312,9 +345,9 @@ elseif arg[1] == "install" then
     print()
     print("Script has been downloaded.")
     print("Programs can be launched via the launcher application in the same directory.")
-    print()
 else
     -- Unknown installer action
     print_installer_actions()
-    return
 end
+
+print()

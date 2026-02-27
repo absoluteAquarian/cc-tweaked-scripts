@@ -3,61 +3,136 @@
     [
         {
             "name": "launcher",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/launcher.lua",
             "install": "launcher.lua",
+            "config": "",
             "deps":
             [
+                "lib.config",
                 "lib.string",
                 "lib.table"
             ]
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
+            "config": "",
             "deps":
             [
                 "lib.cc.fmt",
                 "lib.cc.monitor",
                 "lib.cc.terminal",
+                "lib.dr.paint",
                 "lib.gt.machine",
                 "lib.gt.tiers",
+                "lib.average_value",
                 "lib.class",
                 "lib.exec",
                 "lib.math"
+            ]
+        },
+        {
+            "name": "mirror",
+            "version": 1,
+            "url": "$REPO$/programs/mirror.lua",
+            "install": "mirror.lua",
+            "config": "{\n  SRC:\"left\",\n  DEST:\"right\"\n}",
+            "deps":
+            [
+                "lib.cc.filesystem",
+                "lib.dr.ui.button",
+                "lib.dr.paint",
+                "lib.class",
+                "lib.config",
+                "lib.exec",
+                "lib.table"
             ]
         }
     ],
     "lib":
     [
         {
-            "name": "lib.cc.fmt",
+            "name": "lib.cc.filesystem",
             "version": 1,
+            "url": "$REPO$/lib/cc/filesystem.lua",
+            "install": "lib/cc/filesystem.lua",
+            "config": "",
+            "deps": []
+        },
+        {
+            "name": "lib.cc.fmt",
+            "version": 2,
             "url": "$REPO$/lib/cc/fmt.lua",
             "install": "lib/cc/fmt.lua",
+            "config": "",
             "deps": []
         },
         {
             "name": "lib.cc.monitor",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/cc/monitor.lua",
             "install": "lib/cc/monitor.lua",
-            "deps": []
+            "config": "",
+            "deps":
+            [
+                "lib.cc.terminal"
+            ]
         },
         {
             "name": "lib.cc.terminal",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/cc/terminal.lua",
             "install": "lib/cc/terminal.lua",
+            "config": "",
             "deps": []
+        },
+        {
+            "name": "lib.dr.ui.button",
+            "version": 1,
+            "url": "$REPO$/lib/dr/ui/button.lua",
+            "install": "lib/dr/ui/button.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.dr.paint",
+                "lib.class",
+                "lib.exec",
+                "lib.string"
+            ]
+        },
+        {
+            "name": "lib.dr.blitbuilder",
+            "version": 1,
+            "url": "$REPO$/lib/dr/blitbuilder.lua",
+            "install": "lib/dr/blitbuilder.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.class",
+                "lib.string"
+            ]
+        },
+        {
+            "name": "lib.dr.paint",
+            "version": 1,
+            "url": "$REPO$/lib/dr/paint.lua",
+            "install": "lib/dr/paint.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.class",
+                "lib.string"
+            ]
         },
         {
             "name": "lib.gt.machine",
             "version": 2,
             "url": "$REPO$/lib/gt/machine.lua",
             "install": "lib/gt/machine.lua",
+            "config": "",
             "deps":
             [
                 "lib.gt.tiers",
@@ -66,9 +141,10 @@
         },
         {
             "name": "lib.gt.tiers",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/gt/tiers.lua",
             "install": "lib/gt/tiers.lua",
+            "config": "",
             "deps":
             [
                 "lib.class",
@@ -76,17 +152,47 @@
             ]
         },
         {
+            "name": "lib.average_value",
+            "version": 1,
+            "url": "$REPO$/lib/average_value.lua",
+            "install": "lib/average_value.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.class"
+            ]
+        },
+        {
             "name": "lib.class",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
-            "deps": []
+            "config": "",
+            "deps":
+            [
+                "lib.readonly",
+                "lib.table",
+                "lib.trace"
+            ]
+        },
+        {
+            "name": "lib.config",
+            "version": 1,
+            "url": "$REPO$/lib/config.lua",
+            "install": "lib/config.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.class",
+                "lib.json"
+            ]
         },
         {
             "name": "lib.exec",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
+            "config": "",
             "deps":
             [
                 "lib.cc.monitor",
@@ -96,9 +202,18 @@
         },
         {
             "name": "lib.handler",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
+            "config": "",
+            "deps": []
+        },
+        {
+            "name": "lib.json",
+            "version": 1,
+            "url": "$REPO$/lib/json.lua",
+            "install": "lib/json.lua",
+            "config": "",
             "deps": []
         },
         {
@@ -106,20 +221,42 @@
             "version": 1,
             "url": "$REPO$/lib/math.lua",
             "install": "lib/math.lua",
+            "config": "",
             "deps": []
         },
         {
+            "name": "lib.readonly",
+            "version": 1,
+            "url": "$REPO$/lib/readonly.lua",
+            "install": "lib/readonly.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.table"
+            ]
+        },
+        {
             "name": "lib.string",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/string.lua",
             "install": "lib/string.lua",
+            "config": "",
             "deps": []
         },
         {
             "name": "lib.table",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
+            "config": "",
+            "deps": []
+        },
+        {
+            "name": "lib.trace",
+            "version": 1,
+            "url": "$REPO$/lib/trace.lua",
+            "install": "lib/trace.lua",
+            "config": "",
             "deps": []
         },
         {
@@ -127,6 +264,7 @@
             "version": 1,
             "url": "https://raw.githubusercontent.com/9551-Dev/pixelbox_lite/refs/heads/master/minified/pixelbox_lite.lua",
             "install": "lib/tp/pixelbox_lite/pixelbox_lite.lua",
+            "config": "",
             "deps": []
         },
         {
@@ -134,6 +272,7 @@
             "version": 1,
             "url": "https://raw.githubusercontent.com/9551-Dev/pixelbox_lite/refs/heads/master/minified/bixelbox_lite.lua",
             "install": "lib/tp/pixelbox_lite/bixelbox_lite.lua",
+            "config": "",
             "deps": []
         }
     ]

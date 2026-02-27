@@ -1,3 +1,27 @@
+--- @class __StringRepCache
+--- @field [string] string[]  A table mapping a string to an array of that string repeated N times.  For example, cache["abc"][3] == "abcabcabc"
+local __rep_cache = {}
+
+--- A wrapper around string.rep() that caches results for better performance.
+--- @param str string  The string to repeat
+--- @param count integer  The number of times to repeat the string
+--- @return string result  The repeated string
+local function cached_rep(str, count)
+    local cache_tbl = __rep_cache[str]
+    if not cache_tbl then
+        cache_tbl = {}
+        __rep_cache[str] = cache_tbl
+    end
+
+    local result = cache_tbl[count]
+    if not result then
+        result = count < 1 and "" or string.rep(str, count)
+        cache_tbl[count] = result
+    end
+
+    return result
+end
+
 --- Returns whether 'str' contains 'text'
 --- @param str string  The string to search through
 --- @param text string  The text to search for
@@ -24,6 +48,7 @@ local function ends_with(str, text)
 end
 
 return {
+    cached_rep = cached_rep,
     contains = contains,
     starts_with = starts_with,
     ends_with = ends_with,

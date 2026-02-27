@@ -1,3 +1,36 @@
+--- Returns values that can be used for the "__ipairs" metamethod
+--- @param tbl table
+--- @return function
+--- @return table
+local function create_ipairs(tbl)
+    local function iter(t, i)
+        i = i + 1
+        local v = t[i]
+        if v ~= nil then return i, v end
+    end
+    return iter, tbl
+end
+
+--- Creates a deep copy of the given table, recursing into any subtables.  Preserves metatables.
+--- @param tbl table  The table to copy
+--- @return table copy  The generated copy of the original table
+local function deep_copy(tbl)
+    local copy = {}
+    for key, value in pairs(tbl) do
+        if type(value) == "table" then
+            copy[key] = deep_copy(value)
+        else
+            copy[key] = value
+        end
+    end
+
+    -- Bypass "__metatable" protection
+    local meta = debug.getmetatable(tbl)
+    if meta then debug.setmetatable(copy, meta) end
+
+    return copy
+end
+
 --- Returns whether the given table contains any of the given values
 --- @param tbl table  The table to check
 --- @param ... any  The values to check for
@@ -79,11 +112,52 @@ local function remove_values_where(tbl, predicate)
     end
 end
 
+--- Transform all values in the given table using a transform function.  Modifies the table in-place.
+--- @param tbl table  The table to transform values in
+--- @param transform fun(value: any) : any  A function that takes a value and returns the transformed value
+local function transform_values(tbl, transform)
+    for key, value in pairs(tbl) do
+        tbl[key] = transform(value)
+    end
+end
+
+--- Returns a function that iterates over all key-value pairs in the given table, once per call
+--- @param tbl table  The table to iterate over
+--- @return function
+local function yield_pairs(tbl)
+    local key, value = next(tbl)
+
+    if not key then return function() return nil end end
+
+    return function()
+        local current_key, current_value = key, value
+        key, value = next(tbl, key)
+        return current_key, current_value
+    end
+end
+
+--- Returns a function that iterates over all index-value pairs in the given table, once per call
+--- @param tbl table  The table to iterate over
+--- @return function
+local function yield_ipairs(tbl)
+    local index = 0
+    return function()
+        index = index + 1
+        local value = tbl[index]
+        if value then return index, value end
+    end
+end
+
 return {
+    create_ipairs = create_ipairs,
+    deep_copy = deep_copy,
     has_any_value = has_any_value,
     has_value = has_value,
     remove_keys = remove_keys,
     remove_keys_where = remove_keys_where,
     remove_values = remove_values,
     remove_values_where = remove_values_where,
+    transform_values = transform_values,
+    yield_pairs = yield_pairs,
+    yield_ipairs = yield_ipairs,
 }

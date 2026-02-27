@@ -2,57 +2,55 @@ local class = require "lib.class"
 local R_string = require "lib.string"
 
 --- @class TierDefinition : ClassDefinition
---- (Overrides)
---- @field new fun(self: TierDefinition, name: string, volts: number, color: number) : Tier  Creates a new Tier instance with the given parameters
-local Tier = class.class(
-    nil,
-    --- @param klass TierDefinition
-    function(klass)
-        function klass:new(name, volts, color)
-            --- @class Tier : ClassInstance
-            --- (Defines)
-            --- @field name string  The name of this tier (e.g. "ULV", "LV", etc.)
-            --- @field volts_per_amp number  The voltage per Ampere for this tier
-            --- @field color number  The color corresponding to this tier when displayed on a monitor
-            --- @field index number  The index of this tier in the definition list
-            --- @field within_tier fun(self: Tier, eu: number) : boolean  Whether the given EU value is within this tier
-            --- @field amps fun(self: Tier, eu: number) : number  How many Amperes of this tier are needed to send the given EU
-            --- @field matches_peripheral fun(self: Tier, peripheral_name: string) : boolean  Whether the given peripheral name matches this tier (e.g. "gtceu:ulv_assembler" matches the "ULV" tier)
-            --- @field conversion_factor_to fun(self: Tier, other: Tier) : number  The conversion factor to convert voltage from this tier to another tier
-            local instance = klass:__make_instance(name, volts, color)
+local Tier = class.class("Tier")
 
-            instance.name = name
-            instance.volts_per_amp = volts
-            instance.color = color
-            instance.index = 0
+--- Creates a new Tier instance with the given parameters
+--- @param name string  The name of this tier (e.g. "ULV", "LV", etc.)
+--- @param volts number  The voltage per Ampere for this tier
+--- @param color number  The colors value corresponding to this tier when displayed on a terminal
+function Tier:new(name, volts, color)
+    --- @class Tier : ClassInstance
+    local instance = self:create_instance(name, volts, color)
 
-            --- @param eu number  The EU value to check
-            function instance:within_tier(eu)
-                if self.name == "MAX" then return true end
-                local low = self.volts_per_amp
-                return eu <= low and eu < 4 * low
-            end
+    --- The name of this tier (e.g. "ULV", "LV", etc.)
+    instance.name = name
+    --- The voltage per Ampere for this tier
+    instance.volts_per_amp = volts
+    --- The colors value corresponding to this tier when displayed on a terminal
+    instance.color = color
+    --- The index of this tier in the definition list
+    instance.index = 0
 
-            --- @param eu number  The EU value to convert to Amperes for this tier
-            function instance:amps(eu)
-                return eu / self.volts_per_amp
-            end
-
-            --- @param peripheral_name string  The name of the peripheral to check
-            function instance:matches_peripheral(peripheral_name)
-                return R_string.contains(peripheral_name, ":" .. string.lower(self.name))
-            end
-
-            --- @param other Tier  The tier to convert to
-            function instance:conversion_factor_to(other)
-                if self.index == 0 or other.index == 0 then return 1 end
-                return math.pow(4, self.index - other.index)
-            end
-
-            return instance
-        end
+    --- Determines whether the given EU value is within this tier
+    --- @param eu number  The EU value to check
+    function instance:within_tier(eu)
+        if self.name == "MAX" then return true end
+        local low = self.volts_per_amp
+        return eu <= low and eu < 4 * low
     end
-)
+
+    --- Returns how many Amperes of this tier are needed to send the given EU
+    --- @param eu number  The EU value to convert to Amperes for this tier
+    function instance:amps(eu)
+        return eu / self.volts_per_amp
+    end
+
+    --- Determines whether the given peripheral name matches this tier (e.g. "gtceu:ulv_assembler" matches the "ULV" tier)
+    --- @param peripheral_name string  The name of the peripheral to check
+    function instance:matches_peripheral(peripheral_name)
+        return R_string.contains(peripheral_name, ":" .. string.lower(self.name))
+    end
+
+    --- Returns the conversion factor to convert voltage from this tier to another tier
+    --- @param other Tier  The tier to convert to
+    --- @return number
+    function instance:conversion_factor_to(other)
+        if self.index == 0 or other.index == 0 then return 1 end
+        return math.pow(4, self.index - other.index)
+    end
+
+    return instance
+end
 
 --- @type Tier[]
 local def = {
@@ -151,6 +149,18 @@ end
 
 return {
     def = { "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", "UHV", "UEV", "MAX" },
+    ulv = "ULV",
+    lv = "LV",
+    mv = "MV",
+    hv = "HV",
+    ev = "EV",
+    iv = "IV",
+    luv = "LuV",
+    zpm = "ZPM",
+    uv = "UV",
+    uhv = "UHV",
+    uev = "UEV",
+    max = "MAX",
     peripheral_tier = peripheral_tier,
     get_tier = get_tier,
     get_amps = get_amps,

@@ -1,18 +1,18 @@
+local R_terminal = require "lib.cc.terminal"
+
 --- Writes a string of text to the monitor with the specified color
---- @param self table  The monitor to write to
+--- @param monitor table  The monitor to write to
 --- @param color number  The color to write with (see: colors)
 --- @param text string  The text to write
-local function write(self, color, text)
-    local prev = self.getTextColor()
-    self.setTextColor(color)
-    self.write(text)
-    self.setTextColor(prev)
+local function write(monitor, color, text)
+    -- Body moved to other module, but the function is kept for backwards compatibility
+    R_terminal.write(monitor, color, text)
 end
 
 --- Performs the given function on all connected monitors
---- @param func function  The function to perform on each monitor.  This function should take a monitor as its only argument.
+--- @param func fun(monitor: table)  The function to perform on each monitor.
 local function foreach_monitor(func)
-    for _, monitor in pairs({ peripheral.find("monitor") }) do
+    for _, monitor in pairs({ peripheral.find("monitor") } --[[@as table[]=]]) do
         func(monitor)
     end
 end

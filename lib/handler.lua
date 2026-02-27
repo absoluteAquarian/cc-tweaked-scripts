@@ -10,7 +10,7 @@
 --- <br/>
 --- Example usage:
 --- ```lua
---- local handler = require "util.handler"
+--- local handler = require "lib.handler"
 --- ...
 --- handler.try {
 ---     -- try
