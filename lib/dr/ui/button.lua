@@ -120,38 +120,38 @@ function Button:new(terminal, params)
         return event_x >= self.x and event_x <= self.x + #self.label - 1 and event_y == self.y
     end
 
-    --- Gets the EventWatcher object that this Button should listen through
-    --- @return EventWatcher?
-    --- @return EventWatcher?
+    --- Returns contexts for each event that this button should listen for
+    --- @return EventContext[]
     function instance:get_event_watchers()
-        if not self.clickable then return nil, nil end
+        if not self.clickable then return {} end
 
-        --- @type EventWatcher, EventWatcher
         return
         {
-            event = "mouse_click",
-            --- @param button number
-            --- @param event_x number
-            --- @param event_y number
-            predicate = function(button, event_x, event_y)
-                -- Check if the click was within the button's label
-                if self.visible and self:clickable_area_contains(event_x, event_y) then
-                    if self.events.click then self.events.click(self, button) end
-                    self.events.__clicking = true
+            {
+                event = "mouse_click",
+                --- @param button number
+                --- @param event_x number
+                --- @param event_y number
+                predicate = function(button, event_x, event_y)
+                    -- Check if the click was within the button's label
+                    if self.visible and self:clickable_area_contains(event_x, event_y) then
+                        if self.events.click then self.events.click(self, button) end
+                        self.events.__clicking = true
+                    end
                 end
-            end
-        },
-        {
-            event = "mouse_up",
-            --- @param event_x number
-            --- @param event_y number
-            predicate = function(button, event_x, event_y)
-                -- Check if this is a release for a click that started within the button's label
-                if self.visible and self.events.__clicking and self:clickable_area_contains(event_x, event_y) then
-                    if self.events.release then self.events.release(self, button) end
-                    self.events.__clicking = false
+            },
+            {
+                event = "mouse_up",
+                --- @param event_x number
+                --- @param event_y number
+                predicate = function(button, event_x, event_y)
+                    -- Check if this is a release for a click that started within the button's label
+                    if self.visible and self.events.__clicking and self:clickable_area_contains(event_x, event_y) then
+                        if self.events.release then self.events.release(self, button) end
+                        self.events.__clicking = false
+                    end
                 end
-            end
+            }
         }
     end
 
@@ -249,27 +249,9 @@ function BorderedButton:new(terminal, params)
     return instance
 end
 
---- Creates a new Button instance with the given parameters
---- @param terminal table  The terminal this Button will be drawn on
---- @param params ButtonParameters  The parameters for this Button
---- @return Button
-local function create_button(terminal, params)
-    return Button:new(terminal, params)
-end
-
---- Creates a new BorderedButton instance with the given parameters
---- @param terminal table  The terminal this Button will be drawn on
---- @param params BorderedButtonParameters  The parameters for this BorderedButton
---- @return BorderedButton
-local function create_bordered_button(terminal, params)
-    return BorderedButton:new(terminal, params)
-end
-
 return {
     class = {
         Button = Button,
         BorderedButton = BorderedButton
-    },
-    create_button = create_button,
-    create_bordered_button = create_bordered_button
+    }
 }

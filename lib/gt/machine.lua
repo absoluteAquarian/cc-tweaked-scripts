@@ -1,4 +1,5 @@
 local tiers = require "lib.gt.tiers"
+
 local R_string = require "lib.string"
 
 -- Information for the following was found at:  https://github.com/GregTechCEu/GregTech-Modern/blob/1.20.1/src/main/java/com/gregtechceu/gtceu/integration/cctweaked/peripherals

@@ -16,7 +16,7 @@ local exec = require "lib.exec"
 local R_math = require "lib.math"
 local R_table = require "lib.table"
 
-local cfg_file = config.unserialize("monitor_battery_buffer")
+local cfg_file = config.class.ConfigFile:new("monitor_battery_buffer")
 
 local CHARGE_THRESHOLD = cfg_file:getNumber("CHARGE_THRESHOLD") or 0.6
 local ALARM_THRESHOLD = cfg_file:getNumber("ALARM_THRESHOLD") or 0.3
@@ -26,10 +26,10 @@ local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
 
 -- Ensure that the defaults get properly saved
-config.serialize(cfg_file)
+cfg_file:save()
 
-local eu_in = average_value.create(20)
-local eu_out = average_value.create(20)
+local eu_in = average_value.class.AverageValue:new(20)
+local eu_out = average_value.class.AverageValue:new(20)
 --- @type number
 local eu_net = 0.0
 

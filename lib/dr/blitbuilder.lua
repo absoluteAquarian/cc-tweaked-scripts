@@ -82,14 +82,8 @@ function BlitBuilder:new(terminal)
     return instance
 end
 
---- Creates a new BlitBuilder instance for the given terminal
---- @param terminal table  The terminal this BlitBuilder will write to
---- @return BlitBuilder
-local function create(terminal)
-    return BlitBuilder:new(terminal)
-end
-
 return {
-    class = BlitBuilder,
-    create = create
+    class = {
+        BlitBuilder = BlitBuilder
+    }
 }

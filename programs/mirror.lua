@@ -9,7 +9,7 @@ local config = require "lib.config"
 local exec = require "lib.exec"
 local R_table = require "lib.table"
 
-local cfg_file = config.unserialize("mirror")
+local cfg_file = config.class.ConfigFile:new("mirror")
 
 --- @class DrivePeripheralActor : ClassDefinition
 local DrivePeripheralActor = class.class("DrivePeripheralActor")
@@ -60,7 +60,7 @@ function DrivePeripheralActor:new(cfg_key, default_peripheral, painter, render_p
         if not cfg then
             -- Save the default peripheral to the config
             cfg_file:setString(self.cfg_key, default_peripheral)
-            config.serialize(cfg_file)
+            cfg_file:save()
             cfg = default_peripheral
         end
 
@@ -168,7 +168,7 @@ local w, h = term.current().getSize()
 local window_instance = window.create(term.current(), 2, 2, w - 2, h - 2, true)
 window_instance.setCursorBlink(false)
 
-local global_painter = paint.create(window_instance)
+local global_painter = paint.class.Painter:new(window_instance)
 
 --- @class FileSystemEntry
 --- @field path string  The path to the file
@@ -203,7 +203,7 @@ end
 local actor_source = DrivePeripheralActor:new(
     "SRC",
     "left",
-    paint.create(window_instance),
+    paint.class.Painter:new(window_instance),
     {
         display_name = "Source",
         line = 3,
@@ -215,7 +215,7 @@ local actor_source = DrivePeripheralActor:new(
 local actor_destination = DrivePeripheralActor:new(
     "DEST",
     "right",
-    paint.create(window_instance),
+    paint.class.Painter:new(window_instance),
     {
         display_name = "Destination",
         line = 4,
@@ -224,7 +224,7 @@ local actor_destination = DrivePeripheralActor:new(
     }
 )
 
-local button_start = button.create_bordered_button(
+local button_start = button.class.BorderedButton:new(
     window_instance,
     {
         x = 3,
@@ -239,7 +239,7 @@ local button_start = button.create_bordered_button(
     }
 )
 
-local button_reset = button.create_bordered_button(
+local button_reset = button.class.BorderedButton:new(
     window_instance,
     {
         x = button_start.x + #button_start.label + 2 + 4,  -- 4 is the horizontal padding of the button
@@ -371,6 +371,10 @@ exec.loop_forever(
 
             button_start.visible = false
             button_start:set_release_listener(nil)
+
+            button_start.color.fg = colors.white
+            button_start.color.bg = colors.green
+            button_start.color.border = colors.lightGray
 
             --window_instance.setVisible(true)
 
@@ -578,27 +582,12 @@ exec.loop_forever(
             end
         end
     end,
-    -- sleep_watchers
-    {
-        {
-            event = "peripheral",
-            predicate = check_actors
-        },
-        {
-            event = "peripheral_detach",
-            predicate = check_actors
-        },
-        {
-            event = "disk",
-            predicate = check_actors
-        },
-        {
-            event = "disk_eject",
-            predicate = check_actors
-        },
-        button_start:get_event_watchers(),
-        button_reset:get_event_watchers()
-    },
+    -- sleep_watcher
+    exec.class.EventWatcher:new()
+        :listen({ "peripheral", "peripheral_detach", "disk", "disk_eject" }, check_actors)
+        :add(button_start:get_event_watchers())
+        :add(button_reset:get_event_watchers())
+    ,
     -- quit
     nil
 )

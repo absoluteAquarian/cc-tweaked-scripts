@@ -94,9 +94,9 @@ local function prettify(json)
                 elseif c == "{" or c == "[" then
                     if #prettified == 0 then
                         -- Start of the file, don't prepend a newline
-                        prettified = prettified .. c .. "\n"
+                        prettified = c .. "\n  "
                     else
-                        prettified = prettified .. "\n" .. indent .. c .. "\n"
+                        prettified = prettified .. "\n" .. indent .. c .. "\n  "
                     end
 
                     indent = indent .. "  "

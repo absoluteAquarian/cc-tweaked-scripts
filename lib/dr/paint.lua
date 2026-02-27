@@ -310,13 +310,6 @@ function Painter:new(target)
     return instance
 end
 
---- Creates a new Painter instance for the given target terminal
---- @param target table  The terminal to write to
---- @return Painter
-local function create(target)
-    return Painter:new(target)
-end
-
 --- @class PaintBlockCharacters
 local block_chars =
 {
@@ -647,8 +640,9 @@ local negated_chars = {
 }
 
 return {
-    class = Painter,
-    create = create,
+    class = {
+        Painter = Painter
+    },
     --- @type PaintBlockCharacters
     --- A list of characters that render as blocks in a 2x3 grid, indexed by descriptive names of which parts of the grid they fill.<br/>
     --- HIGH refers to the topmost row, MIDDLE refers to the middle row, and LOW refers to the bottom row.  LEFT and RIGHT refer to the respective columns.<br/>

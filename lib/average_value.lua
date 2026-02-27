@@ -62,14 +62,8 @@ function AverageValue:new(length)
     return instance
 end
 
---- Creates a new AverageValue instance with the given length
---- @param length integer  The number of values to average over
---- @return AverageValue
-local function create(length)
-    return AverageValue:new(length)
-end
-
 return {
-    class = AverageValue,
-    create = create
+    class = {
+        AverageValue = AverageValue
+    }
 }

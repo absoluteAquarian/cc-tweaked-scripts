@@ -1,5 +1,6 @@
---- Converts a compact JSON string into a more human-readable format with indentation, whitespace and newlines.
---- @param json string  The JSON string to prettify.  Expected to be in a valid JSON format, though any whitespace not in quoted strings will be ignored.
+local trace = require "lib.trace"
+
+--- @param json string
 --- @return string
 local function prettify(json)
     local prettified = ""
@@ -19,9 +20,9 @@ local function prettify(json)
                 elseif c == "{" or c == "[" then
                     if #prettified == 0 then
                         -- Start of the file, don't prepend a newline
-                        prettified = prettified .. c .. "\n"
+                        prettified = c .. "\n  "
                     else
-                        prettified = prettified .. "\n" .. indent .. c .. "\n"
+                        prettified = prettified .. "\n" .. indent .. c .. "\n  "
                     end
 
                     indent = indent .. "  "
@@ -45,5 +46,8 @@ local function prettify(json)
 end
 
 return {
-    prettify = prettify
+    --- Converts a compact JSON string into a more human-readable format with indentation, whitespace and newlines.
+    --- @param json string  The JSON string to prettify.  Expected to be in a valid JSON format, though any whitespace not in quoted strings will be ignored.
+    --- @return string
+    prettify = function(json) return trace.scall(prettify, json) end
 }

@@ -93,6 +93,8 @@ local function __assign_field(klass, field, value)
     local oop_proxy = rawget(klass, "__proxy_target")
     if oop_proxy then klass = oop_proxy end
 
+    if type(value) == "function" then value = trace.wrap(value) end
+
     if rawget(klass, "base") then
         local defining_class = __find_defining_class(klass, field)
         if defining_class then

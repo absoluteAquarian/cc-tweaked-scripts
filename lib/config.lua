@@ -1,5 +1,6 @@
 local class = require "lib.class"
 local R_json = require "lib.json"
+local trace = require "lib.trace"
 
 local DIRECTORY = "configs"
 local EXTENSION = ".json"
@@ -46,7 +47,7 @@ end
 --- @class ConfigFileDefinition : ClassDefinition
 local ConfigFile = class.class("ConfigFile")
 
---- [override] Creates a new ConfigFile instance for the given program
+--- [override] Creates a new ConfigFile instance for the given program, loading its config file from disk if it exists
 --- @param program string  The name of the program this config file is for
 function ConfigFile:new(program)
     --- @class ConfigFile : ClassInstance
@@ -148,24 +149,11 @@ function ConfigFile:new(program)
     return instance
 end
 
---- Loads a config file from disk
---- @param program string  The name of the program to load the config for
---- @return ConfigFile file  The loaded config file
-local function unserialize(program)
-    return ConfigFile:new(program)
-end
-
---- Saves a config file to disk
---- @param file ConfigFile  The config file to save
-local function serialize(file)
-    file:save()
-end
-
 return {
+    class = {
+        ConfigFile = ConfigFile
+    },
     DIRECTORY = DIRECTORY,
     EXTENSION = EXTENSION,
-    class = ConfigFile,
-    get_relative_path = get_relative_path,
-    unserialize = unserialize,
-    serialize = serialize,
+    get_relative_path = get_relative_path
 }

@@ -16,7 +16,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:3, RENDER_TICK_DELAY:5 }",
@@ -38,7 +38,7 @@
         },
         {
             "name": "mirror",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/programs/mirror.lua",
             "install": "mirror.lua",
             "config": "{ SRC:\"left\", DEST:\"right\" }",
@@ -93,7 +93,7 @@
         },
         {
             "name": "lib.dr.ui.button",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/dr/ui/button.lua",
             "install": "lib/dr/ui/button.lua",
             "config": "",
@@ -107,7 +107,7 @@
         },
         {
             "name": "lib.dr.blitbuilder",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/dr/blitbuilder.lua",
             "install": "lib/dr/blitbuilder.lua",
             "config": "",
@@ -119,7 +119,7 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
@@ -155,7 +155,7 @@
         },
         {
             "name": "lib.average_value",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/average_value.lua",
             "install": "lib/average_value.lua",
             "config": "",
@@ -166,7 +166,7 @@
         },
         {
             "name": "lib.class",
-            "version": 10,
+            "version": 11,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
@@ -179,19 +179,20 @@
         },
         {
             "name": "lib.config",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/config.lua",
             "install": "lib/config.lua",
             "config": "",
             "deps":
             [
                 "lib.class",
-                "lib.json"
+                "lib.json",
+                "lib.trace"
             ]
         },
         {
             "name": "lib.exec",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",
@@ -199,24 +200,31 @@
             [
                 "lib.cc.monitor",
                 "lib.cc.terminal",
+                "lib.class",
                 "lib.handler"
             ]
         },
         {
             "name": "lib.handler",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",
-            "deps": []
+            "deps":
+            [
+                "lib.trace"
+            ]
         },
         {
             "name": "lib.json",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/json.lua",
             "install": "lib/json.lua",
             "config": "",
-            "deps": []
+            "deps":
+            [
+                "lib.trace"
+            ]
         },
         {
             "name": "lib.math",
@@ -228,13 +236,14 @@
         },
         {
             "name": "lib.readonly",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/readonly.lua",
             "install": "lib/readonly.lua",
             "config": "",
             "deps":
             [
-                "lib.table"
+                "lib.table",
+                "lib.trace"
             ]
         },
         {
@@ -247,11 +256,14 @@
         },
         {
             "name": "lib.table",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
             "config": "",
-            "deps": []
+            "deps":
+            [
+                "lib.trace"
+            ]
         },
         {
             "name": "lib.trace",
