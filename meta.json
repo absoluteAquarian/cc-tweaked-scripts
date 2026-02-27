@@ -38,7 +38,7 @@
         },
         {
             "name": "mirror",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/programs/mirror.lua",
             "install": "mirror.lua",
             "config": "{ SRC:\"left\", DEST:\"right\" }",
@@ -93,7 +93,7 @@
         },
         {
             "name": "lib.dr.ui.button",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/dr/ui/button.lua",
             "install": "lib/dr/ui/button.lua",
             "config": "",

@@ -207,13 +207,14 @@ function BorderedButton:new(terminal, params)
             --   The left and right edges
             :move({ x = self.x, y = self.y + 1 })
             :swap()
+            :color(nil, self.color.bg)
             :text(paint.blocks.HIGH_LEFT_MIDDLE_LEFT_LOW_LEFT)
             :offset(#self.label)
             :swap()
             :text(paint.negated_blocks.HIGH_RIGHT_MIDDLE_RIGHT_LOW_RIGHT)
             --   The bottom corners and edge
             :move({ x = self.x, y = self.y + 2 })
-            :swap()
+            :color(self.color.border, "reset")
             :text(paint.blocks.HIGH, { count = #self.label + 2 })
             --   The label text
             :move({ x = self.x + 1, y = self.y + 1 })
@@ -242,7 +243,7 @@ function BorderedButton:new(terminal, params)
 
     --- [override] Returns whether the provided coordinates are within the clickable area of this Button
     function instance:clickable_area_contains(event_x, event_y)
-        return event_x >= self.x + 1 and event_x <= self.x + #self.label and event_y == self.y + 1
+        return event_x >= self.x + 1 and event_x < self.x + #self.label and event_y == self.y + 1
     end
 
     return instance

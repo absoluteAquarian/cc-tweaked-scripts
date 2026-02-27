@@ -87,7 +87,7 @@ function DrivePeripheralActor:new(cfg_key, default_peripheral, painter, render_p
     --- Renders the initial display for this actor in the terminal
     function instance:render_template()
         self.painter:begin()
-            :move({ x = 1, y = self.render_params.line })
+            :move({ x = 2, y = self.render_params.line })
             :text("[")
             :color(colors.red, nil)
             :text("\120")
@@ -186,7 +186,7 @@ local num_copied = 0
 local function display_error(painter, msg)
     if msg then
         painter:begin()
-            :move({ x = 2, y = -1 })  -- Negative y is an offset from the bottom of the terminal
+            :move({ x = 2, y = -2 })  -- Negative y is an offset from the bottom of the terminal
             :erase(painter:width() - 2)
             :color(colors.red, nil)
             :text(msg)
@@ -194,7 +194,7 @@ local function display_error(painter, msg)
             :paint()
     else
         painter:begin()
-            :move({ x = 2, y = -1 })  -- Negative y is an offset from the bottom of the terminal
+            :move({ x = 2, y = -2 })  -- Negative y is an offset from the bottom of the terminal
             :erase(painter:width() - 2)
             :paint()
     end
@@ -206,7 +206,7 @@ local actor_source = DrivePeripheralActor:new(
     paint.create(window_instance),
     {
         display_name = "Source",
-        line = 2,
+        line = 3,
         err_disconnected = "ERR_INVALID_SRC",
         err_no_disk = "ERR_NO_DISK_SRC"
     }
@@ -218,7 +218,7 @@ local actor_destination = DrivePeripheralActor:new(
     paint.create(window_instance),
     {
         display_name = "Destination",
-        line = 3,
+        line = 4,
         err_disconnected = "ERR_INVALID_DEST",
         err_no_disk = "ERR_NO_DISK_DEST"
     }
@@ -227,8 +227,8 @@ local actor_destination = DrivePeripheralActor:new(
 local button_start = button.create_bordered_button(
     window_instance,
     {
-        x = 2,
-        y = 4,
+        x = 3,
+        y = 5,
         label = "Start",
         color =
         {
@@ -320,7 +320,7 @@ local function init_window_canvas()
         :text(paint.negated_blocks.HIGH_RIGHT_MIDDLE_RIGHT_LOW)
         :swap()
         -- Waiting for disks to be ready...
-        :move({ x = 1, y = 1 })
+        :move({ x = 2, y = 2 })
         :color("reset", "reset")
         :text("Waiting for disks to be ready .")
         :nextline(false)
@@ -381,7 +381,7 @@ exec.loop_forever(
 
             if actor_source.ready and actor_destination.ready then
                 global_painter:begin()
-                    :move({ x = 1, y = 1 })
+                    :move({ x = 2, y = 2 })
                     :erase(#"Waiting for disks to be ready ...")
                     :text("Disks are ready.")
                     :paint()
@@ -398,7 +398,7 @@ exec.loop_forever(
 
                 global_painter:begin()
                     -- Waiting for disks to be ready...
-                    :move({ x = #"Waiting for disks to be ready " + 1, y = 1 })
+                    :move({ x = 2 + #"Waiting for disks to be ready " + 1, y = 2 })
                     :erase(3)
                     :text(".", { count = wait_cycle })
                     :paint()
@@ -439,7 +439,7 @@ exec.loop_forever(
                         -- Display the next message
 
                         global_painter:begin()
-                            :move({ x = 1, y = 9 })
+                            :move({ x = 2, y = 9 })
                             :text("Collecting source files .   (total: -)")
                             :paint()
 
@@ -488,7 +488,7 @@ exec.loop_forever(
                 window_instance.setVisible(false)
 
                 global_painter:begin()
-                    :move({ x = 1 + #"Collecting source files ... (total: " + 1, y = 9 })
+                    :move({ x = 2 + #"Collecting source files ... (total: " + 1, y = 9 })
                     :obj(#buffer_fs)
                     :text(")")
                     :paint()
@@ -499,7 +499,7 @@ exec.loop_forever(
                     wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
 
                     global_painter:begin()
-                        :move({ x = 1 + #"Collecting source files" + 1, y = 9 })
+                        :move({ x = 2 + #"Collecting source files" + 1, y = 9 })
                         :erase(3)
                         :text(".", { count = wait_cycle })
                         :paint()
@@ -514,7 +514,7 @@ exec.loop_forever(
                 local text_total = tostring(#buffer_fs)
 
                 global_painter:begin()
-                    :move({ x = 1, y = 10 })
+                    :move({ x = 2, y = 10 })
                     :text("Copying files to destination .   (copied: ")
                     :text("-", { count = #text_total })
                     :text("/" .. text_total .. ")")
@@ -553,7 +553,7 @@ exec.loop_forever(
                 local text_total = tostring(#buffer_fs)
 
                 global_painter:begin()
-                    :move({ x = 1 + #"Copying files to destination... (copied: " + 1, y = 10 })
+                    :move({ x = 2 + #"Copying files to destination... (copied: " + 1, y = 10 })
                     :erase(#text_total)
                     :offset(#text_total - #text_num, nil)
                     :text(text_num)
@@ -561,7 +561,7 @@ exec.loop_forever(
             else
                 -- No more files to copy
                 global_painter:begin()
-                    :move({ x = 1, y = 11 })
+                    :move({ x = 2, y = 11 })
                     :text("Copy complete! Reset or eject a disk to restart.")
                     :paint()
 
