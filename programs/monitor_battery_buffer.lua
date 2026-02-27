@@ -104,29 +104,18 @@ local function display_to_monitors(current, trend)
 
             local net_fmt, color_net = fmt.signed_and_color(net_amps)
 
-            local AFTER_CURRENT = #"Current:" + 2
-            local STRIDE_CURRENT = #"--.---%"
-            local AFTER_TREND = #"Trend:" + 2
-            local STRIDE_TREND = #"+--.---%"
-            local OFFSET_INPUT = in_amps < 10 and 2 or 1
-            local STRIDE_INPUT = #"---.---"
-            local OFFSET_OUTPUT = out_amps < 10 and 2 or 1
-            local STRIDE_OUTPUT = #"---.---"
-            local OFFSET_NET = net_amps < 10 and 1 or nil
-            local STRIDE_NET = #"+---.---"
-
             painter.terminal = monitor
 
             painter:begin()
                 -- Current: --.---%
-                :move({ x = AFTER_CURRENT, y = 1 })
-                :erase(STRIDE_CURRENT)
+                :move({ x = 1 + #"Current:" + 1, y = 1 })
+                :erase(#"--.---%")
                 :color(color_current, nil)
                 :text(current .. "%")
                 :color("reset", nil)
                 -- Trend: +--.---%
-                :move({ x = AFTER_TREND, y = 2 })
-                :erase(STRIDE_TREND)
+                :move({ x = 1 + #"Trend:" + 1, y = 2 })
+                :erase(#"+--.---%")
                 :color(color_trend, nil)
                 :text(trend_fmt .. "%")
                 :color("reset", nil)
@@ -134,42 +123,47 @@ local function display_to_monitors(current, trend)
                 --  ---.--- A (---)
                 :move({ x = 2, y = 4 })
                 :anchor()
-                :erase(STRIDE_INPUT)
-                :offset(OFFSET_INPUT, nil)
+                :erase(#"---.---")
+                :offset(in_amps < 10 and 2 or (in_amps < 100 and 1 or 0), nil)
                 :obj(in_amps)
                 :reset()
-                :offset(STRIDE_INPUT + 4, nil)
+                :offset(#"---.--- A (", nil)
+                :erase(4)
                 :color(tiers.get_color(in_tier), nil)
                 :text(in_tier)
                 :color("reset", nil)
+                :text(")")
                 :deanchor()
                 -- Output:
                 --  ---.--- A (---)
                 :move({ x = 2, y = 6 })
                 :anchor()
-                :erase(STRIDE_OUTPUT)
-                :offset(OFFSET_OUTPUT, nil)
+                :erase(#"---.---")
+                :offset(out_amps < 10 and 2 or (out_amps < 100 and 1 or 0), nil)
                 :obj(out_amps)
                 :reset()
-                :offset(STRIDE_OUTPUT + 4, nil)
+                :offset(#"---.--- A (", nil)
+                :erase(4)
                 :color(tiers.get_color(out_tier), nil)
                 :text(out_tier)
                 :color("reset", nil)
+                :text(")")
                 :deanchor()
                 -- Net:
                 -- +---.--- A (---)
                 :move({ x = 1, y = 8 })
                 :anchor()
-                :erase(STRIDE_NET)
-                :offset(OFFSET_NET, nil)
+                :erase(#"+---.---")
+                :offset(net_amps < 10 and 2 or (net_amps < 100 and 1 or 0), nil)
                 :color(color_net, nil)
                 :text(net_fmt)
                 :color("reset", nil)
                 :reset()
-                :offset(STRIDE_NET + 4, nil)
+                :offset(#"+---.--- A (", nil)
                 :color(tiers.get_color(net_tier), nil)
                 :text(net_tier)
                 :color("reset", nil)
+                :text(")")
                 :deanchor()
                 :paint()
         end
@@ -250,9 +244,9 @@ exec.loop_forever(
         metrics_net = Metrics:new(function() return eu_net end, BATTERY_TIER)
 
         -- Initialize the monitors with the base template
-        
+
         local new_painter = false
-        
+
         R_monitor.foreach_monitor(
             function(monitor)
                 monitor.setBackgroundColor(colors.black)
@@ -285,7 +279,6 @@ exec.loop_forever(
                     :nextline()
                     :text("Net:")
                     :nextline()
-                    :offset(2, nil)
                     :text("+---.--- A (---)")
                     :paint()
             end
