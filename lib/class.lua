@@ -268,8 +268,7 @@ local function class(name, base)
             "base",
             "class",
             "create_instance",
-            "instanceof",
-            "name"
+            "instanceof"
         ),
         --- @private
         --- The common metatable for class instances

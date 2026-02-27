@@ -164,7 +164,7 @@
         },
         {
             "name": "lib.class",
-            "version": 8,
+            "version": 9,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
