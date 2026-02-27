@@ -16,10 +16,10 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 6,
+            "version": 7,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
-            "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:3, RENDER_TICK_DELAY:5 }",
+            "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
             "deps":
             [
                 "lib.cc.fmt",
