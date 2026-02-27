@@ -29,11 +29,7 @@ local function __define_field(klass, field)
     local oop_proxy = rawget(klass, "__proxy_target")
     if oop_proxy then klass = oop_proxy end
 
-    if __has_field_directly(klass, field) then
-        error("Field '" .. field .. "' is already defined on class " .. klass.__type .. " '" .. klass.name .. "'", 2)
-    else
-        rawget(klass, "__fields")[field] = true
-    end
+    rawget(klass, "__fields")[field] = true
 end
 
 --- Attempts to find the class-like object that defines the given field, or returns nil if no such object exists
