@@ -11,13 +11,22 @@ local tiers = require "lib.gt.tiers"
 
 local average_value = require "lib.average_value"
 local class = require "lib.class"
+local config = require "lib.config"
 local exec = require "lib.exec"
 local R_math = require "lib.math"
+local R_table = require "lib.table"
 
-local CHARGE_THRESHOLD = 0.6
-local ALARM_THRESHOLD = 0.3
-local PRECISION_DISPLAYED = 3
-local UPDATE_INTERVAL_TICKS = 5
+local cfg_file = config.unserialize("monitor_battery_buffer")
+
+local CHARGE_THRESHOLD = cfg_file:getNumber("CHARGE_THRESHOLD") or 0.6
+local ALARM_THRESHOLD = cfg_file:getNumber("ALARM_THRESHOLD") or 0.3
+local PRECISION_DISPLAYED = cfg_file:getNumber("PRECISION_DISPLAYED") or 3
+local RENDER_TICK_DELAY = cfg_file:getNumber("RENDER_TICK_DELAY") or 5
+local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
+local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
+
+-- Ensure that the defaults get properly saved
+config.serialize(cfg_file)
 
 local eu_in = average_value.create(20)
 local eu_out = average_value.create(20)
@@ -170,10 +179,22 @@ local function display_to_monitors(current, trend)
     )
 end
 
+--- @type GTCEu_EnergyInfoPeripheral
+local BATTERY
+--- @type string
+local BATTERY_TIER
+local LAST_PERCENTAGE = 0.0
+
 --- @param current number
 --- @param trend number
 local function display_to_terminal(current, trend)
     R_terminal.reset_terminal()
+
+    if not BATTERY_TIER then
+        print("WARNING: Could not determine tier for connected battery")
+        print("Set the default tier by running \"launcher config\" and modifying the \"POWER_OVERRIDE\" setting")
+        print()
+    end
 
     local net, net_tier = metrics_net:amps()
 
@@ -185,20 +206,17 @@ local function display_to_terminal(current, trend)
     print("Net: " .. fmt.signed(net) .. " A (" .. net_tier .. ")")
 end
 
---- @class GTCEu_BatteryBuffer : GTCEu_EnergyInfoPeripheral, GTCEu_WorkablePeripheral
-local GTCEu_BatteryBuffer = {}
-
---- @return GTCEu_BatteryBuffer
+--- @return GTCEu_EnergyInfoPeripheral
 --- @return string
 local function wait_for_battery()
-    --- @type GTCEu_BatteryBuffer?
+    --- @type GTCEu_EnergyInfoPeripheral?
     local battery
     --- @type string?
     local battery_tier
 
     while battery == nil do
-        --- @type GTCEu_BatteryBuffer?, string?
-        local temp_battery, temp_tier = machine.find_machine("battery_buffer", GTCEu_BatteryBuffer)
+        --- @type GTCEu_EnergyInfoPeripheral?, string?
+        local temp_battery, temp_tier = machine.find_machine(MACHINE, true)
 
         if temp_battery ~= nil and pcall(temp_battery.getEnergyStored) then
             battery = temp_battery
@@ -218,14 +236,6 @@ local function wait_for_battery()
     return battery, battery_tier --[[@as string]]
 end
 
--- Check for connection (for example on server startup)
-
---- @type GTCEu_BatteryBuffer
-local BATTERY
---- @type string
-local BATTERY_TIER
-local LAST_PERCENTAGE = 0.0
-
 local tick = 1
 
 exec.loop_forever(
@@ -234,6 +244,10 @@ exec.loop_forever(
     -- init
     function()
         BATTERY, BATTERY_TIER = wait_for_battery()
+
+        if POWER_OVERRIDE and #POWER_OVERRIDE > 0 and R_table.has_value(tiers.def, POWER_OVERRIDE) then
+            BATTERY_TIER = POWER_OVERRIDE
+        end
 
         eu_in:clear()
         eu_out:clear()
@@ -304,7 +318,7 @@ exec.loop_forever(
             LAST_PERCENTAGE = percentage
         end
 
-        tick = tick == UPDATE_INTERVAL_TICKS and 1 or tick + 1
+        tick = tick == RENDER_TICK_DELAY and 1 or tick + 1
     end,
     -- sleep_watchers
     nil,

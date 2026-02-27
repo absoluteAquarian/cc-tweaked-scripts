@@ -35,34 +35,30 @@ local R_string = require "lib.string"
 --- @field isActive fun() : boolean
 
 --- Finds a GTCE machine matching the given name and returns it along with its tier, or nil for both if no matching machine is found
---- @generic T : __GTCEu_Peripheral
 --- @param machine string  The name of the machine to find.  Can be a whole name or substring (e.g. "assembler" will match "gtceu:ulv_assembler" and "gtceu:mv_assembler")
---- @param peripheral_type `T`  A table used to infer the generic type for the return value.  Its @class annotation must inherit from __GTCEu_Peripheral or one of its subtypes
---- @return `T`?
+--- @param allow_null_tier boolean?  If true, machines that don't have a tier will be returned with a tier of nil instead of being ignored.
+--- @return table?
 --- @return string?
-local function find_machine(machine, peripheral_type)
+local function find_machine(machine, allow_null_tier)
     for _, p in pairs(peripheral.getNames()) do
         if (R_string.starts_with(p, "gtceu:") and R_string.contains(p, machine)) then
             local tier = tiers.peripheral_tier(p)
-            if tier then return peripheral.wrap(p), tier end
+            if (allow_null_tier == true) or tier then return peripheral.wrap(p), tier end
         end
     end
     return nil, nil
 end
 
 --- Finds all GTCE machines matching the given name and returns them along with their tiers
---- @generic T : __GTCEu_Peripheral
 --- @param machine string  The name of the machines to find.  Can be a whole name or substring (e.g. "assembler" will match "gtceu:ulv_assembler" and "gtceu:mv_assembler")
---- @param peripheral_type `T`  A table used to infer the generic type for the return value.  Its @class annotation must inherit from __GTCEu_Peripheral or one of its subtypes
---- @return { [1]: `T`, [2]: string }[]
-local function find_machines(machine, peripheral_type)
+--- @param allow_null_tier boolean?  If true, machines that don't have a tier will be returned with a tier of nil instead of being ignored.
+--- @return { [1]: table, [2]: string }[]
+local function find_machines(machine, allow_null_tier)
     local machines = {}
     for _, p in pairs(peripheral.getNames()) do
         if (R_string.starts_with(p, "gtceu:") and R_string.contains(p, machine)) then
             local tier = tiers.peripheral_tier(p)
-            if tier then
-                table.insert(machines, {peripheral.wrap(p), tier})
-            end
+            if (allow_null_tier == true) or tier then table.insert(machines, { peripheral.wrap(p), tier }) end
         end
     end
     return machines
@@ -70,6 +66,5 @@ end
 
 return {
     find_machine = find_machine,
-    find_machines = find_machines,
-    unknown_peripheral = {} --[[@as __GTCEu_Peripheral]]
+    find_machines = find_machines
 }

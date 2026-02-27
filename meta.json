@@ -16,10 +16,10 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
-            "config": "",
+            "config": "{\n  MACHINE:\"battery_buffer\",\n  POWER_OVERRIDE:\"\"\n  ALARM_THRESHOLD:0.3\n  CHARGE_THRESHOLD:0.6\n  PRECISION_DISPLAYED:3\n  RENDER_TICK_DELAY:5\n}",
             "deps":
             [
                 "lib.cc.fmt",
@@ -30,8 +30,10 @@
                 "lib.gt.tiers",
                 "lib.average_value",
                 "lib.class",
+                "lib.config",
                 "lib.exec",
-                "lib.math"
+                "lib.math",
+                "lib.table"
             ]
         },
         {
@@ -129,7 +131,7 @@
         },
         {
             "name": "lib.gt.machine",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/gt/machine.lua",
             "install": "lib/gt/machine.lua",
             "config": "",
