@@ -192,7 +192,7 @@
         },
         {
             "name": "lib.exec",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",

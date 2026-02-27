@@ -104,6 +104,8 @@ function EventWatcher:new()
             end
         end
     end
+
+    return instance
 end
 
 --- @param seconds number
