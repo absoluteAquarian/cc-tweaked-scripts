@@ -117,7 +117,7 @@ function DrivePeripheralActor:new(cfg_key, default_peripheral, painter, render_p
         end
 
         self.painter:begin()
-            :move({ x = 2, y = self.render_params.line })
+            :move({ x = 3, y = self.render_params.line })
             :color(color, nil)
             :text(icon)
             :offset(2, nil)
@@ -165,7 +165,7 @@ local tick = 0
 local w, h = term.current().getSize()
 
 --- @type table
-local window_instance = window.create(term.current(), 2, 2, w - 1, h - 1, false)
+local window_instance = window.create(term.current(), 2, 2, w - 2, h - 2, false)
 window_instance.setCursorBlink(false)
 
 local global_painter = paint.create(window_instance)
