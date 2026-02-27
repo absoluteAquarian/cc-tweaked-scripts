@@ -247,9 +247,16 @@ local function download_program_and_dependencies(program, meta, directory)
         local path = directory .. "/configs/" .. program_file.name .. ".json"
         if not fs.exists(path) then
             local handle = fs.open(path, "w")
+
             -- Ensure that the config has the standard format, no matter how it's defined in the meta
-            local json_tbl = textutils.unserialiseJSON(program_file.config, { nbt_style = true, allow_repetitions = false })
-            local json = textutils.serialiseJSON(json_tbl, { nbt_style = false, allow_repetitions = false })
+            local json_tbl = textutils.unserialiseJSON(program_file.config, { nbt_style = true })
+
+            if not json_tbl then
+                error("Default config for requested program was malformed")
+            end
+
+            -- Make it look nice for the user
+            local json = textutils.serialiseJSON(json_tbl, { nbt_style = false })
             handle.write(prettify(json))
             handle.flush()
             handle.close()

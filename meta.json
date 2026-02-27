@@ -19,7 +19,7 @@
             "version": 5,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
-            "config": "{\n  MACHINE:\"battery_buffer\",\n  POWER_OVERRIDE:\"\"\n  ALARM_THRESHOLD:0.3\n  CHARGE_THRESHOLD:0.6\n  PRECISION_DISPLAYED:3\n  RENDER_TICK_DELAY:5\n}",
+            "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:3, RENDER_TICK_DELAY:5 }",
             "deps":
             [
                 "lib.cc.fmt",
@@ -41,7 +41,7 @@
             "version": 1,
             "url": "$REPO$/programs/mirror.lua",
             "install": "mirror.lua",
-            "config": "{\n  SRC:\"left\",\n  DEST:\"right\"\n}",
+            "config": "{ SRC:\"left\", DEST:\"right\" }",
             "deps":
             [
                 "lib.cc.filesystem",

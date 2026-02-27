@@ -20,7 +20,7 @@ local function load_config(program)
     local handle = fs.open(path, "r")
     if not handle then return {} end
 
-    local file = textutils.unserialiseJSON(handle.readAll(), { nbt_style = true, allow_repetitions = false })
+    local file = textutils.unserialiseJSON(handle.readAll(), { nbt_style = true })
     handle.close()
     return file or {}
 end
@@ -31,7 +31,7 @@ local function save_config(program, config)
     local path = fs.getDir(shell.getRunningProgram()) .. "/" .. get_relative_path(program)
     if fs.exists(path) then fs.delete(path) end
 
-    local json = textutils.serialiseJSON(config, { nbt_style = true, allow_repetitions = false })
+    local json = textutils.serialiseJSON(config, { nbt_style = true })
 
     local handle = fs.open(path, "w")
     -- textutils.serializeJSON() returns a compacted JSON string, so it needs to be cleaned up before writing
