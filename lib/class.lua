@@ -83,7 +83,7 @@ local function __tag_field_readonly(klass, field, is_readonly)
     if oop_proxy then klass = oop_proxy end
 
     if not __has_field(klass, field) then
-        error("Field '" .. field .. "' is not defined on class " .. klass.__type .. " '" .. klass.class.name .. "'", 2)
+        error("Field '" .. field .. "' is not defined on class " .. klass.__type .. " '" .. klass.class:nameof() .. "'", 2)
     else
         klass.__fields.readonly[field] = is_readonly
     end
@@ -246,17 +246,16 @@ local function __create_oop_proxy(klass, newindex)
     )
 end
 
---- @generic TBaseClass : ClassDefinition
 --- @param name string
---- @param base `TBaseClass`
---- @return ClassDefinition<TBaseClass>
+--- @param base ClassDefinition?
+--- @return ClassDefinition
 local function class(name, base)
     -- Verify that the identifier is valid
     if type(name) ~= "string" or name == "" then
         error("Class name must be a non-empty string", 2)
     end
 
-    --- @class ClassDefinition<TBaseClass> : Classlike  A class definition, which can be used to create class instances.  May optionally inherit from another class definition.
+    --- @class ClassDefinition : Classlike  A class definition, which can be used to create class instances.  May optionally inherit from another class definition.
     local definition = {
         --- @private
         --- A set of field names that are defined on this class definition
@@ -264,6 +263,7 @@ local function class(name, base)
             "__fields",
             "__instance",
             "__instance_mt",
+            "__name",
             "__type",
             "base",
             "class",
@@ -281,7 +281,7 @@ local function class(name, base)
                 --- @return any
                 function(self, key)
                     if __has_field(rawget(self, "class"), key) then
-                        error("Field '" .. key .. "' is defined on class definition '" .. rawget(self, "class").name .. "' and cannot be accessed through a class instance", 2)
+                        error("Field '" .. key .. "' is defined on class definition '" .. rawget(self, "class"):nameof() .. "' and cannot be accessed through a class instance", 2)
                     elseif __is_readonly_field(self, key) then
                         -- Field must be defined on this instance, so just access it directly
                         return rawget(self, key)
@@ -293,14 +293,16 @@ local function class(name, base)
             )
         },
         --- @private
+        --- The identifier for this class definition
+        __name = name,
+        --- @private
         --- The classification of this class-like object
         __type = "definition",
-        --- The identifier for this class definition
-        name = name,
         --- The base class definition
         base = base
     }
 
+    __define_field(definition, "nameof")
     __define_field(definition, "new")
 
     --- The class definition (itself)
@@ -349,9 +351,9 @@ local function class(name, base)
             -- __newindex
             function(target, key, value)
                 if __has_field(target.class, key) then
-                    error("Field '" .. key .. "' is defined on class definition '" .. target.class.name .. "' and cannot be modified through a class instance", 3)
+                    error("Field '" .. key .. "' is defined on class definition '" .. target.class:nameof() .. "' and cannot be modified through a class instance", 3)
                 elseif __is_readonly_field(target, key) then
-                    error("Field '" .. key .. "' on class instance of '" .. target.class.name .. "' is read-only and cannot be modified.", 3)
+                    error("Field '" .. key .. "' on class instance of '" .. target.class:nameof() .. "' is read-only and cannot be modified.", 3)
                 else
                     __assign_field(target, key, value)
                 end
@@ -369,6 +371,10 @@ local function class(name, base)
     --- @param ... any  The arguments to pass to the class instance constructor
     --- @return ClassInstance
     function definition:new(...) return self:create_instance(...) end
+
+    --- Gets the name assigned to this class definition
+    --- @return string
+    function definition:nameof() return self.__name end
 
     --- Whether this class definition is the same as or inherits from another class definition
     --- @param klass ClassDefinition  The class definition to check
@@ -403,7 +409,7 @@ local function class(name, base)
         -- __newindex
         function(target, key, value)
             if __is_readonly_field(target, key) then
-                error("Field '" .. key .. "' on class definition '" .. target.name .. "' is read-only and cannot be modified.", 3)
+                error("Field '" .. key .. "' on class definition '" .. target:nameof() .. "' is read-only and cannot be modified.", 3)
             else
                 __assign_field(target, key, value)
             end
@@ -413,9 +419,8 @@ end
 
 return {
     --- Defines a table representing an object-oriented class definition.
-    --- @generic TBaseClass : ClassDefinition
     --- @param name string  The identifier for this class definition.
-    --- @param base `TBaseClass`?  An optional base class to inherit from
+    --- @param base ClassDefinition?  An optional base class to inherit from
     --- @return ClassDefinition
     class = function(name, base) return trace.scall(class, name, base) end,
     --- Returns whether the given class inherits from another class (or is the same class)
