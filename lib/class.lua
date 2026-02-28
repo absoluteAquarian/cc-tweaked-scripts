@@ -103,7 +103,8 @@ local function __tag_field_readonly(klass, field, is_readonly)
     if not __has_field(proxy_target, field) then
         error("Field '" .. field .. "' is not defined on class " .. proxy_target.__type .. " '" .. proxy_target.class:nameof() .. "'", 2)
     else
-        proxy_target.__fields.readonly[field] = is_readonly
+        -- Need to redirect the assignment to the original table directly
+        rawget(proxy_target.__fields.readonly, "__proxy_target")[field] = is_readonly
     end
 end
 

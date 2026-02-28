@@ -166,7 +166,7 @@
         },
         {
             "name": "lib.class",
-            "version": 12,
+            "version": 13,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
@@ -236,7 +236,7 @@
         },
         {
             "name": "lib.readonly",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/readonly.lua",
             "install": "lib/readonly.lua",
             "config": "",
