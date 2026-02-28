@@ -508,13 +508,13 @@ exec.loop_forever(
                 goto check_stage
             end
 
-            local path, contents = iterator--[[@as fun():string?, string?]]()
+            local _, entry = iterator--[[@as fun():integer?, FileSystemEntry?]]()
 
-            if path then
+            if entry then
                 -- Copy the contents of the file to the destination disk
-                local dest_path = actor_destination.mount .. path:sub(#actor_source.mount + 1)
+                local dest_path = actor_destination.mount .. entry.path:sub(#actor_source.mount + 1)
                 local handle = fs.open(dest_path, "w")
-                handle.write(contents)
+                handle.write(entry.contents)
                 handle.flush()
                 handle.close()
 
