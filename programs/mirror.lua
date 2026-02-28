@@ -421,7 +421,7 @@ exec.loop_forever(
 
                         global_painter:begin()
                             :move({ x = 2, y = 9 })
-                            :text("Collecting source files ... -")
+                            :text("Collecting source files ...      0")
                             :paint()
 
                         wait_cycle = 1
@@ -465,7 +465,7 @@ exec.loop_forever(
                 -- Display the total file count
 
                 global_painter:begin()
-                    :move({ x = 2 + #"Collecting source files ..." + 1, y = 9 })
+                    :move({ x = 2 + #"Collecting source files ..." + 1 + 5, y = 9 })  -- 5 offset to match the file count for the next stage
                     :obj(#buffer_fs)
                     :paint()
 
@@ -491,7 +491,7 @@ exec.loop_forever(
                     :erase(#"Collecting source files ...")
                     :text("Source files collected.")
                     :move({ x = 2, y = 10 })
-                    :text("Copying files to destination ... -")
+                    :text("Copying files to destination ... 0")
                     :paint()
 
                 wait_cycle = 1
