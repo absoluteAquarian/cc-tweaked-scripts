@@ -488,7 +488,7 @@ exec.loop_forever(
 
                 global_painter:begin()
                     :move({ x = 2, y = 9 })
-                    :erase(#"Collecting source files ...")
+                    :erase(#"Collecting source files ...     ")
                     :text("Source files collected.")
                     :move({ x = 2, y = 10 })
                     :text("Copying files to destination ... 0")
