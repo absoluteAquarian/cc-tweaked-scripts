@@ -47,7 +47,7 @@ function Button:new(terminal, params)
     }
 
     --- The Painter instance used to draw this Button
-    instance.painter = paint.create(terminal)
+    instance.painter = paint.class.Painter:new(terminal)
 
     --- @type boolean  Whether this Button can be clicked
     instance.clickable = true
