@@ -376,7 +376,7 @@ exec.loop_forever(
             button_start.color.bg = colors.green
             button_start.color.border = colors.lightGray
 
-            copy_stage = 0
+            copy_stage = copy_stage + 1
             goto check_stage
         elseif copy_stage == 0 then
             -- Wait for both disks to be ready before proceeding
@@ -391,7 +391,7 @@ exec.loop_forever(
                 wait_cycle = 1
                 tick = 0
 
-                copy_stage = 1
+                copy_stage = copy_stage + 1
             else
                 wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
 
@@ -427,14 +427,14 @@ exec.loop_forever(
                         wait_cycle = 1
                         iterator = filesystem.iterate_all_files(actor_source.mount)
 
-                        copy_stage = 3
+                        copy_stage = copy_stage + 1
                     end
                 end
             )
 
             button_start:draw()
 
-            copy_stage = 2
+            copy_stage = copy_stage + 1
         elseif copy_stage == 2 then
             -- Wait for the user to click the button
 
@@ -495,7 +495,7 @@ exec.loop_forever(
                 wait_cycle = 1
                 tick = 0
 
-                copy_stage = 4
+                copy_stage = copy_stage + 1
             end
         elseif copy_stage == 4 then
             -- Get the iterator for the destinatio disk
@@ -505,7 +505,7 @@ exec.loop_forever(
             wait_cycle = 1
             tick = 0
 
-            copy_stage = 5
+            copy_stage = copy_stage + 1
         elseif copy_stage == 5 then
             -- Clear the destination disk
 
@@ -550,7 +550,7 @@ exec.loop_forever(
                 wait_cycle = 1
                 tick = 0
 
-                copy_stage = 6
+                copy_stage = copy_stage + 1
             end
         elseif copy_stage == 6 then
             -- Copy the files to the destination disk
@@ -605,7 +605,7 @@ exec.loop_forever(
                 wait_cycle = 1
                 tick = 0
 
-                copy_stage = 5
+                copy_stage = copy_stage + 1
             end
         elseif copy_stage == 7 then
             -- Reset if a disk was ejected
