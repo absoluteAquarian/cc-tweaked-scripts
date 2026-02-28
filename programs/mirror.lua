@@ -531,7 +531,7 @@ exec.loop_forever(
                     wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
 
                     global_painter:begin()
-                        :move({ x = 2 + #"Copying files to destination" + 1, y = 9 })
+                        :move({ x = 2 + #"Copying files to destination" + 1, y = 10 })
                         :erase(3)
                         :text(".", { count = wait_cycle })
                         :paint()

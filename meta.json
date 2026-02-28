@@ -38,7 +38,7 @@
         },
         {
             "name": "mirror",
-            "version": 12,
+            "version": 13,
             "url": "$REPO$/programs/mirror.lua",
             "install": "mirror.lua",
             "config": "{ SRC:\"left\", DEST:\"right\" }",
