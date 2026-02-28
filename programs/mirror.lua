@@ -275,6 +275,17 @@ local function check_actors(p)
     end
 end
 
+local function reaload_actors()
+    actor_source:reload_peripheral()
+    actor_source:check_peripheral_state()
+    actor_source:render_current_state()
+    actor_destination:reload_peripheral()
+    actor_destination:check_peripheral_state()
+    actor_destination:render_current_state()
+
+    display_error(global_painter, actor_source:get_error() or actor_destination:get_error())
+end
+
 local function init_window_canvas()
     --   Border:
     --
@@ -289,9 +300,6 @@ local function init_window_canvas()
     --   x -   - -   - x
     --   x -   - -   - x
     --   x x   x x   x x
-
-    --local was_visible = window_instance.isVisible()
-    --window_instance.setVisible(false)
 
     global_painter:begin()
         :clean()
@@ -322,7 +330,7 @@ local function init_window_canvas()
         -- Waiting for disks to be ready...
         :move({ x = 2, y = 2 })
         :color("reset", "reset")
-        :text("Waiting for disks to be ready .")
+        :text("Waiting for disks to be ready ...")
         :nextline(false)
         :paint()
 
@@ -332,8 +340,6 @@ local function init_window_canvas()
     button_reset:draw()
 
     display_error(global_painter, actor_source:get_error() or actor_destination:get_error())
-
-    --window_instance.setVisible(was_visible)
 end
 
 exec.loop_forever(
@@ -343,14 +349,10 @@ exec.loop_forever(
     end,
     -- init
     function()
-        actor_source:reload_peripheral()
-        actor_source:check_peripheral_state()
-        actor_destination:reload_peripheral()
-        actor_destination:check_peripheral_state()
-
         -- Render the initial state
 
         init_window_canvas()
+        reaload_actors()
     end,
     -- body
     function()
@@ -364,9 +366,8 @@ exec.loop_forever(
             wait_cycle = 1
             tick = 0
 
-            --window_instance.setVisible(false)
-
             init_window_canvas()
+            reaload_actors()
 
             button_start.visible = false
             button_start:set_release_listener(nil)
@@ -374,8 +375,6 @@ exec.loop_forever(
             button_start.color.fg = colors.white
             button_start.color.bg = colors.green
             button_start.color.border = colors.lightGray
-
-            --window_instance.setVisible(true)
 
             copy_stage = 0
             goto check_stage
@@ -393,10 +392,7 @@ exec.loop_forever(
                 tick = 0
 
                 copy_stage = 1
-                goto check_stage
             else
-                --window_instance.setVisible(false)
-                
                 wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
 
                 global_painter:begin()
@@ -405,22 +401,6 @@ exec.loop_forever(
                     :erase(3)
                     :text(".", { count = wait_cycle })
                     :paint()
-
-                if tick == 0 then
-                    -- Manually check the states of each actor
-                    actor_source:reload_peripheral()
-                    actor_source:check_peripheral_state()
-                    actor_source:render_current_state()
-                    actor_destination:reload_peripheral()
-                    actor_destination:check_peripheral_state()
-                    actor_destination:render_current_state()
-
-                    display_error(global_painter, actor_source:get_error() or actor_destination:get_error())
-                end
-
-                tick = (tick + 1) % 24  -- Cycles every (5 * 24) / 20 = 6 seconds
-
-                --window_instance.setVisible(true)
             end
         elseif copy_stage == 1 then
             -- Reinitialize the button
@@ -430,8 +410,6 @@ exec.loop_forever(
                     -- Left click
                     if copy_stage == 2 and btn == 1 then
                         -- Fade out the button
-
-                        --window_instance.setVisible(false)
 
                         self.color.fg = colors.lightGray
                         self.color.bg = colors.gray
@@ -443,10 +421,8 @@ exec.loop_forever(
 
                         global_painter:begin()
                             :move({ x = 2, y = 9 })
-                            :text("Collecting source files .   (total: -)")
+                            :text("Collecting source files ... -")
                             :paint()
-
-                        --window_instance.setVisible(true)
 
                         wait_cycle = 1
                         iterator = filesystem.iterate_all_files(actor_source.mount)
@@ -488,15 +464,10 @@ exec.loop_forever(
 
                 -- Display the total file count
 
-                --window_instance.setVisible(false)
-
                 global_painter:begin()
-                    :move({ x = 2 + #"Collecting source files ... (total: " + 1, y = 9 })
+                    :move({ x = 2 + #"Collecting source files ..." + 1, y = 9 })
                     :obj(#buffer_fs)
-                    :text(")")
                     :paint()
-
-                tick = (tick + 1) % 5
 
                 if tick == 0 then
                     wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
@@ -508,19 +479,19 @@ exec.loop_forever(
                         :paint()
                 end
 
-                --window_instance.setVisible(true)
+                tick = (tick + 1) % 5
             else
                 -- No more files to collect
                 iterator = R_table.yield_ipairs(buffer_fs)
 
                 -- Display the next message
-                local text_total = tostring(#buffer_fs)
 
                 global_painter:begin()
+                    :move({ x = 2, y = 9 })
+                    :erase(#"Collecting source files ...")
+                    :text("Source files collected.")
                     :move({ x = 2, y = 10 })
-                    :text("Copying files to destination .   (copied: ")
-                    :text("-", { count = #text_total })
-                    :text("/" .. text_total .. ")")
+                    :text("Copying files to destination ... -")
                     :paint()
 
                 wait_cycle = 1
@@ -537,8 +508,6 @@ exec.loop_forever(
                 goto check_stage
             end
 
-            --window_instance.setVisible(false)
-
             local path, contents = iterator--[[@as fun():string?, string?]]()
 
             if path then
@@ -552,26 +521,39 @@ exec.loop_forever(
                 num_copied = num_copied + 1
 
                 -- Display the copied file count
-                local text_num = tostring(num_copied)
-                local text_total = tostring(#buffer_fs)
 
                 global_painter:begin()
-                    :move({ x = 2 + #"Copying files to destination... (copied: " + 1, y = 10 })
-                    :erase(#text_total)
-                    :offset(#text_total - #text_num, nil)
-                    :text(text_num)
+                    :move({ x = 2 + #"Copying files to destination ..." + 1, y = 10 })
+                    :obj(num_copied)
                     :paint()
+
+                if tick == 0 then
+                    wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
+
+                    global_painter:begin()
+                        :move({ x = 2 + #"Copying files to destination" + 1, y = 9 })
+                        :erase(3)
+                        :text(".", { count = wait_cycle })
+                        :paint()
+                end
+
+                tick = (tick + 1) % 5
             else
                 -- No more files to copy
                 global_painter:begin()
-                    :move({ x = 2, y = 11 })
-                    :text("Copy complete! Reset or eject a disk to restart.")
+                    :move({ x = 2, y = 10 })
+                    :erase(#"Copying files to destination ..." + 1)
+                    :move({ x = 2, y = 10 })
+                    :text("Completed copying files.")
+                    :move({ x = 2, y = 12 })
+                    :text("Reset or eject a disk to restart.")
                     :paint()
+
+                wait_cycle = 1
+                tick = 0
 
                 copy_stage = 5
             end
-
-            --window_instance.setVisible(true)
         elseif copy_stage == 5 then
             -- Reset if a disk was ejected
             if (not actor_source.ready) or (not actor_destination.ready) then
