@@ -402,7 +402,7 @@ exec.loop_forever(
 
                 global_painter:begin()
                     -- Waiting for disks to be ready...
-                    :move({ x = 2 + #"Waiting for disks to be ready " + 1, y = 2 })
+                    :move({ x = 2 + #"Waiting for disks to be ready" + 1, y = 2 })
                     :erase(3)
                     :text(".", { count = wait_cycle })
                     :paint()

@@ -165,13 +165,13 @@ function Painter:new(target)
             local w, h = self.terminal.getSize()
 
             if coordinate.x < 0 then
-                x = w + coordinate.x
+                x = w + coordinate.x + 1
             else
                 x = coordinate.x
             end
 
             if coordinate.y < 0 then
-                y = h + coordinate.y
+                y = h + coordinate.y + 1
             else
                 y = coordinate.y
             end
@@ -259,6 +259,12 @@ function Painter:new(target)
     --- @param text string  The text to write
     --- @param params PainterFunctionTextParams?  Optional parameters for how the text should be written.
     function instance:text(text, params)
+        if type(text) ~= "string" then
+            error("Text must be a string", 2)
+        end
+
+        if #text == 0 then return self end
+
         if params then
             local t
             if params.reversed then
