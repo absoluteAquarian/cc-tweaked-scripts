@@ -344,9 +344,8 @@ exec.loop_forever(
     -- init
     function()
         actor_source:reload_peripheral()
-        actor_destination:reload_peripheral()
-
         actor_source:check_peripheral_state()
+        actor_destination:reload_peripheral()
         actor_destination:check_peripheral_state()
 
         -- Render the initial state
@@ -407,8 +406,6 @@ exec.loop_forever(
                     :text(".", { count = wait_cycle })
                     :paint()
 
-                tick = (tick + 1) % 24  -- Cycles every (5 * 24) / 20 = 6 seconds
-
                 if tick == 0 then
                     -- Manually check the states of each actor
                     actor_source:reload_peripheral()
@@ -420,6 +417,8 @@ exec.loop_forever(
 
                     display_error(global_painter, actor_source:get_error() or actor_destination:get_error())
                 end
+
+                tick = (tick + 1) % 24  -- Cycles every (5 * 24) / 20 = 6 seconds
 
                 --window_instance.setVisible(true)
             end
