@@ -48,7 +48,22 @@ local function iterate_all_files(dir)
     end
 end
 
+--- Returns a function that iterates over the entries in a directory, but not its subdirectories, once per call
+--- @param dir string  The absolute directory to list entries from
+--- @return fun(): string? iter
+local function iterate_directory(dir)
+    local entries = fs.list(dir) --[[@as string[]=]]
+    local index = 1
+    return function()
+        if index > #entries then return nil end
+        local entry = entries[index]
+        index = index + 1
+        return dir .. "/" .. entry
+    end
+end
+
 return {
     list_all = list_all,
-    iterate_all_files = iterate_all_files
+    iterate_all_files = iterate_all_files,
+    iterate_directory = iterate_directory
 }

@@ -482,8 +482,6 @@ exec.loop_forever(
                 tick = (tick + 1) % 5
             else
                 -- No more files to collect
-                iterator = R_table.yield_ipairs(buffer_fs)
-
                 -- Display the next message
 
                 global_painter:begin()
@@ -491,7 +489,7 @@ exec.loop_forever(
                     :erase(#"Collecting source files ...     ")
                     :text("Source files collected.")
                     :move({ x = 2, y = 10 })
-                    :text("Copying files to destination ... 0")
+                    :text("Clearing destination disk ...")
                     :paint()
 
                 wait_cycle = 1
@@ -500,6 +498,61 @@ exec.loop_forever(
                 copy_stage = 4
             end
         elseif copy_stage == 4 then
+            -- Get the iterator for the destinatio disk
+
+            iterator = filesystem.iterate_directory(actor_destination.mount)
+
+            wait_cycle = 1
+            tick = 0
+
+            copy_stage = 5
+        elseif copy_stage == 5 then
+            -- Clear the destination disk
+
+            if (not actor_source.ready) or (not actor_destination.ready) then
+                -- Reset the program
+                copy_stage = -1
+                goto check_stage
+            end
+
+            local entry = iterator--[[@as fun():string?]]()
+
+            if entry then
+                -- Delete the file or directory
+                fs.delete(entry)
+
+                if tick == 0 then
+                    wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
+
+                    global_painter:begin()
+                        :move({ x = 2 + #"Clearing destination disk" + 1, y = 10 })
+                        :erase(3)
+                        :text(".", { count = wait_cycle })
+                        :paint()
+                end
+
+                tick = (tick + 1) % 5
+            else
+                -- No more files to delete
+
+                iterator = R_table.yield_ipairs(buffer_fs)
+
+                -- Display the next message
+
+                global_painter:begin()
+                    :move({ x = 2, y = 10 })
+                    :erase(#"Clearing destination disk ...")
+                    :text("Destination disk cleared.")
+                    :move({ x = 2, y = 11 })
+                    :text("Copying files to destination ... 0")
+                    :paint()
+
+                wait_cycle = 1
+                tick = 0
+
+                copy_stage = 6
+            end
+        elseif copy_stage == 6 then
             -- Copy the files to the destination disk
 
             if (not actor_source.ready) or (not actor_destination.ready) then
@@ -523,7 +576,7 @@ exec.loop_forever(
                 -- Display the copied file count
 
                 global_painter:begin()
-                    :move({ x = 2 + #"Copying files to destination ..." + 1, y = 10 })
+                    :move({ x = 2 + #"Copying files to destination ..." + 1, y = 11 })
                     :obj(num_copied)
                     :paint()
 
@@ -531,7 +584,7 @@ exec.loop_forever(
                     wait_cycle = wait_cycle == 3 and 1 or wait_cycle + 1
 
                     global_painter:begin()
-                        :move({ x = 2 + #"Copying files to destination" + 1, y = 10 })
+                        :move({ x = 2 + #"Copying files to destination" + 1, y = 11 })
                         :erase(3)
                         :text(".", { count = wait_cycle })
                         :paint()
@@ -541,11 +594,11 @@ exec.loop_forever(
             else
                 -- No more files to copy
                 global_painter:begin()
-                    :move({ x = 2, y = 10 })
+                    :move({ x = 2, y = 11 })
                     :erase(#"Copying files to destination ..." + 1)
-                    :move({ x = 2, y = 10 })
+                    :move({ x = 2, y = 11 })
                     :text("Completed copying files.")
-                    :move({ x = 2, y = 12 })
+                    :move({ x = 2, y = 13 })
                     :text("Reset or eject a disk to restart.")
                     :paint()
 
@@ -554,7 +607,7 @@ exec.loop_forever(
 
                 copy_stage = 5
             end
-        elseif copy_stage == 5 then
+        elseif copy_stage == 7 then
             -- Reset if a disk was ejected
             if (not actor_source.ready) or (not actor_destination.ready) then
                 -- Reset the program
