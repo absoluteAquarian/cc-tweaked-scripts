@@ -58,7 +58,7 @@
     [
         {
             "name": "lib.cc.filesystem",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/cc/filesystem.lua",
             "install": "lib/cc/filesystem.lua",
             "config": "",

@@ -25,6 +25,7 @@ local function iterate_all_files(dir)
     local queue = { dir }
     local head = 1
     return function()
+        ::next::
         if head > #queue then return nil end
 
         local current = queue[head]
@@ -37,6 +38,9 @@ local function iterate_all_files(dir)
                 table.insert(queue, index, current .. "/" .. entry)
                 index = index + 1
             end
+
+            -- Keep jumping back until a file is found
+            goto next
         else
             -- The path is a file, yield it
             return current
