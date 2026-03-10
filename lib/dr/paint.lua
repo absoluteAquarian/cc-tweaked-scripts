@@ -1108,6 +1108,14 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
     --- A virtual canvas for storing the results from painting operations
     instance.canvas = canvas.class.PixelCanvas:new(w, h, canvas_fg, canvas_bg, true)
 
+    --- @private
+    instance.cache = {
+        --- @type number
+        brush_fg = brush_fg or colors.white,
+        --- @type number
+        brush_bg = brush_bg or colors.black
+    }
+
     --- Controls related to where and what is painted on the canvas
     instance.params = {
         --- @type CanvasCoordinate  The current working texel cursor position of the painter's brush
@@ -1265,9 +1273,11 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
         cursor.x = 1
         cursor.y = 1
 
+        local cache = self.cache
+
         local color = params.color
-        color.fg = canvas.fg
-        color.bg = canvas.bg
+        color.fg = cache.brush_fg
+        color.bg = cache.brush_bg
 
         self.work.index = 0
         self:paint(terminal)
