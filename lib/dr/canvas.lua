@@ -63,13 +63,15 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- The default background color for the canvas, or <code>nil</code> to defer to the terminal's background color when painting
     instance.bg = bg
     instance:mark_readonly("bg")
+    local fg_blit = fg and colors.toBlit(fg) or "-"
     --- @private
     --- @type string  The blit character to use for the default foreground color
-    instance.fg_blit = fg and colors.toBlit(fg) or "-"
+    instance.fg_blit = fg_blit
     instance:mark_readonly("fg_blit")
+    local bg_blit = bg and colors.toBlit(bg) or "-"
     --- @private
     --- @type string  The blit character to use for the default background color
-    instance.bg_blit = bg and colors.toBlit(bg) or "-"
+    instance.bg_blit = bg_blit
     instance:mark_readonly("bg_blit")
 
     --- @private
@@ -78,9 +80,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         --- The text to display
         text = R_table.create_2d(width, height, function() return " " end),
         --- The blit string for the foreground colors
-        fg = R_table.create_2d(width, height, function() return instance.fg_blit end),
+        fg = R_table.create_2d(width, height, function() return fg_blit end),
         --- The blit string for the background colors
-        bg = R_table.create_2d(width, height, function() return instance.bg_blit end),
+        bg = R_table.create_2d(width, height, function() return bg_blit end),
         dirty = {
             text = R_table.create(height, function() return true end),
             fg = R_table.create(height, function() return true end),
@@ -127,7 +129,7 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param y integer  The vertical texel row
     function instance:mark_dirty_foreground(y)
         if not self:contains_texel(1, y) then return end
- 
+
         -- contains() already verifies the coordinates
 
         self.blit.dirty.fg[y] = true
@@ -475,6 +477,8 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @return integer end_x  The horizontal texel coordinate of the texel after the end of the painted text
     --- @return integer end_y  The vertical texel coordinate of the texel after the end of the painted text
     function instance:set_texel_many(x, y, text, params)
+        if #text == 0 then return 0, x, y end
+
         if #text == 1 then
             self:set_texel(x, y, text, params)
             if params.vertical then return 1, x, y + 1 else return 1, x + 1, y end
@@ -602,13 +606,13 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
             if forced_dirty_fg or tbl_dirty.fg[r] or (not tbl_cache.blitted_fg[r]) then
                 tbl_dirty.fg[r] = false
                 tbl_cache.terminal_fg = terminal_fg
-                tbl_cache.blitted_fg[r] = native.string.gsub(native.table.concat(tbl_blit.fg[r]), "%-", tbl_cache.terminal_fg)
+                tbl_cache.blitted_fg[r] = native.string.gsub(native.table.concat(tbl_blit.fg[r]), "%-", native.colors.toBlit(terminal_fg))
             end
 
             if forced_dirty_bg or tbl_dirty.bg[r] or (not tbl_cache.blitted_bg[r]) then
                 tbl_dirty.bg[r] = false
                 tbl_cache.terminal_bg = terminal_bg
-                tbl_cache.blitted_bg[r] = native.string.gsub(native.table.concat(tbl_blit.bg[r]), "%-", tbl_cache.terminal_bg)
+                tbl_cache.blitted_bg[r] = native.string.gsub(native.table.concat(tbl_blit.bg[r]), "%-", native.colors.toBlit(terminal_bg))
             end
 
             if pass.count[r] == 0 then
@@ -874,7 +878,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
     function instance:set_texel_many(x, y, text, params)
         local count, end_x, end_y = self.base:set_texel_many(x, y, text, params)
 
-        if not params.vertical then
+        if count > 0 and not params.vertical then
             -- Note: params.vertical calls set_texel() for each character, so the map is already updated in that case
 
             local fg = params.fg

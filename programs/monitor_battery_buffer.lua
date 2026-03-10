@@ -39,10 +39,7 @@ local eu_out = average_value.class.AverageValue:new(20)
 --- @type number
 local eu_net = 0.0
 
---- @type Painter
-local painter = nil
-
-local monitor_template_painter = paint.class.DeferredPixelPainter:new(14 * 2, 14 * 3, nil, nil, colors.white, colors.black)
+local monitor_template_painter = paint.class.DeferredPixelPainter:new(16 * 2, 16 * 3, nil, nil, colors.white, colors.black)
 monitor_template_painter
     :move({ x = 1, y = 1 })
     :text("Current: --.---%")
@@ -51,17 +48,17 @@ monitor_template_painter
     :move({ x = 1, y = 3 })
     :text("Input:")
     :move({ x = 1, y = 4 })
-    :text(" ---.--- A | ---")
+    :text(" ---.--- A  ---")
     :move({ x = 1, y = 5 })
     :text("Output:")
     :move({ x = 1, y = 6 })
-    :text(" ---.--- A | ---")
+    :text(" ---.--- A  ---")
     :move({ x = 1, y = 7 })
     :text("Net:")
     :move({ x = 1, y = 8 })
-    :text("+---.--- A | ---")
+    :text("+---.--- A  ---")
 
-local monitor_state_painter = paint.class.DeferredPixelPainter:new(14 * 2, 14 * 3, nil, nil, colors.white, colors.black)
+local monitor_state_painter = paint.class.DeferredPixelPainter:new(16 * 2, 16 * 3, nil, nil, colors.white, colors.black)
 monitor_state_painter
     :move({ x = 1 + #"Current: ", y = 1 })
     :clear({ count = PRECISION_PERCENTS + 4 })  -- count = #"--." + precision + #"%"
@@ -76,7 +73,7 @@ monitor_state_painter
     :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
     :offset(monitor_state_painter:recall("OFFSET_AMPS_IN"))
     :obj(monitor_state_painter:recall("AMPS_IN"))
-    :move({ x = 2 + #"---.--- A | ", y = 4 })
+    :move({ x = 2 + #"---.--- A  ", y = 4 })
     :clear({ count = 3 })
     :color(monitor_state_painter:recall("COLOR_IN_TIER"), nil)
     :text(monitor_state_painter:recall("IN_TIER"))
@@ -85,7 +82,7 @@ monitor_state_painter
     :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
     :offset(monitor_state_painter:recall("OFFSET_AMPS_OUT"))
     :obj(monitor_state_painter:recall("AMPS_OUT"))
-    :move({ x = 2 + #"---.--- A | ", y = 6 })
+    :move({ x = 2 + #"---.--- A  ", y = 6 })
     :clear({ count = 3 })
     :color(monitor_state_painter:recall("COLOR_OUT_TIER"), nil)
     :text(monitor_state_painter:recall("OUT_TIER"))
@@ -95,7 +92,7 @@ monitor_state_painter
     :offset(monitor_state_painter:recall("OFFSET_AMPS_NET"))
     :color(monitor_state_painter:recall("COLOR_NET"), nil)
     :obj(monitor_state_painter:recall("AMPS_NET"))
-    :move({ x = 1 + #"+---.--- A | ", y = 8 })
+    :move({ x = 1 + #"+---.--- A  ", y = 8 })
     :clear({ count = 3 })
     :color(monitor_state_painter:recall("COLOR_NET_TIER"), nil)
     :text(monitor_state_painter:recall("NET_TIER"))
@@ -334,52 +331,14 @@ exec.loop_forever(
 
         -- Initialize the monitors with the base template
 
-        local new_painter = false
-
         R_monitor.foreach_monitor(
             function(monitor)
                 monitor.setBackgroundColor(colors.black)
                 monitor.setTextColor(colors.white)
                 monitor.setTextScale(0.5)
+                monitor.clear()
 
-                if (not painter) or (not new_painter) then
-                    painter = paint.class.Painter:new(monitor)
-                    new_painter = true
-                end
-
-                painter.terminal = monitor
-
-                painter:begin()
-                    :clean()
-                    :reset()
-                    :text("Current: --.")
-                    :text("-", { count = PRECISION_DISPLAYED })
-                    :text("%")
-                    :nextline()
-                    :text("Trend: +--.")
-                    :text("-", { count = PRECISION_DISPLAYED })
-                    :text("%")
-                    :nextline()
-                    :text("Input:")
-                    :nextline()
-                    :offset(1, nil)
-                    :text("---.")
-                    :text("-", { count = PRECISION_DISPLAYED })
-                    :text(" A (---)")
-                    :nextline()
-                    :text("Output:")
-                    :nextline()
-                    :offset(1, nil)
-                    :text("---.")
-                    :text("-", { count = PRECISION_DISPLAYED })
-                    :text(" A (---)")
-                    :nextline()
-                    :text("Net:")
-                    :nextline()
-                    :text("+---.")
-                    :text("-", { count = PRECISION_DISPLAYED })
-                    :text(" A (---)")
-                    :paint()
+                monitor_template_painter:paint(monitor)
             end
         )
     end,

@@ -530,7 +530,8 @@ function TextPaintOperation:new(text, params)
         if self_text == nil or #self_text == 0 then return end
 
         local painter_params = painter.params
-        local x, y = painter_params.cursor.x, painter_params.cursor.y
+        local cursor = painter_params.cursor
+        local x, y = cursor.x, cursor.y
         local color = painter_params.color
 
         local self_params = __extract(self.params) --[[@as PainterFunctionTextParams?]]
@@ -549,7 +550,6 @@ function TextPaintOperation:new(text, params)
             }
         )
 
-        local cursor = painter_params.cursor
         cursor.x = end_x
         cursor.y = end_y
     end
