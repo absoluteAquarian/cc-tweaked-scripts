@@ -442,11 +442,7 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         text = temp_text
 
         if params.tail_align then
-            if params.vertical then
-                y = y - #text + 1
-            else
-                x = x - #text + 1
-            end
+            coordinate = coordinate - #text + 1
         end
 
         -- Adjust the input text
@@ -456,14 +452,18 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
             -- Trim the start of input text
             start = 2 - coordinate
             length = native.math.min(#text - start + 1, dimension)
-            if params.vertical then y = 1 else x = 1 end
-        elseif coordinate + #text >= dimension then
+            coordinate = 1
+        end
+
+        if coordinate + #text > dimension then
             -- Trim the end of the input text
             length = dimension - coordinate + 1
         else
             -- The full input text is within bounds
             length = #text
         end
+
+        if params.vertical then y = coordinate else x = coordinate end
 
         return x, y, text, start, start + length - 1, length
     end
