@@ -65,11 +65,13 @@ monitor_state_painter
     :offset(monitor_state_painter:recall("OFFSET_CURRENT"))
     :color(monitor_state_painter:recall("COLOR_CURRENT"), nil)
     :obj(monitor_state_painter:recall("CURRENT"))
+    :text("%")
     :move({ x = 1 + #"Trend:  ", y = 2 })
     :clear({ count = PRECISION_PERCENTS + 5 })  -- count = #"+--." + precision + #"%"
     :offset(monitor_state_painter:recall("OFFSET_TREND"))
     :color(monitor_state_painter:recall("COLOR_TREND"), nil)
     :obj(monitor_state_painter:recall("TREND"))
+    :text("%")
     :move({ x = 2, y = 4 })
     :color("reset", nil)
     :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
