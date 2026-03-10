@@ -396,8 +396,8 @@ local function class(name, base)
         --- Marks a field on this class instance as read-only
         --- @param field string  The name of the field to mark as read-only
         function instance:mark_readonly(field)
-            if self ~= self.this then
-                error("Deriving class instances cannot mark fields on their base class instances as read-only", 2)
+            if self.this and (self ~= self.this) then
+                error("Deriving class instances cannot mark fields on their base class instances as read-only ('" .. field .. "')", 2)
             end
 
             trace.scall(__tag_field_readonly, self, field, true)
