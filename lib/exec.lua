@@ -6,6 +6,8 @@ local handler = require "lib.handler"
 local trace = require "lib.trace"
 
 --- @class EventWatcherDefinition : ClassDefinition
+--- @field base nil
+--- @field class EventWatcherDefinition
 local EventWatcher = class.class("EventWatcher")
 
 --- @class EventContext  A table representing an entry in an EventWatcher
@@ -20,6 +22,9 @@ local EventWatcher = class.class("EventWatcher")
 --- @return EventWatcher
 function EventWatcher:new()
     --- @class EventWatcher : ClassInstance
+    --- @field base nil
+    --- @field class EventWatcherDefinition
+    --- @field this EventWatcher
     local instance = self:create_instance()
 
     --- @private
@@ -197,19 +202,24 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
     if quit then quit() end
 end
 
-return {
+local module_table = {
+    --- The classes defined by this module
     class = {
         EventWatcher = EventWatcher
-    },
-    --- Sleeps for the given number of seconds, but also pulls events while waiting for the sleep timer to expire.
-    --- @param seconds number  The number of seconds to sleep for
-    --- @param watcher EventWatcher  The table of events to watch while sleeping
-    sleep_with_polling = function(seconds, watcher) return trace.scall(sleep_with_polling, seconds, watcher) end,
-    --- A utility function to loop forever, with optional logic to run when quitting or restarting the program.
-    --- @param wait_interval (fun() : integer)|integer  The amount of ticks to wait between iterations.  Forced to be at least 1.
-    --- @param init fun()?  An optional function to run once before the loop starts or when the program is restarted after an error
-    --- @param body fun()  The function to run every loop iteration
-    --- @param sleep_watcher EventWatcher?  An optional EventWatcher to pull events from while sleeping between loop iterations
-    --- @param quit fun()?  An optional function to run when the program is quitting after an error
-    loop_forever = function(wait_interval, init, body, sleep_watcher, quit) return trace.scall(loop_forever, wait_interval, init, body, sleep_watcher, quit) end
+    }
 }
+
+--- Sleeps for the given number of seconds, but also pulls events while waiting for the sleep timer to expire.
+--- @param seconds number  The number of seconds to sleep for
+--- @param watcher EventWatcher  The table of events to watch while sleeping
+function module_table.sleep_with_polling(seconds, watcher) return trace.scall(sleep_with_polling, seconds, watcher) end
+
+--- A utility function to loop forever, with optional logic to run when quitting or restarting the program.
+--- @param wait_interval (fun() : integer)|integer  The amount of ticks to wait between iterations.  Forced to be at least 1.
+--- @param init fun()?  An optional function to run once before the loop starts or when the program is restarted after an error
+--- @param body fun()  The function to run every loop iteration
+--- @param sleep_watcher EventWatcher?  An optional EventWatcher to pull events from while sleeping between loop iterations
+--- @param quit fun()?  An optional function to run when the program is quitting after an error
+function module_table.loop_forever(wait_interval, init, body, sleep_watcher, quit) return trace.scall(loop_forever, wait_interval, init, body, sleep_watcher, quit) end
+
+return module_table

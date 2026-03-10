@@ -5,6 +5,7 @@ local exec = require "lib.exec"
 
 --- @class ButtonDefinition : ClassDefinition
 --- @field base nil
+--- @field class ButtonDefinition
 local Button = class.class("Button")
 
 --- @class ButtonParameters
@@ -14,19 +15,21 @@ local Button = class.class("Button")
 --- @field color ButtonColorParameters  A table containing the colors used for different parts of the button
 
 --- @class ButtonColorParameters
---- @field fg number  The foreground color to use for the button (see: colors)
---- @field bg number  The background color to use for the button (see: colors)
+--- @field fg number  The foreground color to use for the button (see: <code>colors</code>)
+--- @field bg number  The background color to use for the button (see: <code>colors</code>)
 
---- [override] Creates a new Button instance with the given parameters
---- @param terminal table  The terminal this Button will be drawn on
---- @param params ButtonParameters  The parameters for this Button
+--- [override] Creates a new <code>Button</code> instance with the given parameters
+--- @param terminal table  The terminal the button will be drawn on
+--- @param params ButtonParameters  The parameters for the button
 --- @return Button
 function Button:new(terminal, params)
     --- @class Button : ClassInstance
     --- @field base nil
+    --- @field class ButtonDefinition
+    --- @field this Button
     local instance = self:create_instance(terminal, params)
 
-    --- The terminal this Button is drawn on
+    --- The terminal the button is drawn on
     instance.terminal = terminal
 
     --- The X-coordinate of the top left corner of the button
@@ -40,19 +43,19 @@ function Button:new(terminal, params)
     --- A table containing the colors used for different parts of the button
     instance.color =
     {
-        --- The foreground color to use for the button (see: colors)
+        --- The foreground color to use for the button (see: <code>colors</code>)
         fg = params.color.fg,
-        --- The background color to use for the button (see: colors)
+        --- The background color to use for the button (see: <code>colors</code>)
         bg = params.color.bg
     }
 
-    --- The Painter instance used to draw this Button
+    --- The Painter instance used to draw the button
     instance.painter = paint.class.Painter:new(terminal)
 
-    --- @type boolean  Whether this Button can be clicked
+    --- @type boolean  Whether the button can be clicked
     instance.clickable = true
 
-    --- @type boolean  Whether this Button is currently visible on the terminal
+    --- @type boolean  Whether the button is currently visible on the terminal
     instance.visible = false
 
     --- @private
@@ -63,7 +66,7 @@ function Button:new(terminal, params)
         window = pcall(terminal.isVisible) and pcall(terminal.setVisible, terminal.isVisible()),
     }
 
-    --- Draws this button and marks it as visible
+    --- Draws the button and marks it as visible
     function instance:draw()
         self.painter:begin()
             :move({ x = self.x, y = self.y })
@@ -74,7 +77,7 @@ function Button:new(terminal, params)
         self.visible = true
     end
 
-    --- Hides this Button from the terminal
+    --- Hides the button from the terminal
     function instance:hide()
         if not self.visible then return end
 
@@ -92,37 +95,37 @@ function Button:new(terminal, params)
     --- @param new_y integer  The new Y-coordinate of the top left corner of the button
     function instance:move(new_x, new_y)
         local was_visible = self.visible
-        if was_visible then self:hide() end
+        if was_visible then self.this:hide() end
         self.x = new_x
         self.y = new_y
-        if was_visible then self:draw() end
+        if was_visible then self.this:draw() end
     end
 
     --- @private
-    --- @class ButtonEvents  A table containing the events invoked by this Button
+    --- @class ButtonEvents  A table containing the events invoked by the button
     instance.events = {
-        --- @type boolean  Whether this Button is currently being clicked
+        --- @type boolean  Whether the button is currently being clicked
         __clicking = false,
-        --- @type function?  Invoked through the "mouse_click" event
+        --- @type function?  Invoked through the <code>mouse_click</code> event
         click = nil,
-        --- @type function?  Invoked through the "mouse_up" event
+        --- @type function?  Invoked through the <code>mouse_up</code> event
         release = nil
     }
 
-    --- Sets the function to be called when this Button is clicked
-    --- @param func fun(self: BorderedButton, button: number)?  The function to call when this Button is clicked.<br/>The "button" parameter is the mouse button that was used (see: event mouse_click)
+    --- Sets the function to be called when the button is clicked
+    --- @param func fun(self: BorderedButton, button: number)?  The function to call when the button is clicked.<br/>The <code>button</code> parameter is the mouse button that was used (see: event <code>mouse_click</code>)
     function instance:set_click_listener(func)
         self.events.click = func
     end
 
-    --- Sets the function to be called when this Button is released after being clicked
-    --- @param func fun(self: BorderedButton, button: number)?  The function to call when this Button is released after being clicked.<br/>The "button" parameter is the mouse button that was used (see: event mouse_up)
+    --- Sets the function to be called when the button is released after being clicked
+    --- @param func fun(self: BorderedButton, button: number)?  The function to call when the button is released after being clicked.<br/>The <code>button</code> parameter is the mouse button that was used (see: event <code>mouse_up</code>)
     function instance:set_release_listener(func)
         self.events.release = func
     end
 
     --- @private
-    --- Converts the provided coordinates to coordinates relative to this button's terminal<br/>
+    --- Converts the provided coordinates to coordinates relative to the button's terminal<br/>
     --- Effectively does nothing for direct terminal drawing, but otherwise accounts for things like window position
     function instance:resolve_absolute_coordinates(x, y)
         if self.cache.window then
@@ -132,7 +135,7 @@ function Button:new(terminal, params)
         return x, y
     end
 
-    --- Returns whether the provided coordinates are within the clickable area of this Button
+    --- Returns whether the provided coordinates are within the clickable area of the button
     --- @param event_x number  The X-coordinate of the click event
     --- @param event_y number  The Y-coordinate of the click event
     --- @return boolean
@@ -140,7 +143,7 @@ function Button:new(terminal, params)
         return event_x >= self.x and event_x <= self.x + #self.label - 1 and event_y == self.y
     end
 
-    --- Returns contexts for each event that this button should listen for
+    --- Returns contexts for each event that the button should listen for
     --- @return EventContext[]
     function instance:get_event_watchers()
         return
@@ -186,28 +189,31 @@ end
 
 --- @class BorderedButtonDefinition : ButtonDefinition
 --- @field base ButtonDefinition
+--- @field class BorderedButtonDefinition
 local BorderedButton = class.class("BorderedButton", Button)
 
 --- @class BorderedButtonParameters : ButtonParameters
 --- @field color BorderedButtonColorParameters  [override] A table containing the colors used for different parts of the button
 
 --- @class BorderedButtonColorParameters : ButtonColorParameters
---- @field border number  The foreground color to use for the button's border (see: colors)<br/>The background color is inherited from the terminal
+--- @field border number  The foreground color to use for the button's border (see: <code>colors</code>)<br/>The background color is inherited from the terminal
 
---- [override] Creates a new Button instance with the given parameters
---- @param terminal table  The terminal this Button will be drawn on
---- @param params BorderedButtonParameters  The parameters for this BorderedButton
+--- [override] Creates a new <code>BorderedButton</code> instance with the given parameters
+--- @param terminal table  The terminal the button will be drawn on
+--- @param params BorderedButtonParameters  The parameters for the button
 --- @return BorderedButton
 function BorderedButton:new(terminal, params)
     --- @class BorderedButton : Button
     --- @field base Button
+    --- @field class BorderedButtonDefinition
+    --- @field this BorderedButton
     local instance = self:create_instance(terminal, params)
-    -- ButtonDefinition:new(terminal, x, y, label, fg, bg)
+    -- ButtonDefinition:new(terminal, params)
 
-    --- The foreground color to use for the button's border (see: colors).  The background color is inherited from the terminal
+    --- The foreground color to use for the button's border (see: <code>colors</code>).  The background color is inherited from the terminal
     instance.color.border = params.color.border
 
-    --- [override] Draws this button and marks it as visible
+    --- [override] Draws the button and marks it as visible
     function instance:draw()
         --   Character layout:
         --
@@ -248,10 +254,10 @@ function BorderedButton:new(terminal, params)
             :text(self.label)
             :paint()
 
-        self--[[@as Button]].visible = true
+        self.visible = true
     end
 
-    --- [override] Clears the area occupied by this button if it is currently visible
+    --- [override] Clears the area occupied by the button if it is currently visible
     function instance:hide()
         if not self.visible then return end
 
@@ -264,10 +270,10 @@ function BorderedButton:new(terminal, params)
             :text(" ", { count = #self.label + 2 })
             :paint()
 
-       self--[[@as Button]].visible = false
+       self.visible = false
     end
 
-    --- [override] Returns whether the provided coordinates are within the clickable area of this Button
+    --- [override] Returns whether the provided coordinates are within the clickable area of the button
     function instance:clickable_area_contains(event_x, event_y)
         return event_x >= self.x + 1 and event_x < self.x + #self.label and event_y == self.y + 1
     end
@@ -276,8 +282,11 @@ function BorderedButton:new(terminal, params)
 end
 
 return {
+    --- The classes defined by this module
     class = {
+        --- A class representing rendered text that can listen for click events within its bounds
         Button = Button,
+        --- A variant of Button that also draws a border around the text
         BorderedButton = BorderedButton
     }
 }

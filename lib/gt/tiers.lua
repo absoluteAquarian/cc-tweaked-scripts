@@ -1,7 +1,10 @@
 local class = require "lib.class"
 local R_string = require "lib.string"
+local trace = require "lib.trace"
 
 --- @class TierDefinition : ClassDefinition
+--- @field base nil
+--- @field class TierDefinition
 local Tier = class.class("Tier")
 
 --- Creates a new Tier instance with the given parameters
@@ -10,6 +13,9 @@ local Tier = class.class("Tier")
 --- @param color number  The colors value corresponding to this tier when displayed on a terminal
 function Tier:new(name, volts, color)
     --- @class Tier : ClassInstance
+    --- @field base nil
+    --- @field class TierDefinition
+    --- @field this Tier
     local instance = self:create_instance(name, volts, color)
 
     --- The name of this tier (e.g. "ULV", "LV", etc.)
@@ -94,8 +100,7 @@ local function __internal_eu_tier(eu)
     return tier_max
 end
 
---- Gets the name of the EU tier corresponding to the given peripheral name, or nil if no matching tier is found
---- @param name string  The name of the peripheral to get the tier for
+--- @param name string
 --- @return string?
 local function peripheral_tier(name)
     for _, tier in ipairs(def) do
@@ -104,39 +109,34 @@ local function peripheral_tier(name)
     return nil
 end
 
---- Gets the name of the tier corresponding to the given EU
---- @param eu number  The EU to get the tier for
+--- @param eu number
 --- @return string
 local function get_tier(eu)
     return __internal_eu_tier(eu).name
 end
 
---- Returns how many amps of the given tier are needed to send the given EU
---- @param eu number  The EU to convert
---- @param tier string  The name of the tier
+--- @param eu number
+--- @param tier string
 --- @return number
 local function get_amps(eu, tier)
     return __internal_get_tier(tier):amps(eu)
 end
 
---- Gets the color corresponding to the given tier
---- @param tier string  The name of the tier
+--- @param tier string
 --- @return number
 local function get_color(tier)
     return __internal_get_tier(tier).color
 end
 
---- Returns the voltage per amp for the given tier
---- @param tier string  The name of the tier
+--- @param tier string
 --- @return number
 local function voltage_per_amp(tier)
     return __internal_get_tier(tier).volts_per_amp
 end
 
---- Converts the given value (voltage, amps, etc.) from the current tier to the target tier
---- @param value number  The value to convert
---- @param current_tier string  The name of the current tier
---- @param target_tier string  The name of the target tier
+--- @param value number
+--- @param current_tier string
+--- @param target_tier string
 --- @return number?
 local function transform(value, current_tier, target_tier)
     local current = __internal_get_tier(current_tier)
@@ -147,7 +147,18 @@ local function transform(value, current_tier, target_tier)
     return value * current:conversion_factor_to(target)
 end
 
-return {
+--- @param tier string
+--- @param offset integer
+--- @return string?
+local function tier_offset(tier, offset)
+    local obj = __internal_get_tier(tier)
+
+    if (not obj) or obj.index == 0 then return nil end
+
+    return def[math.min(1, math.max(#def, obj.index + offset))].name
+end
+
+local module_table = {
     def = { "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", "UHV", "UEV", "MAX" },
     ulv = "ULV",
     lv = "LV",
@@ -160,11 +171,53 @@ return {
     uv = "UV",
     uhv = "UHV",
     uev = "UEV",
-    max = "MAX",
-    peripheral_tier = peripheral_tier,
-    get_tier = get_tier,
-    get_amps = get_amps,
-    get_color = get_color,
-    voltage_per_amp = voltage_per_amp,
-    transform = transform
+    max = "MAX"
 }
+
+--- Gets the name of the EU tier corresponding to the given peripheral name, or nil if no matching tier is found
+--- @param name string  The name of the peripheral to get the tier for
+--- @return string?
+function module_table.peripheral_tier(name) return trace.scall(peripheral_tier, name) end
+
+--- Gets the name of the tier corresponding to the given EU
+--- @param eu number  The EU to get the tier for
+--- @return string
+function module_table.get_tier(eu) return trace.scall(get_tier, eu) end
+
+--- Returns how many amps of the given tier are needed to send the given EU
+--- @param eu number  The EU to convert
+--- @param tier string  The name of the tier
+--- @return number
+function module_table.get_amps(eu, tier) return trace.scall(get_amps, eu, tier) end
+
+--- Gets the color corresponding to the given tier
+--- @param tier string  The name of the tier
+--- @return number
+function module_table.get_color(tier) return trace.scall(get_color, tier) end
+
+--- Returns the voltage per ampere for the given tier
+--- @param tier string  The name of the tier
+--- @return number
+function module_table.voltage_per_amp(tier) return trace.scall(voltage_per_amp, tier) end
+
+--- Converts the given value (voltage, amps, etc.) from the current tier to the target tier.<br/>
+--- If either tier is invalid, returns nil.
+--- @param value number  The value to convert
+--- @param current_tier string  The name of the current tier
+--- @param target_tier string  The name of the target tier
+--- @return number?
+function module_table.transform(value, current_tier, target_tier) return trace.scall(transform, value, current_tier, target_tier) end
+
+--- Gets the name of the tier above the provided tier (e.g. "LV" for "ULV"), or nil if the provided tier is invalid.<br/>
+--- Returns "MAX" if the provided tier is "MAX".
+--- @param tier string  The name of the current tier
+--- @return string?
+function module_table.next_tier(tier) return trace.scall(tier_offset, tier, 1) end
+
+--- Gets the name of the tier below the provided tier (e.g. "ULV" for "LV"), or nil if the provided tier is invalid.<br/>
+--- Returns "ULV" if the provided tier is "ULV".
+--- @param tier string  The name of the current tier
+--- @return string?
+function module_table.previous_tier(tier) return trace.scall(tier_offset, tier, -1) end
+
+return module_table

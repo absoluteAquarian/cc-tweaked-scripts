@@ -16,7 +16,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 8,
+            "version": 9,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
@@ -58,7 +58,7 @@
     [
         {
             "name": "lib.cc.filesystem",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/cc/filesystem.lua",
             "install": "lib/cc/filesystem.lua",
             "config": "",
@@ -66,7 +66,7 @@
         },
         {
             "name": "lib.cc.fmt",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/cc/fmt.lua",
             "install": "lib/cc/fmt.lua",
             "config": "",
@@ -74,7 +74,7 @@
         },
         {
             "name": "lib.cc.monitor",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/cc/monitor.lua",
             "install": "lib/cc/monitor.lua",
             "config": "",
@@ -85,15 +85,18 @@
         },
         {
             "name": "lib.cc.terminal",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/cc/terminal.lua",
             "install": "lib/cc/terminal.lua",
             "config": "",
-            "deps": []
+            "deps":
+            [
+                "lib.trace"
+            ]
         },
         {
             "name": "lib.dr.ui.button",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/lib/dr/ui/button.lua",
             "install": "lib/dr/ui/button.lua",
             "config": "",
@@ -107,7 +110,7 @@
         },
         {
             "name": "lib.dr.blitbuilder",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/dr/blitbuilder.lua",
             "install": "lib/dr/blitbuilder.lua",
             "config": "",
@@ -119,14 +122,29 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 6,
+            "version": 7,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
             "deps":
             [
                 "lib.class",
-                "lib.string"
+                "lib.math",
+                "lib.string",
+                "lib.table"
+            ]
+        },
+        {
+            "name": "lib.dr.canvas",
+            "version": 1,
+            "url": "$REPO$/lib/dr/canvas.lua",
+            "install": "lib/dr/canvas.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.class",
+                "lib.string",
+                "lib.table"
             ]
         },
         {
@@ -143,19 +161,20 @@
         },
         {
             "name": "lib.gt.tiers",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/gt/tiers.lua",
             "install": "lib/gt/tiers.lua",
             "config": "",
             "deps":
             [
                 "lib.class",
-                "lib.string"
+                "lib.string",
+                "lib.trace"
             ]
         },
         {
             "name": "lib.average_value",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/average_value.lua",
             "install": "lib/average_value.lua",
             "config": "",
@@ -166,7 +185,7 @@
         },
         {
             "name": "lib.class",
-            "version": 13,
+            "version": 14,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
@@ -179,7 +198,7 @@
         },
         {
             "name": "lib.config",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/config.lua",
             "install": "lib/config.lua",
             "config": "",
@@ -192,7 +211,7 @@
         },
         {
             "name": "lib.exec",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",
@@ -206,7 +225,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",
@@ -217,7 +236,7 @@
         },
         {
             "name": "lib.json",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/json.lua",
             "install": "lib/json.lua",
             "config": "",
@@ -228,7 +247,7 @@
         },
         {
             "name": "lib.math",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/math.lua",
             "install": "lib/math.lua",
             "config": "",
@@ -248,7 +267,7 @@
         },
         {
             "name": "lib.string",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/string.lua",
             "install": "lib/string.lua",
             "config": "",
@@ -256,7 +275,7 @@
         },
         {
             "name": "lib.table",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
             "config": "",

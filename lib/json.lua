@@ -45,9 +45,11 @@ local function prettify(json)
     return prettified
 end
 
-return {
-    --- Converts a compact JSON string into a more human-readable format with indentation, whitespace and newlines.
-    --- @param json string  The JSON string to prettify.  Expected to be in a valid JSON format, though any whitespace not in quoted strings will be ignored.
-    --- @return string
-    prettify = function(json) return trace.scall(prettify, json) end
-}
+local module_table = {}
+
+--- Converts a compact JSON string into a more human-readable format with indentation, whitespace and newlines.
+--- @param json string  The JSON string to prettify.  Expected to be in a valid JSON format, though any whitespace not in quoted strings will be ignored.
+--- @return string
+function module_table.prettify(json) return trace.scall(prettify, json) end
+
+return module_table

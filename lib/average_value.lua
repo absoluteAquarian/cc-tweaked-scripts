@@ -1,6 +1,8 @@
 local class = require "lib.class"
 
 --- @class AverageValueDefinition : ClassDefinition
+--- @field base nil
+--- @field class AverageValueDefinition
 local AverageValue = class.class("AverageValue")
 
 --- [override] Creates a new AverageValue instance with the given length
@@ -8,6 +10,9 @@ local AverageValue = class.class("AverageValue")
 --- @return AverageValue
 function AverageValue:new(length)
     --- @class AverageValue : ClassInstance
+    --- @field base nil
+    --- @field class AverageValueDefinition
+    --- @field this AverageValue
     local instance = AverageValue:create_instance(length)
 
     --- @private
@@ -63,7 +68,9 @@ function AverageValue:new(length)
 end
 
 return {
+    --- The classes defined by this module
     class = {
+        --- A class representing a rolling average of a set number of values
         AverageValue = AverageValue
     }
 }

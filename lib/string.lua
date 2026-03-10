@@ -1,3 +1,12 @@
+local native = {
+    string = {
+        rep = string.rep,
+        find = string.find,
+        sub = string.sub,
+    }
+}
+
+--- @private
 --- @class __StringRepCache
 --- @field [string] string[]  A table mapping a string to an array of that string repeated N times.  For example, cache["abc"][3] == "abcabcabc"
 local __rep_cache = {}
@@ -15,7 +24,7 @@ local function cached_rep(str, count)
 
     local result = cache_tbl[count]
     if not result then
-        result = count < 1 and "" or string.rep(str, count)
+        result = count < 1 and "" or native.string.rep(str, count)
         cache_tbl[count] = result
     end
 
@@ -28,7 +37,7 @@ end
 --- @param plain boolean?  Whether to treat 'text' as a plain string (defaults to true)
 --- @return boolean
 local function contains(str, text, plain)
-    return string.find(str, text, 1, plain or true) ~= nil
+    return native.string.find(str, text, 1, plain or true) ~= nil
 end
 
 --- Returns whether 'str' starts with 'text'
@@ -36,7 +45,7 @@ end
 --- @param text string  The text to search for
 --- @return boolean
 local function starts_with(str, text)
-    return text == "" or string.sub(str, 1, #text) == text
+    return text == "" or native.string.sub(str, 1, #text) == text
 end
 
 --- Returns whether 'str' ends with 'text'
@@ -44,7 +53,7 @@ end
 --- @param text string  The text to search for
 --- @return boolean
 local function ends_with(str, text)
-    return text == "" or string.sub(str, -#text) == text
+    return text == "" or native.string.sub(str, -#text) == text
 end
 
 return {

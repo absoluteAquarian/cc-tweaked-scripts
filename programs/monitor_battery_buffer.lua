@@ -25,6 +25,12 @@ local RENDER_TICK_DELAY = cfg_file:getNumber("RENDER_TICK_DELAY") or 5
 local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
 
+-- The displays have a fixed max length, so the precision has to be limited to prevent overdraw
+local PRECISION_PERCENTS = math.min(3, PRECISION_DISPLAYED)  -- ex. "--.---%"
+local PRECISION_AMPS = math.min(3, PRECISION_DISPLAYED)  -- ex. "---.--- A"
+
+local MAX_AMPS_DISPLAYED = math.pow(10, 6 - PRECISION_AMPS) - math.pow(10, -PRECISION_AMPS)  -- ex. "999.999 A" for PRECISION_AMPS = 3
+
 -- Ensure that the defaults get properly saved
 cfg_file:save()
 
@@ -36,7 +42,67 @@ local eu_net = 0.0
 --- @type Painter
 local painter = nil
 
+local monitor_template_painter = paint.class.DeferredPixelPainter:new(14 * 2, 14 * 3, nil, nil, colors.white, colors.black)
+monitor_template_painter
+    :move({ x = 1, y = 1 })
+    :text("Current: --.---%")
+    :move({ x = 1, y = 2 })
+    :text("Trend:  +--.---%")
+    :move({ x = 1, y = 3 })
+    :text("Input:")
+    :move({ x = 1, y = 4 })
+    :text(" ---.--- A | ---")
+    :move({ x = 1, y = 5 })
+    :text("Output:")
+    :move({ x = 1, y = 6 })
+    :text(" ---.--- A | ---")
+    :move({ x = 1, y = 7 })
+    :text("Net:")
+    :move({ x = 1, y = 8 })
+    :text("+---.--- A | ---")
+
+local monitor_state_painter = paint.class.DeferredPixelPainter:new(14 * 2, 14 * 3, nil, nil, colors.white, colors.black)
+monitor_state_painter
+    :move({ x = 1 + #"Current: ", y = 1 })
+    :clear({ count = PRECISION_PERCENTS + 4 })  -- count = #"--." + precision + #"%"
+    :color(monitor_state_painter:recall("COLOR_CURRENT"), nil)
+    :obj(monitor_state_painter:recall("CURRENT"))
+    :move({ x = 1 + #"Trend:  ", y = 2 })
+    :clear({ count = PRECISION_PERCENTS + 5 })  -- count = #"+--." + precision + #"%"
+    :color(monitor_state_painter:recall("COLOR_TREND"), nil)
+    :obj(monitor_state_painter:recall("TREND"))
+    :move({ x = 2, y = 4 })
+    :color("reset", nil)
+    :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
+    :offset(monitor_state_painter:recall("OFFSET_AMPS_IN"))
+    :obj(monitor_state_painter:recall("AMPS_IN"))
+    :move({ x = 2 + #"---.--- A | ", y = 4 })
+    :clear({ count = 3 })
+    :color(monitor_state_painter:recall("COLOR_IN_TIER"), nil)
+    :text(monitor_state_painter:recall("IN_TIER"))
+    :move({ x = 2, y = 6 })
+    :color("reset", nil)
+    :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
+    :offset(monitor_state_painter:recall("OFFSET_AMPS_OUT"))
+    :obj(monitor_state_painter:recall("AMPS_OUT"))
+    :move({ x = 2 + #"---.--- A | ", y = 6 })
+    :clear({ count = 3 })
+    :color(monitor_state_painter:recall("COLOR_OUT_TIER"), nil)
+    :text(monitor_state_painter:recall("OUT_TIER"))
+    :move({ x = 1, y = 8 })
+    :color("reset", nil)
+    :clear({ count = PRECISION_AMPS + 5 })  -- count = #"+---." + precision
+    :offset(monitor_state_painter:recall("OFFSET_AMPS_NET"))
+    :color(monitor_state_painter:recall("COLOR_NET"), nil)
+    :obj(monitor_state_painter:recall("AMPS_NET"))
+    :move({ x = 1 + #"+---.--- A | ", y = 8 })
+    :clear({ count = 3 })
+    :color(monitor_state_painter:recall("COLOR_NET_TIER"), nil)
+    :text(monitor_state_painter:recall("NET_TIER"))
+
 --- @class MetricsDefinition : ClassDefinition
+--- @field base nil
+--- @field class MetricsDefinition
 local Metrics = class.class("Metrics")
 
 --- [override] Creates a new Metrics instance with the given parameters
@@ -45,6 +111,9 @@ local Metrics = class.class("Metrics")
 --- @return Metrics
 function Metrics:new(get_energy, tier)
     --- @class Metrics : ClassInstance
+    --- @field base nil
+    --- @field class MetricsDefinition
+    --- @field this Metrics
     local instance = Metrics:create_instance()
 
     --- @private
@@ -95,6 +164,48 @@ local metrics_net
 local function display_to_monitors(current, trend)
     R_monitor.foreach_monitor(
         function(monitor)
+            --- @param amps number
+            --- @param signed boolean
+            --- @param colored boolean
+            --- @return integer offset
+            --- @return any formatted
+            --- @return number color
+            local function process_amps_text(amps, signed, colored)
+                local abs_amps = math.abs(amps)
+
+                if abs_amps > MAX_AMPS_DISPLAYED then
+                    return 0, (amps > 0 and ">" or "<") .. MAX_AMPS_DISPLAYED, colors.orange
+                end
+
+                local num = 10
+                local max_decimals = 6 - PRECISION_AMPS
+                local decimals = 0
+
+                for i = 1, max_decimals do
+                    if abs_amps < num then
+                        decimals = i
+                        break
+                    end
+
+                    num = num * 10
+                end
+
+                -- Display with an offset
+
+                local offset, value, color
+
+                offset = max_decimals - decimals
+
+                if signed then
+                    value, color = fmt.signed_and_color(amps)
+                else
+                    value = amps
+                    color = value > 0 and colors.green or (value < 0 and colors.red or colors.white)
+                end
+
+                return offset, value, colored and color or colors.white
+            end
+
             local color_current
 
             if current < (ALARM_THRESHOLD * 100) then
@@ -111,73 +222,34 @@ local function display_to_monitors(current, trend)
             local out_amps, out_tier = metrics_outgoing:amps()
             local net_amps, net_tier = metrics_net:amps()
 
-            local net_fmt, color_net = fmt.signed_and_color(net_amps)
+            monitor_state_painter:store("COLOR_CURRENT", color_current)
+            monitor_state_painter:store("CURRENT", current)
 
-            painter.terminal = monitor
+            monitor_state_painter:store("COLOR_TREND", color_trend)
+            monitor_state_painter:store("TREND", trend_fmt)
 
-            painter:begin()
-                -- Current: --.---%
-                :move({ x = 1 + #"Current:" + 1, y = 1 })
-                :erase(PRECISION_DISPLAYED + 4)  -- count = #"--." + PRECISION_DISPLAYED + #"%"
-                :color(color_current, nil)
-                :text(current .. "%")
-                :color("reset", nil)
-                -- Trend: +--.---%
-                :move({ x = 1 + #"Trend:" + 1, y = 2 })
-                :erase(PRECISION_DISPLAYED + 5)  -- count = #"+--." + PRECISION_DISPLAYED + #"%"
-                :color(color_trend, nil)
-                :text(trend_fmt .. "%")
-                :color("reset", nil)
-                -- Input:
-                --  ---.--- A (---)
-                :move({ x = 2, y = 4 })
-                :anchor()
-                :erase(PRECISION_DISPLAYED + 4)  -- count = #"---." + PRECISION_DISPLAYED
-                :offset(in_amps < 10 and 2 or (in_amps < 100 and 1 or 0), nil)
-                :obj(in_amps)
-                :reset()
-                :offset(PRECISION_DISPLAYED + 8, nil)  -- count = #"---." + PRECISION_DISPLAYED + #" A ("
-                :erase(4)
-                :color(tiers.get_color(in_tier), nil)
-                :text(in_tier)
-                :color("reset", nil)
-                :erase(2)
-                :text(")")
-                :deanchor()
-                -- Output:
-                --  ---.--- A (---)
-                :move({ x = 2, y = 6 })
-                :anchor()
-                :erase(PRECISION_DISPLAYED + 4)  -- count = #"---." + PRECISION_DISPLAYED
-                :offset(out_amps < 10 and 2 or (out_amps < 100 and 1 or 0), nil)
-                :obj(out_amps)
-                :reset()
-                :offset(PRECISION_DISPLAYED + 8, nil)  -- count = #"---." + PRECISION_DISPLAYED + #" A ("
-                :erase(4)
-                :color(tiers.get_color(out_tier), nil)
-                :text(out_tier)
-                :color("reset", nil)
-                :erase(2)
-                :text(")")
-                :deanchor()
-                -- Net:
-                -- +---.--- A (---)
-                :move({ x = 1, y = 8 })
-                :anchor()
-                :erase(PRECISION_DISPLAYED + 5)  -- count = #"+---." + PRECISION_DISPLAYED
-                :offset(net_amps < 10 and 2 or (net_amps < 100 and 1 or 0), nil)
-                :color(color_net, nil)
-                :text(net_fmt)
-                :color("reset", nil)
-                :reset()
-                :offset(PRECISION_DISPLAYED + 9, nil)  -- count = #"+---." + PRECISION_DISPLAYED + #" A ("
-                :color(tiers.get_color(net_tier), nil)
-                :text(net_tier)
-                :color("reset", nil)
-                :erase(2)
-                :text(")")
-                :deanchor()
-                :paint()
+            local offset, formatted, color
+            offset, formatted, _ = process_amps_text(in_amps, false, false)
+            monitor_state_painter:store("OFFSET_AMPS_IN", { x = offset })
+            monitor_state_painter:store("AMPS_IN", formatted)
+            monitor_state_painter:store("COLOR_IN_TIER", tiers.get_color(in_tier))
+            monitor_state_painter:store("IN_TIER", in_tier)
+
+            offset, formatted, _ = process_amps_text(out_amps, false, false)
+            monitor_state_painter:store("OFFSET_AMPS_OUT", { x = offset })
+            monitor_state_painter:store("AMPS_OUT", formatted)
+            monitor_state_painter:store("COLOR_OUT_TIER", tiers.get_color(out_tier))
+            monitor_state_painter:store("OUT_TIER", out_tier)
+
+            offset, formatted, color = process_amps_text(net_amps, true, true)
+            monitor_state_painter:store("OFFSET_AMPS_NET", { x = offset })
+            monitor_state_painter:store("AMPS_NET", formatted)
+            monitor_state_painter:store("COLOR_NET", color)
+            monitor_state_painter:store("COLOR_NET_TIER", tiers.get_color(net_tier))
+            monitor_state_painter:store("NET_TIER", net_tier)
+
+            monitor_template_painter:paint(monitor)
+            monitor_state_painter:repaint(monitor)
         end
     )
 end

@@ -1,18 +1,31 @@
+local native = {
+    pairs = pairs,
+    ipairs = ipairs,
+    fs = {
+        list = fs.list,
+        isDir = fs.isDir
+    },
+    table = {
+        insert = table.insert,
+        remove = table.remove
+    },
+}
+
 --- Returns a list of file paths for every file in the directory and its subdirectories
 --- @param dir string  The absolute directory to list files from
 --- @return string[] files
 local function list_all(dir)
     --- @type string[]
     local files = {}
-    for _, entry in pairs(fs.list(dir) --[[@as string[]=]]) do
+    for _, entry in native.pairs(native.fs.list(dir) --[[@as string[]=]]) do
         local path = dir .. "/" .. entry
-        if fs.isDir(path) then
+        if native.fs.isDir(path) then
             local subfiles = list_all(path)
-            for _, subfile in ipairs(subfiles) do
-                table.insert(files, entry .. "/" .. subfile)
+            for _, subfile in native.ipairs(subfiles) do
+                native.table.insert(files, entry .. "/" .. subfile)
             end
         else
-            table.insert(files, entry)
+            native.table.insert(files, entry)
         end
     end
     return files
@@ -31,11 +44,11 @@ local function iterate_all_files(dir)
         local current = queue[head]
         head = head + 1
 
-        if fs.isDir(current) then
+        if native.fs.isDir(current) then
             -- Add the direct children of the directory to the queue
             local index = head
-            for _, entry in pairs(fs.list(current) --[[@as string[]=]]) do
-                table.insert(queue, index, current .. "/" .. entry)
+            for _, entry in native.pairs(native.fs.list(current) --[[@as string[]=]]) do
+                native.table.insert(queue, index, current .. "/" .. entry)
                 index = index + 1
             end
 
@@ -52,7 +65,7 @@ end
 --- @param dir string  The absolute directory to list entries from
 --- @return fun(): string? iter
 local function iterate_directory(dir)
-    local entries = fs.list(dir) --[[@as string[]=]]
+    local entries = native.fs.list(dir) --[[@as string[]=]]
     local index = 1
     return function()
         if index > #entries then return nil end

@@ -2,15 +2,20 @@ local class = require("lib.class")
 local R_string = require("lib.string")
 
 --- @class BlitBuilderDefinition : ClassDefinition
+--- @field base nil
+--- @field class BlitBuilderDefinition
 local BlitBuilder = class.class("BlitBuilder")
 
---- [override] Creates a new BlitBuilder instance for the given terminal
---- @param terminal table  The terminal this BlitBuilder will write to
+--- [override] Creates a new <code>BlitBuilder</code> instance for the given terminal
+--- @param terminal table  The terminal the builder will write to
 function BlitBuilder:new(terminal)
     --- @class BlitBuilder : ClassInstance
+    --- @field base nil
+    --- @field class BlitBuilderDefinition
+    --- @field this BlitBuilder
     local instance = self:create_instance(terminal)
 
-    --- The terminal this BlitBuilder will write to
+    --- The terminal the builder will write to
     instance.terminal = terminal
     --- The text to write
     instance.text = ""
@@ -25,10 +30,10 @@ function BlitBuilder:new(terminal)
     --- @field text_bg string  The built blit string for the background colors
     instance.cache = nil
 
-    --- Appends text with the given colors to this BlitBuilder
+    --- Appends text with the given colors to the builder
     --- @param text string  The text to append
-    --- @param fg string|number?  The color to use for the foreground, either as a blit color string or a colors value.  Defaults to the current foreground color if nil.
-    --- @param bg string|number?  The color to use for the background, either as a blit color string or a colors value.  Defaults to the current background color if nil.
+    --- @param fg string|number?  The color to use for the foreground, either as a blit color string or a <code>colors</code> value.  Defaults to the current foreground color if <code>nil</code>.
+    --- @param bg string|number?  The color to use for the background, either as a blit color string or a <code>colors</code> value.  Defaults to the current background color if <code>nil</code>.
     function instance:append(text, fg, bg)
         if type(fg) == "string" and #text ~= #fg then
             error("Foreground color string must be the same length as the text", 2)
@@ -83,7 +88,9 @@ function BlitBuilder:new(terminal)
 end
 
 return {
+    --- The classes defined by this module
     class = {
+        --- A class representing a builder for blitted text that can be constructed piece by piece and then written to the terminal all at once
         BlitBuilder = BlitBuilder
     }
 }

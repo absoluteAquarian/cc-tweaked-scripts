@@ -12,10 +12,12 @@ local trace = require "lib.trace"
 --- @field class ClassDefinition  The class definition for this class-like object
 --- @field instanceof fun(self: Classlike, klass: ClassDefinition) : boolean  Whether this class-like object is an instance of the given class definition or any of its base classes
 
---- @param proxy Classlike
---- @return Classlike
+local FIELD_PROXY = "__proxy_target"
+
+--- @param proxy table
+--- @return table
 local function __resolve_proxy(proxy)
-    local target = rawget(proxy, "__proxy_target")
+    local target = rawget(proxy, FIELD_PROXY)
     return target ~= nil and target or proxy
 end
 
@@ -33,18 +35,21 @@ local function __define_field(klass, field)
     rawget(__resolve_proxy(klass), "__fields")[field] = true
 end
 
---- Iterates through the class-like object's hierarchy to find a class-like object that satisfies the given predicate, and returns that object or nil if no such object exists
+--- Iterates through the class-like object's hierarchy to find a class-like object that satisfies the given predicate, and returns that object or <code>nil</code> if no such object exists
 --- @param klass Classlike  The class-like object to start searching from
 --- @param predicate fun(klass: Classlike) : boolean  Whether the given class-like object satisfies the condition to be returned
 --- @return Classlike?
 local function __find_in_hierarchy(klass, predicate)
+    --- @type Classlike
     local proxy_target = __resolve_proxy(klass)
 
     if predicate(proxy_target) then
         return klass
     else
+        --- @type Classlike?
         local base = rawget(proxy_target, "base")
         while base do
+            --- @type Classlike
             proxy_target = __resolve_proxy(base)
             if predicate(proxy_target) then return base end
             base = rawget(proxy_target, "base")
@@ -57,12 +62,15 @@ end
 --- @param action fun(klass: Classlike)  The action to perform on each class-like object in the hierarchy
 --- @param include_self boolean  Whether to include the given class-like object in the iteration
 local function __foreach_in_hierarchy(klass, action, include_self)
+    --- @type Classlike
     local proxy_target = __resolve_proxy(klass)
 
     if include_self then action(proxy_target) end
 
+    --- @type Classlike?
     local base = rawget(proxy_target, "base")
     while base do
+        --- @type Classlike
         proxy_target = __resolve_proxy(base)
         action(proxy_target)
         base = rawget(proxy_target, "base")
@@ -90,7 +98,9 @@ end
 --- @param field string  The name of the field to check
 --- @return boolean
 local function __is_readonly_field(klass, field)
-    return __resolve_proxy(klass).__fields.readonly[field] == true
+    --- @type Classlike
+    local proxy_target = __resolve_proxy(klass)
+    return proxy_target.__fields.readonly[field] == true
 end
 
 --- Tags a field on a class-like object as read-only or not, for use with internal assignments of readonly fields after instance creation
@@ -98,13 +108,14 @@ end
 --- @param field string  The name of the field to tag
 --- @param is_readonly boolean  Whether the field should be tagged as read-only or not
 local function __tag_field_readonly(klass, field, is_readonly)
+    --- @type Classlike
     local proxy_target = __resolve_proxy(klass)
 
-    if not __has_field(proxy_target, field) then
+    if not __has_field_directly(proxy_target, field) then
         error("Field '" .. field .. "' is not defined on class " .. proxy_target.__type .. " '" .. proxy_target.class:nameof() .. "'", 2)
     else
         -- Need to redirect the assignment to the original table directly
-        rawget(proxy_target.__fields.readonly, "__proxy_target")[field] = is_readonly
+        __resolve_proxy(proxy_target.__fields.readonly)[field] = is_readonly
     end
 end
 
@@ -113,7 +124,16 @@ end
 --- @param field string  The name of the field to assign
 --- @param value any  The value to assign to the field
 local function __assign_field(klass, field, value)
-    if type(value) == "function" then value = trace.wrap(value) end
+    if type(value) == "function" then
+        -- Always assign functions to the original object
+        -- This allows deriving classes to access the original function from their base class
+
+        --- @type Classlike
+        local proxy_target = __resolve_proxy(klass)
+        __define_field(proxy_target, field)
+        rawset(proxy_target, field, trace.wrap(value))
+        return
+    end
 
     local defining_class = __find_defining_class(klass, field)
     if defining_class then
@@ -121,10 +141,15 @@ local function __assign_field(klass, field, value)
         rawset(__resolve_proxy(defining_class), field, value)
     else
         -- The field is not defined on any base class nor the original object, so add it to the original object
-        __define_field(klass, field)
-        rawset(__resolve_proxy(klass), field, value)
+
+        --- @type Classlike
+        local proxy_target = __resolve_proxy(klass)
+        __define_field(proxy_target, field)
+        rawset(proxy_target, field, value)
     end
 end
+
+-- TODO: implement a better way for deriving classes to invoke the original function (cache it in __newindex maybe?)
 
 --- Attempts to read a field from a class-like object, checking base classes if necessary
 --- @param obj Classlike  The object to read the field from
@@ -140,8 +165,8 @@ end
 --- @param other ClassDefinition  The class to check against
 --- @return boolean
 local function __instanceof(klass, other)
-    local oop_proxy = rawget(klass, "__proxy_target")
-    if oop_proxy then klass = oop_proxy end
+    --- @type Classlike
+    klass = __resolve_proxy(klass)
 
     if rawget(klass, "class") == other then return true end
 
@@ -158,7 +183,7 @@ local function __create_fields_stringset(...)
     local set = {
         --- @type { [string]: boolean }  The set of field names that are read-only on this class-like object
         readonly = {},
-        --- @type { [string]: boolean }  The set of field names.  If true, the class-like object has defined a field with this name, even if its value is nil.
+        --- @type { [string]: boolean }  The set of field names.  If <code>true</code>, the class-like object has defined a field with this name, even if its value is <code>nil</code>.
         names = {}
     }
 
@@ -177,17 +202,17 @@ local function __create_fields_stringset(...)
         },
         {
             __index = trace.wrap(
-                function(self, name)
+                function(self, key)
                     --- @type FieldTracker
-                    local target = rawget(self, "__proxy_target")
+                    local target = __resolve_proxy(self)
 
-                    if name == "readonly" then
+                    if key == "readonly" then
                         return target.readonly
                     end
 
-                    local defined = target.names[name]
+                    local defined = target.names[key]
                     if defined == nil then
-                        target.names[name] = false
+                        target.names[key] = false
                         return false
                     else
                         return defined
@@ -195,18 +220,18 @@ local function __create_fields_stringset(...)
                 end
             ),
             __newindex = trace.wrap(
-                function(self, name, value)
-                    if name == "readonly" then
+                function(self, key, value)
+                    if key == "readonly" then
                         error("Field definition 'readonly' is reserved and cannot be modified.", 2)
                     end
 
                     --- @type FieldTracker
-                    local target = rawget(self, "__proxy_target")
+                    local target = __resolve_proxy(self)
 
-                    if target.readonly[name] then
-                        error("Field definition '" .. name .. "' is reserved and cannot be modified.", 2)
+                    if target.readonly[key] then
+                        error("Field definition '" .. key .. "' is reserved and cannot be modified.", 2)
                     else
-                        target.names[name] = value
+                        target.names[key] = value
                     end
                 end
             )
@@ -215,7 +240,7 @@ local function __create_fields_stringset(...)
 end
 
 --- @param klass Classlike  The class-like object to create a proxy for
---- @param newindex fun(target: Classlike, key: any, value: any)  The __newindex metamethod for the proxy
+--- @param newindex fun(target: Classlike, key: any, value: any)  The <code>__newindex</code> metamethod for the proxy
 --- @return ObjectProxy
 local function __create_oop_proxy(klass, newindex)
     --- @type table
@@ -260,12 +285,14 @@ local function class(name, base)
             "base",
             "class",
             "create_instance",
-            "instanceof"
+            "instanceof",
+            "mark_readonly"
         ),
         --- @private
         --- The common metatable for class instances
         __instance_mt =
         {
+            __name = name .. " instance",
             __index = trace.wrap(
                 --- @param self ClassInstance
                 --- @param key string
@@ -275,8 +302,11 @@ local function class(name, base)
                         -- Field must be defined on this instance, so just access it directly
                         -- This allows both class definitions and class instances to have the same common read-only fields
                         return rawget(self, key)
-                    elseif __has_field(rawget(self, "class"), key) then
-                        error("Field '" .. key .. "' is defined on class definition '" .. rawget(self, "class"):nameof() .. "' and cannot be accessed through a class instance", 2)
+                    end
+
+                    local klass = rawget(self, "class")
+                    if __has_field(klass, key) then
+                        error("Field '" .. key .. "' is defined on class definition '" .. klass:nameof() .. "' and cannot be accessed through a class instance", 2)
                     else
                         -- Resolve the field using base classes
                         return __get_field(self, key)
@@ -299,7 +329,6 @@ local function class(name, base)
 
     --- The class definition (itself)
     definition.class = definition
-    definition.this = definition
 
     --- @private
     --- @param self ClassDefinition
@@ -312,11 +341,14 @@ local function class(name, base)
             --- A set of field names that are defined on this class instance
             __fields = __create_fields_stringset(
                 "__fields",
+                "__super_public",
                 "__type",
                 "base",
                 "castclass",
                 "class",
                 "instanceof",
+                "mark_readonly",
+                "super",
                 "this"
             ),
             --- @private
@@ -346,8 +378,8 @@ local function class(name, base)
             )
         end
 
-        --- Retrieves the class instance from this class instance's hierarchy whose class field matches the given class definition, or returns nil if no such instance exists<br/>
-        --- If this class instance is a base class instance, upcasting to deriving classes is possible
+        --- Retrieves the class instance from this class instance's hierarchy whose class field matches the given class definition, or returns <code>nil</code> if no such instance exists<br/>
+        --- If this class instance is a base class instance created by a deriving class instance, upcasting the deriving class is possible
         --- @param klass ClassDefinition  The class definition to look for
         --- @return ClassInstance?
         function instance:castclass(klass)
@@ -359,6 +391,17 @@ local function class(name, base)
         --- @param klass ClassDefinition  The class definition to check
         --- @return boolean
         function instance:instanceof(klass) return trace.scall(__instanceof, self, klass) end
+
+        --- @protected
+        --- Marks a field on this class instance as read-only
+        --- @param field string  The name of the field to mark as read-only
+        function instance:mark_readonly(field)
+            if self ~= self.this then
+                error("Deriving class instances cannot mark fields on their base class instances as read-only", 2)
+            end
+
+            trace.scall(__tag_field_readonly, self, field, true)
+        end
 
         setmetatable(instance, self.__instance_mt)
 
@@ -382,7 +425,7 @@ local function class(name, base)
 
     --- @protected
     --- The native function for creating class instances
-    --- @param ... any  The arguments to pass to the base class definition's new() function
+    --- @param ... any  The arguments to pass to the base class definition's <code>new()</code> function
     --- @return ClassInstance
     function definition:create_instance(...) return trace.scall(self.__instance, self, ...) end
 
@@ -400,9 +443,15 @@ local function class(name, base)
     --- @return boolean
     function definition:instanceof(klass) return trace.scall(__instanceof, self, klass) end
 
+    --- @protected
+    --- Marks a field on this class definition as read-only
+    --- @param field string  The name of the field to mark as read-only
+    function definition:mark_readonly(field) trace.scall(__tag_field_readonly, self, field, true) end
+
     setmetatable(
         definition,
         {
+            __name = name .. " definition",
             __index = trace.wrap(
                 --- @param self ClassDefinition
                 --- @param key string
@@ -436,15 +485,18 @@ local function class(name, base)
     )
 end
 
-return {
-    --- Defines a table representing an object-oriented class definition.
-    --- @param name string  The identifier for this class definition.
-    --- @param base ClassDefinition?  An optional base class to inherit from
-    --- @return ClassDefinition
-    class = function(name, base) return trace.scall(class, name, base) end,
-    --- Returns whether the given class inherits from another class (or is the same class)
-    --- @param klass Classlike  The class-like object to check
-    --- @param other ClassDefinition  The class to check against
-    --- @return boolean
-    instanceof = function(klass, other) return trace.scall(__instanceof, klass, other) end
-}
+local module_table = {}
+
+--- Defines a table representing an object-oriented class definition.
+--- @param name string  The identifier for this class definition.
+--- @param base ClassDefinition?  An optional base class to inherit from
+--- @return ClassDefinition
+function module_table.class(name, base) return trace.scall(class, name, base) end
+
+--- Returns whether the given class inherits from another class (or is the same class)
+--- @param klass ClassDefinition|ClassInstance  The class definition or instance to check
+--- @param other ClassDefinition  The class to check against
+--- @return boolean
+function module_table.instanceof(klass, other) return trace.scall(__instanceof, klass, other) end
+
+return module_table

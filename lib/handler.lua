@@ -19,25 +19,27 @@ local function try(what)
     return table.unpack(results, 2)
 end
 
-return {
-    --- Implements try-catch functionality by wrapping a call to pcall and invoking the appropriate function based on success or failure
-    --- @param what TryBlock
-    --- @return ...
-    --- <br/>
-    --- Example usage:
-    --- ```lua
-    --- local handler = require "lib.handler"
-    --- ...
-    --- handler.try {
-    ---     -- try
-    ---     function()
-    ---         -- code to try goes here
-    ---     end,
-    ---     -- catch
-    ---     function(error)
-    ---        -- error handling code goes here, with the error passed as an argument
-    ---     end
-    --- }
-    --- ```
-    try = function(what) return trace.scall(try, what) end
-}
+local module_table = {}
+
+--- Implements try-catch functionality by wrapping a call to pcall and invoking the appropriate function based on success or failure
+--- @param what TryBlock
+--- @return ...
+--- <br/>
+--- Example usage:
+--- ```lua
+--- local handler = require "lib.handler"
+--- ...
+--- handler.try {
+---     -- try
+---     function()
+---         -- code to try goes here
+---     end,
+---     -- catch
+---     function(error)
+---        -- error handling code goes here, with the error passed as an argument
+---     end
+--- }
+--- ```
+function module_table.try(what) return trace.scall(try, what) end
+
+return module_table

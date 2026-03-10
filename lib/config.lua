@@ -45,6 +45,8 @@ end
 --- @field [string] any  The value of the config entry, indexed by the config key
 
 --- @class ConfigFileDefinition : ClassDefinition
+--- @field base nil
+--- @field class ConfigFileDefinition
 local ConfigFile = class.class("ConfigFile")
 
 --- [override] Creates a new ConfigFile instance for the given program, loading its config file from disk if it exists
@@ -150,7 +152,9 @@ function ConfigFile:new(program)
 end
 
 return {
+    --- The classes defined by this module
     class = {
+        --- A class representing a config file for a program, allowing for easy loading, saving, and type-specific access to config values
         ConfigFile = ConfigFile
     },
     DIRECTORY = DIRECTORY,
