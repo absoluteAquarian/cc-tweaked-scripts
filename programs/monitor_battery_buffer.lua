@@ -275,7 +275,6 @@ local function display_to_monitors(current, trend)
             monitor_state_painter:store("COLOR_NET_TIER", tiers.get_color(net_tier))
             monitor_state_painter:store("NET_TIER", net_tier)
 
-            monitor_template_painter:paint(monitor)
             monitor_state_painter:repaint(monitor)
         end
     )
