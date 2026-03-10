@@ -341,14 +341,12 @@ local function class(name, base)
             --- A set of field names that are defined on this class instance
             __fields = __create_fields_stringset(
                 "__fields",
-                "__super_public",
                 "__type",
                 "base",
                 "castclass",
                 "class",
                 "instanceof",
                 "mark_readonly",
-                "super",
                 "this"
             ),
             --- @private
