@@ -1,5 +1,3 @@
-local texel_canvas = require "lib.dr.texel_canvas"
-
 local class = require "lib.class"
 local R_string = require "lib.string"
 local R_table = require "lib.table"
@@ -773,7 +771,7 @@ local INVALID_TEXEL_STATE = 0x40
 --- @class PixelCanvasDefinition : TexelCanvasDefinition
 --- @field base TexelCanvasDefinition
 --- @field class PixelCanvasDefinition
-local PixelCanvas = class.class("PixelCanvas", texel_canvas.class.TexelCanvas)
+local PixelCanvas = class.class("PixelCanvas", TexelCanvas)
 
 --- [override] Creates a new <code>PixelCanvas</code> instance with the given parameters
 --- @param width integer  The width of the canvas
