@@ -30,6 +30,8 @@ local function scall(func, ...)
                             table.insert(filtered, line)
                         end
                     end
+
+                    msg = table.concat(filtered, "\n")
                 end
 
                 -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
