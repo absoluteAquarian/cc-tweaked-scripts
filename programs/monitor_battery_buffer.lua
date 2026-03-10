@@ -61,20 +61,20 @@ monitor_template_painter
 local monitor_state_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black)
 monitor_state_painter
     :move({ x = 1 + #"Current: ", y = 1 })
-    :clear({ count = PRECISION_PERCENTS + 4 })  -- count = #"--." + precision + #"%"
+    :clear({ count = #"--.--%" })
     :offset(monitor_state_painter:recall("OFFSET_CURRENT"))
     :color(monitor_state_painter:recall("COLOR_CURRENT"), nil)
     :obj(monitor_state_painter:recall("CURRENT"))
     :text("%")
     :move({ x = 1 + #"Trend:  ", y = 2 })
-    :clear({ count = PRECISION_PERCENTS + 5 })  -- count = #"+--." + precision + #"%"
+    :clear({ count = #"+--.--%" })
     :offset(monitor_state_painter:recall("OFFSET_TREND"))
     :color(monitor_state_painter:recall("COLOR_TREND"), nil)
     :obj(monitor_state_painter:recall("TREND"))
     :text("%")
     :move({ x = 2, y = 4 })
     :color("reset", nil)
-    :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
+    :clear({ count = #"---.---" })
     :offset(monitor_state_painter:recall("OFFSET_AMPS_IN"))
     :obj(monitor_state_painter:recall("AMPS_IN"))
     :move({ x = 2 + #"---.--- A  ", y = 4 })
@@ -83,7 +83,7 @@ monitor_state_painter
     :text(monitor_state_painter:recall("IN_TIER"))
     :move({ x = 2, y = 6 })
     :color("reset", nil)
-    :clear({ count = PRECISION_AMPS + 4 })  -- count = #"---." + precision
+    :clear({ count = #"---.---" })
     :offset(monitor_state_painter:recall("OFFSET_AMPS_OUT"))
     :obj(monitor_state_painter:recall("AMPS_OUT"))
     :move({ x = 2 + #"---.--- A  ", y = 6 })
@@ -92,7 +92,7 @@ monitor_state_painter
     :text(monitor_state_painter:recall("OUT_TIER"))
     :move({ x = 1, y = 8 })
     :color("reset", nil)
-    :clear({ count = PRECISION_AMPS + 5 })  -- count = #"+---." + precision
+    :clear({ count = #"+---.---" })
     :offset(monitor_state_painter:recall("OFFSET_AMPS_NET"))
     :color(monitor_state_painter:recall("COLOR_NET"), nil)
     :obj(monitor_state_painter:recall("AMPS_NET"))
@@ -175,7 +175,7 @@ local function display_to_monitors(current, trend)
                 local abs_amps = math.abs(amps)
 
                 if abs_amps > MAX_AMPS_DISPLAYED then
-                    return 0, (amps > 0 and ">" or "<") .. MAX_AMPS_DISPLAYED, colors.orange
+                    return 0, (amps > 0 and 1 or -1) * MAX_AMPS_DISPLAYED, colors.orange
                 end
 
                 local num = 10

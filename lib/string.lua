@@ -24,7 +24,7 @@ local function cached_rep(str, count)
 
     local result = cache_tbl[count]
     if not result then
-        result = count < 1 and "" or native.string.rep(str, count)
+        result = count <= 1 and "" or native.string.rep(str, count)
         cache_tbl[count] = result
     end
 
