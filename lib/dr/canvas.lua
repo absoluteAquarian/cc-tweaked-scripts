@@ -404,6 +404,7 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @field tail_align boolean?  If <code>true</code>, the provided coordinate will be adjusted so that painting stops at the original coordinate; otherwise, painting will start at the original coordinate.
     --- @field reversed boolean?  If <code>true</code>, the provided text will be painted in reverse order; otherwise, it will be painted in the current order.
     --- @field count integer?  If not <code>nil</code> and greater than 1, the provided text will be painted the given number of times.<br/>For example, with <code>text = "abc"</code> and <code>repeat = 3</code>, the text <code>"abcabcabc"</code> would be painted.
+    --- @field forced boolean?  If <code>true</code>, a painted texel will force an update to the blit cache, even if its character and colors did not change.
 
     --- @protected
     --- @param x integer
@@ -532,6 +533,12 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
                     line_bg[index] = bg
                     tbl_dirty.bg[y] = true
                 end
+            end
+
+            if params.forced then
+                tbl_dirty.text[y] = true
+                tbl_dirty.fg[y] = true
+                tbl_dirty.bg[y] = true
             end
 
             self:updatePassMany(x, x + length - 1, y, false)

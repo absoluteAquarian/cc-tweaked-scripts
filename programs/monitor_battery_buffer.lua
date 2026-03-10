@@ -26,7 +26,7 @@ local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
 
 -- The displays have a fixed max length, so the precision has to be limited to prevent overdraw
-local PRECISION_PERCENTS = math.min(3, PRECISION_DISPLAYED)  -- ex. "--.---%"
+local PRECISION_PERCENTS = math.min(2, PRECISION_DISPLAYED)  -- ex. "--.--%"
 local PRECISION_AMPS = math.min(3, PRECISION_DISPLAYED)  -- ex. "---.--- A"
 
 local MAX_AMPS_DISPLAYED = math.pow(10, 6 - PRECISION_AMPS) - math.pow(10, -PRECISION_AMPS)  -- ex. "999.999 A" for PRECISION_AMPS = 3
@@ -39,12 +39,12 @@ local eu_out = average_value.class.AverageValue:new(20)
 --- @type number
 local eu_net = 0.0
 
-local monitor_template_painter = paint.class.DeferredPixelPainter:new(16 * 2, 16 * 3, nil, nil, colors.white, colors.black)
+local monitor_template_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black)
 monitor_template_painter
     :move({ x = 1, y = 1 })
-    :text("Current: --.---%")
+    :text("Current: --.--%")
     :move({ x = 1, y = 2 })
-    :text("Trend:  +--.---%")
+    :text("Trend:  +--.--%")
     :move({ x = 1, y = 3 })
     :text("Input:")
     :move({ x = 1, y = 4 })
@@ -58,14 +58,16 @@ monitor_template_painter
     :move({ x = 1, y = 8 })
     :text("+---.--- A  ---")
 
-local monitor_state_painter = paint.class.DeferredPixelPainter:new(16 * 2, 16 * 3, nil, nil, colors.white, colors.black)
+local monitor_state_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black)
 monitor_state_painter
     :move({ x = 1 + #"Current: ", y = 1 })
     :clear({ count = PRECISION_PERCENTS + 4 })  -- count = #"--." + precision + #"%"
+    :offset(monitor_state_painter:recall("OFFSET_CURRENT"))
     :color(monitor_state_painter:recall("COLOR_CURRENT"), nil)
     :obj(monitor_state_painter:recall("CURRENT"))
     :move({ x = 1 + #"Trend:  ", y = 2 })
     :clear({ count = PRECISION_PERCENTS + 5 })  -- count = #"+--." + precision + #"%"
+    :offset(monitor_state_painter:recall("OFFSET_TREND"))
     :color(monitor_state_painter:recall("COLOR_TREND"), nil)
     :obj(monitor_state_painter:recall("TREND"))
     :move({ x = 2, y = 4 })
@@ -213,15 +215,41 @@ local function display_to_monitors(current, trend)
                 color_current = colors.green
             end
 
+            local offset_current
+
+            if current == 100 then
+                offset_current = 0
+
+                -- Force the trend to use at most 1 decimal
+                if PRECISION_PERCENTS > 1 then
+                    trend = R_math.round(trend, 1)
+                end
+            else
+                offset_current = current < 10 and 1 or 0
+            end
+
+            local offset_trend
+
+            if trend == 0 then
+                -- Special case
+                offset_trend = (current == 100) and 2 or 1
+            elseif math.abs(trend) < 10 then
+                offset_trend = 1
+            else
+                offset_trend = 0
+            end
+
             local trend_fmt, color_trend = fmt.signed_and_color(trend)
 
             local in_amps, in_tier = metrics_incoming:amps()
             local out_amps, out_tier = metrics_outgoing:amps()
             local net_amps, net_tier = metrics_net:amps()
 
+            monitor_state_painter:store("OFFSET_CURRENT", { x = offset_current })
             monitor_state_painter:store("COLOR_CURRENT", color_current)
             monitor_state_painter:store("CURRENT", current)
 
+            monitor_state_painter:store("OFFSET_TREND", { x = offset_trend })
             monitor_state_painter:store("COLOR_TREND", color_trend)
             monitor_state_painter:store("TREND", trend_fmt)
 

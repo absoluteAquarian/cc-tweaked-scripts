@@ -16,7 +16,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 11,
+            "version": 12,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
@@ -122,8 +122,21 @@
             ]
         },
         {
+            "name": "lib.dr.canvas",
+            "version": 6,
+            "url": "$REPO$/lib/dr/canvas.lua",
+            "install": "lib/dr/canvas.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.class",
+                "lib.string",
+                "lib.table"
+            ]
+        },
+        {
             "name": "lib.dr.paint",
-            "version": 8,
+            "version": 9,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
@@ -131,19 +144,6 @@
             [
                 "lib.class",
                 "lib.math",
-                "lib.string",
-                "lib.table"
-            ]
-        },
-        {
-            "name": "lib.dr.canvas",
-            "version": 5,
-            "url": "$REPO$/lib/dr/canvas.lua",
-            "install": "lib/dr/canvas.lua",
-            "config": "",
-            "deps":
-            [
-                "lib.class",
                 "lib.string",
                 "lib.table"
             ]

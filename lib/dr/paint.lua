@@ -642,7 +642,8 @@ function EraseTexelsPaintOperation:new(params)
             {
                 vertical = params.vertical,
                 tail_align = params.tail_align,
-                count = params.count
+                count = params.count,
+                forced = true
             }
         )
 
