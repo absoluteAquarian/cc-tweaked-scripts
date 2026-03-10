@@ -887,13 +887,15 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
             local text_start, text_end, length
             x, y, text, text_start, text_end, length = self:__set_texel_many_resolve_parameters(x, y, text, params)
 
-            local map = self.map
-            local texel_state_row = map.texel_state[y]
-            local texel_fg_row = map.texel_fg[y]
-            local texel_bg_row = map.texel_bg[y]
+            if length > 0 and text_start <= text_end then
+                local map = self.map
+                local texel_state_row = map.texel_state[y]
+                local texel_fg_row = map.texel_fg[y]
+                local texel_bg_row = map.texel_bg[y]
 
-            for i = text_start, text_end do
-                __set_texel_update_maps(x + i - text_start, native.string.sub(text, i, i), fg, bg, texel_state_row, texel_fg_row, texel_bg_row)
+                for i = text_start, text_end do
+                    __set_texel_update_maps(x + i - text_start, native.string.sub(text, i, i), fg, bg, texel_state_row, texel_fg_row, texel_bg_row)
+                end
             end
         end
 
