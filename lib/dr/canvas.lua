@@ -429,8 +429,8 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
-        if #text <= 1 then
-            return x, y, text, 1, #text, #text
+        if #text == 0 then
+            return x, y, text, 1, 0, 0
         end
 
         local coordinate = params.vertical and y or x
@@ -488,13 +488,13 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     function instance:set_texel_many(x, y, text, params)
         if #text == 0 then return 0, x, y end
 
-        if #text == 1 then
+        local text_start, text_end, length
+        x, y, text, text_start, text_end, length = self:__set_texel_many_resolve_parameters(x, y, text, params)
+
+        if length <= 1 then
             self:set_texel(x, y, text, params)
             if params.vertical then return 1, x, y + 1 else return 1, x + 1, y end
         end
-
-        local text_start, text_end, length
-        x, y, text, text_start, text_end, length = self:__set_texel_many_resolve_parameters(x, y, text, params)
 
         if params.vertical then
             -- Intercept the parameters to make execution faster
