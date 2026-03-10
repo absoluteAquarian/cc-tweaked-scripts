@@ -315,11 +315,12 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param y integer
     --- @param target_table string[][]
     --- @param dirty_table boolean[]
-    local function try_update_text(new_char, x, y, target_table, dirty_table)
+    --- @param forced boolean
+    local function try_update_text(new_char, x, y, target_table, dirty_table, forced)
         if new_char ~= nil then
             local row = target_table[y]
             local old_char = row[x]
-            if old_char ~= new_char then
+            if forced or old_char ~= new_char then
                 row[x] = new_char
                 dirty_table[y] = true
             end
@@ -341,12 +342,13 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param y integer
     --- @param target_table string[][]
     --- @param dirty_table boolean[]
-    local function try_update_color(new_color, x, y, target_table, dirty_table)
+    --- @param forced boolean
+    local function try_update_color(new_color, x, y, target_table, dirty_table, forced)
         if new_color ~= nil then
             local row = target_table[y]
             local old_color = row[x]
             new_color = resolve_color(new_color)
-            if old_color ~= new_color then
+            if forced or old_color ~= new_color then
                 row[x] = new_color
                 dirty_table[y] = true
             end
@@ -356,6 +358,7 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @class TexelSetParameters
     --- @field fg (number|string)?  The foreground color, either as a <code>colors</code> value or <code>nil</code> to not update the color<br/>(use <code>"-"</code> to defer to the terminal's foreground color when painting)
     --- @field bg (number|string)?  The background color, either as a <code>colors</code> value or <code>nil</code> to not update the color<br/>(use <code>"-"</code> to defer to the terminal's background color when painting)
+    --- @field forced boolean?  If <code>true</code>, a painted texel will force an update to the blit cache, even if its character and colors did not change.
 
     --- Paints the given character texel onto the canvas and forces it to be visible
     --- @param x integer  The horizontal texel coordinate
@@ -370,9 +373,15 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         local tbl_blit = self.blit
         local tbl_dirty = tbl_blit.dirty
 
-        try_update_text(char, x, y, tbl_blit.text, tbl_dirty.text)
-        try_update_color(params.fg, x, y, tbl_blit.fg, tbl_dirty.fg)
-        try_update_color(params.bg, x, y, tbl_blit.bg, tbl_dirty.bg)
+        try_update_text(char, x, y, tbl_blit.text, tbl_dirty.text, params.forced)
+        try_update_color(params.fg, x, y, tbl_blit.fg, tbl_dirty.fg, params.forced)
+        try_update_color(params.bg, x, y, tbl_blit.bg, tbl_dirty.bg, params.forced)
+
+        if params.forced then
+            tbl_dirty.text[y] = true
+            tbl_dirty.fg[y] = true
+            tbl_dirty.bg[y] = true
+        end
 
         self:updatePass(x, y, false)
     end
@@ -391,9 +400,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         local tbl_dirty = tbl_blit.dirty
 
         if background then
-            try_update_color(color, x, y, tbl_blit.bg, tbl_dirty.bg)
+            try_update_color(color, x, y, tbl_blit.bg, tbl_dirty.bg, false)
         else
-            try_update_color(color, x, y, tbl_blit.fg, tbl_dirty.fg)
+            try_update_color(color, x, y, tbl_blit.fg, tbl_dirty.fg, false)
         end
 
         self:updatePass(x, y, false)
@@ -404,7 +413,6 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @field tail_align boolean?  If <code>true</code>, the provided coordinate will be adjusted so that painting stops at the original coordinate; otherwise, painting will start at the original coordinate.
     --- @field reversed boolean?  If <code>true</code>, the provided text will be painted in reverse order; otherwise, it will be painted in the current order.
     --- @field count integer?  If not <code>nil</code> and greater than 1, the provided text will be painted the given number of times.<br/>For example, with <code>text = "abc"</code> and <code>repeat = 3</code>, the text <code>"abcabcabc"</code> would be painted.
-    --- @field forced boolean?  If <code>true</code>, a painted texel will force an update to the blit cache, even if its character and colors did not change.
 
     --- @protected
     --- @param x integer
