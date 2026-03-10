@@ -631,15 +631,19 @@ function EraseTexelsPaintOperation:new(params)
     instance.params = params
 
     function instance:execute(painter)
-        local cursor = painter.params.cursor
+        local painter_params = painter.params
+        local cursor = painter_params.cursor
+        local color = painter_params.color
 
         local params = __extract(self.params) --[[@as TexelEraseParameters]]
 
         painter.canvas:set_texel_many(
             cursor.x,
             cursor.y,
-            "\128",
+            " ",
             {
+                fg = color.fg,
+                bg = color.bg,
                 vertical = params.vertical,
                 tail_align = params.tail_align,
                 count = params.count,
