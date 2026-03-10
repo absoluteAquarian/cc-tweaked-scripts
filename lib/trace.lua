@@ -18,7 +18,22 @@ local function scall(func, ...)
 
         pcall(
             function(msg)
+                -- Remove any lines that mention scall or xpcall
+
+                if type(msg) == "string" then
+                    --- @cast msg string
+
+                    local filtered = {}
+
+                    for line in msg:gmatch("[^\r\n]+") do
+                        if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) then
+                            table.insert(filtered, line)
+                        end
+                    end
+                end
+
                 -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
+
                 local program = shell.getRunningProgram()
                 local path = fs.getDir(program) .. "/logs/" .. fs.getName(program) .. "-" .. os.time()
 
