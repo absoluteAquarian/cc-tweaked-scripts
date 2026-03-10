@@ -510,6 +510,8 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
 
             local tbl_dirty = tbl_blit.dirty
 
+            local forced = params.forced
+
             -- Update each array with the new values
             for i = text_start, text_end do
                 local index = x + i - text_start
@@ -517,25 +519,25 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
                 local old_text = line_text[index]
                 local new_text = native.string.sub(text, i, i)
 
-                if old_text ~= new_text then
+                if forced or old_text ~= new_text then
                     line_text[index] = new_text
                     tbl_dirty.text[y] = true
                 end
 
                 local old_fg = line_fg[index]
-                if fg ~= nil and old_fg ~= fg then
+                if fg ~= nil and (forced or old_fg ~= fg) then
                     line_fg[index] = fg
                     tbl_dirty.fg[y] = true
                 end
 
                 local old_bg = line_bg[index]
-                if bg ~= nil and old_bg ~= bg then
+                if bg ~= nil and (forced or old_bg ~= bg) then
                     line_bg[index] = bg
                     tbl_dirty.bg[y] = true
                 end
             end
 
-            if params.forced then
+            if forced then
                 tbl_dirty.text[y] = true
                 tbl_dirty.fg[y] = true
                 tbl_dirty.bg[y] = true
