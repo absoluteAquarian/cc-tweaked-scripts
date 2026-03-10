@@ -123,7 +123,7 @@
         },
         {
             "name": "lib.dr.canvas",
-            "version": 8,
+            "version": 9,
             "url": "$REPO$/lib/dr/canvas.lua",
             "install": "lib/dr/canvas.lua",
             "config": "",

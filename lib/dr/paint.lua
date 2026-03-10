@@ -638,7 +638,7 @@ function EraseTexelsPaintOperation:new(params)
         painter.canvas:set_texel_many(
             cursor.x,
             cursor.y,
-            " ",
+            "\128",
             {
                 vertical = params.vertical,
                 tail_align = params.tail_align,
