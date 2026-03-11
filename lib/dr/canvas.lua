@@ -773,7 +773,7 @@ end
 --- @return integer texel_x  The horizontal texel coordinate
 --- @return integer texel_y  The vertical texel coordinate
 local function pixel_to_texel(x, y)
-    return native.math.floor((x + 1) / 2), native.math.floor((y + 1) / 3)
+    return native.math.floor((x + 1) / 2), native.math.floor((y + 2) / 3)
 end
 
 --- Converts texel coordinates to the corresponding pixel coordinates for the top-left pixel in the texel
