@@ -163,6 +163,8 @@ end
 local NUM_GRAPH_SLICES = math.ceil(GRAPH_WIDTH / 2)
 --- @type DeferredPixelPainter[]
 local terminal_graph_slices = {}
+--- @type integer[]
+local graph_measure_locations = {}
 local front_slice_index = 0
 
 local terminal_state_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black)
@@ -442,6 +444,7 @@ local function display_to_terminal(current, trend)
     if #terminal_graph_slices < NUM_GRAPH_SLICES then
         local slice_painter = create_graph_slice_painter()
         table.insert(terminal_graph_slices, slice_painter)
+        table.insert(graph_measure_locations, 0)
         front_slice_index = #terminal_graph_slices
     end
 
@@ -461,13 +464,12 @@ local function display_to_terminal(current, trend)
         -- Use the previous slice's measurement
 
         local previous_index = front_slice_index == 1 and #terminal_graph_slices or front_slice_index - 1
-        local previous_slice = terminal_graph_slices[previous_index]
-        --- @type { x: integer, y: integer }
-        local previous_measurement = previous_slice:recall("MEASURE")
-        slice_painter:store("MEASURE_PREV", { x = 1, y = previous_measurement.y })
+        local previous_measurement = graph_measure_locations[previous_index]
+        slice_painter:store("MEASURE_PREV", { x = 1, y = previous_measurement })
     end
 
     slice_painter:store("MEASURE", { x = 2, y = graph_position })
+    graph_measure_locations[front_slice_index] = graph_position
 
     local slice_color = measurement > 0 and colors.green or (measurement < 0 and colors.red or colors.white)
     slice_painter:store("COLOR", slice_color)
@@ -565,6 +567,7 @@ exec.loop_forever(
         terminal_template_painter:paint(current_terminal)
 
         terminal_graph_slices = {}
+        graph_measure_locations = {}
         front_slice_index = 0
     end,
     -- body
