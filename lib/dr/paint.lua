@@ -987,7 +987,7 @@ function FillAreaPixelPaintOperation:new(area, background)
 
         --]]
 
-        painter_canvas:begin_update_group()
+        local new_group = painter_canvas:try_begin_update_group()
 
         if area.width >= 5 - ((left - 1) % 2) and area.height >= 7 - ((top - 1) % 3) then
             local start_texel_x, start_texel_y = canvas.pixel_to_texel(left, top)
@@ -1049,7 +1049,9 @@ function FillAreaPixelPaintOperation:new(area, background)
         -- Bottom corners and edge
         __fill_pixels(left, right, top_of_bottom, bottom)
 
-        painter_canvas:end_update_group()
+        if new_group then
+            painter_canvas:end_update_group()
+        end
     end
 
     return instance

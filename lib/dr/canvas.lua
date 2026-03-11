@@ -1074,6 +1074,17 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         self.__pending_texel_updates = {}
     end
 
+    --- Attempts call <code>begin_update_group()</code> and returns whether it was successful
+    --- @return boolean
+    function instance:try_begin_update_group()
+        if not self.__has_active_group then
+            self:begin_update_group()
+            return true
+        end
+
+        return false
+    end
+
     --- @private
     --- @param updating_table table<integer, table<integer, 0|1|2|3>>
     function instance:__push_texel_updates(updating_table)
