@@ -30,9 +30,9 @@ local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
 cfg_file:setString("MACHINE", MACHINE)
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
 cfg_file:setString("POWER_OVERRIDE", POWER_OVERRIDE)
-local GRAPH_MAX_AMPS = cfg_file:getInteger("GRAPH_MAX_AMPS") or 64
+local GRAPH_MAX_AMPS = cfg_file:getInt("GRAPH_MAX_AMPS") or 64
 cfg_file:setInteger("GRAPH_MAX_AMPS", GRAPH_MAX_AMPS)
-local GRAPH_MAX_AMPS_NET = cfg_file:getInteger("GRAPH_MAX_AMPS_NET") or 16
+local GRAPH_MAX_AMPS_NET = cfg_file:getInt("GRAPH_MAX_AMPS_NET") or 32
 cfg_file:setInteger("GRAPH_MAX_AMPS_NET", GRAPH_MAX_AMPS_NET)
 
 cfg_file:save()
