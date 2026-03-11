@@ -1085,6 +1085,32 @@ function PointPixelPaintOperation:new(coordinate, active)
     return instance
 end
 
+--- @class GroupPixelPaintOperationDefinition : AbstractPaintOperationDefinition
+--- @field base AbstractPaintOperationDefinition
+--- @field class GroupPixelPaintOperationDefinition
+local GroupPixelPaintOperation = class.class("GroupPixelPaintOperation", AbstractPaintOperation)
+
+--- [override] Creates a new <code>GroupPixelPaintOperation</code> instance with the given parameters
+--- @param begin boolean  If <code>true</code>, a new batch of pixel painting operations will start; otherwise, the current batch will end
+--- @return GroupPixelPaintOperation
+function GroupPixelPaintOperation:new(begin)
+    --- @class GroupPixelPaintOperation : AbstractPaintOperation
+    --- @field base AbstractPaintOperation
+    local instance = self:create_instance(begin)
+
+    instance.begin = begin
+
+    function instance:execute(painter)
+        if self.begin then
+            painter.canvas:begin_update_group()
+        else
+            painter.canvas:end_update_group()
+        end
+    end
+
+    return instance
+end
+
 --- @class DeferredPixelPainterDefinition : ClassDefinition
 --- @field base nil
 --- @field class DeferredPixelPainterDefinition
@@ -1097,16 +1123,17 @@ local DeferredPixelPainter = class.class("DeferredPixelPainter")
 --- @param canvas_bg number?  The initial background color for the painter's canvas (see: <code>colors</code>), or <code>nil</code> to defer to the terminal's background color when painting
 --- @param brush_fg number?  The initial foreground color for the painter's brush (see: <code>colors</code>).<br/>Defaults to <code>colors.white</code> if <code>nil</code>.
 --- @param brush_bg number?  The initial background color for the painter's brush (see: <code>colors</code>).<br/>Defaults to <code>colors.black</code> if <code>nil</code>.
+--- @param transparent boolean?  If <code>true</code>, the painter's canvas will initially be transparent; otherwise, the canvas will initially be filled with the default foreground and background colors.
 --- @return DeferredPixelPainter
-function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg)
+function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg, transparent)
     --- @class DeferredPixelPainter : ClassInstance
     --- @field base nil
     --- @field class DeferredPixelPainterDefinition
     --- @field this DeferredPixelPainter
-    local instance = self:create_instance(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg)
+    local instance = self:create_instance(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg, transparent)
 
     --- A virtual canvas for storing the results from painting operations
-    instance.canvas = canvas.class.PixelCanvas:new(w, h, canvas_fg, canvas_bg, true)
+    instance.canvas = canvas.class.PixelCanvas:new(w, h, canvas_fg, canvas_bg, transparent)
 
     --- @private
     instance.cache = {
@@ -1179,6 +1206,12 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
         return self:__register_operation(ColorChangePaintOperation:new(fg, bg))
     end
 
+    --- Stops the current batch of pixel painting operations
+    --- @return DeferredPixelPainter
+    function instance:end_group()
+        return self:__register_operation(GroupPixelPaintOperation:new(false))
+    end
+
     --- Erases the specified number of texels on the painter's canvas starting from the current position<br/>
     --- When texels are erased, they no longer update the underlying terminal when painted, effectively creating a "transparent" texel
     --- @param params TexelEraseParameters|RecallCallback  The parameters for erasing texels on the painter's canvas
@@ -1193,6 +1226,13 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
     --- @return DeferredPixelPainter
     function instance:fill(area, background)
         return self:__register_operation(FillAreaPixelPaintOperation:new(area, background))
+    end
+
+    --- Starts a new batch of pixel painting operations<br/>
+    --- While a batch is active, any pixel operations will have their results delayed to when the group ends
+    --- @return DeferredPixelPainter
+    function instance:group()
+        return self:__register_operation(GroupPixelPaintOperation:new(true))
     end
 
     --- Paints a line on the painter's canvas, using the painter's current foreground color for the line's color

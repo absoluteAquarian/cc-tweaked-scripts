@@ -19,11 +19,23 @@ local R_table = require "lib.table"
 local cfg_file = config.class.ConfigFile:new("monitor_battery_buffer")
 
 local CHARGE_THRESHOLD = cfg_file:getNumber("CHARGE_THRESHOLD") or 0.6
+cfg_file:setNumber("CHARGE_THRESHOLD", CHARGE_THRESHOLD)
 local ALARM_THRESHOLD = cfg_file:getNumber("ALARM_THRESHOLD") or 0.3
+cfg_file:setNumber("ALARM_THRESHOLD", ALARM_THRESHOLD)
 local PRECISION_DISPLAYED = cfg_file:getNumber("PRECISION_DISPLAYED") or 2
+cfg_file:setNumber("PRECISION_DISPLAYED", PRECISION_DISPLAYED)
 local RENDER_TICK_DELAY = cfg_file:getNumber("RENDER_TICK_DELAY") or 5
+cfg_file:setNumber("RENDER_TICK_DELAY", RENDER_TICK_DELAY)
 local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
+cfg_file:setString("MACHINE", MACHINE)
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
+cfg_file:setString("POWER_OVERRIDE", POWER_OVERRIDE)
+local GRAPH_MAX_AMPS = cfg_file:getInteger("GRAPH_MAX_AMPS") or 64
+cfg_file:setInteger("GRAPH_MAX_AMPS", GRAPH_MAX_AMPS)
+local GRAPH_MAX_AMPS_NET = cfg_file:getInteger("GRAPH_MAX_AMPS_NET") or 16
+cfg_file:setInteger("GRAPH_MAX_AMPS_NET", GRAPH_MAX_AMPS_NET)
+
+cfg_file:save()
 
 -- The displays have a fixed max length, so the precision has to be limited to prevent overdraw
 local PRECISION_PERCENTS = math.min(2, PRECISION_DISPLAYED)  -- ex. "--.--%"
@@ -101,6 +113,101 @@ monitor_state_painter
     :color(monitor_state_painter:recall("COLOR_NET_TIER"), nil)
     :text(monitor_state_painter:recall("NET_TIER"))
 
+local current_terminal = term.current()
+local w, h = current_terminal.getSize()
+w = w * 2
+h = h * 3
+
+local GRAPH_LEFT = 2
+local GRAPH_RIGHT = w - 13
+local GRAPH_TOP = 14 * 3 + 1
+local GRAPH_BOTTOM = h - 1 * 3 - 2
+local GRAPH_WIDTH = GRAPH_RIGHT - GRAPH_LEFT + 1
+local GRAPH_HEIGHT = GRAPH_BOTTOM - GRAPH_TOP + 1
+local GRAPH_MIDPOINT = math.ceil(GRAPH_TOP + GRAPH_HEIGHT / 2)
+local GRAPH_HALFHEIGHT_TOP = GRAPH_MIDPOINT - GRAPH_TOP
+local GRAPH_HALFHEIGHT_BOTTOM = GRAPH_BOTTOM - GRAPH_MIDPOINT
+
+local terminal_template_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black)
+terminal_template_painter
+    -- Large energy bar
+    :color(colors.blue, nil)
+    :box({ x = w - 10, y = 2, width = 4, height = h - 5 })
+    :move({ x = -1, y = -1 })
+    :text("--.--%", { tail_align = true })
+    -- Reports
+    :move({ x = 1, y = 1 })
+    :text("     |   Amps   | Tier")
+    :move({ x = 1, y = 2 })
+    :text("Out: |  ---.--- |  ---")
+    :move({ x = 1, y = 3 })
+    :text("In:  |  ---.--- |  ---")
+    :move({ x = 1, y = 4 })
+    :text("Net: | +---.--- |  ---")
+    -- Value graph
+    :color(colors.white, colors.gray)
+    :group()
+    :fill({ x = GRAPH_LEFT, y = GRAPH_TOP, width = GRAPH_WIDTH, height = GRAPH_HEIGHT }, false)
+    :line({ x = GRAPH_LEFT, y = GRAPH_TOP }, { x = GRAPH_LEFT, y = GRAPH_BOTTOM })
+    :end_group()
+
+--- @return DeferredPixelPainter
+local function create_graph_slice_painter()
+    local slice_painter = paint.class.DeferredPixelPainter:new(2, GRAPH_HEIGHT, colors.white, colors.gray, colors.white, colors.black, false)
+    slice_painter
+        :color(slice_painter:recall("COLOR"), nil)
+        :line(slice_painter:recall("MEASURE_PREV"), slice_painter:recall("MEASURE"))
+    return slice_painter
+end
+
+local NUM_GRAPH_SLICES = math.ceil(GRAPH_WIDTH / 2)
+--- @type DeferredPixelPainter[]
+local terminal_graph_slices = {}
+local front_slice_index = 0
+
+local terminal_state_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black)
+terminal_state_painter
+    -- Large energy bar
+    :color(nil, colors.brown)
+    :fill({ x = w - 9, y = 3, width = 2, height = h - 7 }, true)
+    :color(terminal_state_painter:recall("CHARGE_COLOR"), nil)
+    :fill(terminal_state_painter:recall("CHARGE_AREA"), true)
+    :move({ x = -1, y = -1 })
+    :offset(terminal_state_painter:recall("OFFSET_CURRENT"))
+    :text(terminal_state_painter:recall("CURRENT_TEXT"), { tail_align = true })
+    -- Reports
+    :color("reset", "reset")
+    :move({ x = 1 + #"Out: |  ", y = 2 })
+    :clear({ count = #"---.---" })
+    :offset(terminal_state_painter:recall("OFFSET_AMPS_OUT"))
+    :obj(terminal_state_painter:recall("AMPS_OUT"))
+    :move({ x = 1 + #"Out: | ---.--- |  ", y = 2 })
+    :clear({ count = 3 })
+    :color(terminal_state_painter:recall("COLOR_OUT_TIER"), nil)
+    :text(terminal_state_painter:recall("OUT_TIER"))
+    :move({ x = 1 + #"In:  |  ", y = 3 })
+    :clear({ count = #"---.---" })
+    :offset(terminal_state_painter:recall("OFFSET_AMPS_IN"))
+    :obj(terminal_state_painter:recall("AMPS_IN"))
+    :move({ x = 1 + #"In:  | ---.--- |  ", y = 3 })
+    :clear({ count = 3 })
+    :color(terminal_state_painter:recall("COLOR_IN_TIER"), nil)
+    :text(terminal_state_painter:recall("IN_TIER"))
+    :move({ x = 1 + #"Net: | ", y = 4 })
+    :clear({ count = #"+---.---" })
+    :offset(terminal_state_painter:recall("OFFSET_AMPS_NET"))
+    :color(terminal_state_painter:recall("COLOR_NET"), nil)
+    :obj(terminal_state_painter:recall("AMPS_NET"))
+    :move({ x = 1 + #"Net: | +---.--- |  ", y = 4 })
+    :clear({ count = 3 })
+    :color(terminal_state_painter:recall("COLOR_NET_TIER"), nil)
+    :text(terminal_state_painter:recall("NET_TIER"))
+
+local function build_charged_bar_area(percent)
+    local filled_height = math.floor((h - 7) * percent)
+    return { x = w - 9, y = h - 3 - filled_height, width = 2, height = filled_height }
+end
+
 --- @class MetricsDefinition : ClassDefinition
 --- @field base nil
 --- @field class MetricsDefinition
@@ -160,53 +267,53 @@ local metrics_outgoing
 --- @type Metrics
 local metrics_net
 
+--- @param amps number
+--- @param signed boolean
+--- @param colored boolean
+--- @return integer offset
+--- @return any formatted
+--- @return number color
+local function process_amps_text(amps, signed, colored)
+    local abs_amps = math.abs(amps)
+
+    if abs_amps > MAX_AMPS_DISPLAYED then
+        return 0, (amps > 0 and 1 or -1) * MAX_AMPS_DISPLAYED, colors.orange
+    end
+
+    local num = 10
+    local max_decimals = 6 - PRECISION_AMPS
+    local decimals = 0
+
+    for i = 1, max_decimals do
+        if abs_amps < num then
+            decimals = i
+            break
+        end
+
+        num = num * 10
+    end
+
+    -- Display with an offset
+
+    local offset, value, color
+
+    offset = max_decimals - decimals
+
+    if signed then
+        value, color = fmt.signed_and_color(amps)
+    else
+        value = amps
+        color = value > 0 and colors.green or (value < 0 and colors.red or colors.white)
+    end
+
+    return offset, value, colored and color or colors.white
+end
+
 --- @param current number
 --- @param trend number
 local function display_to_monitors(current, trend)
     R_monitor.foreach_monitor(
         function(monitor)
-            --- @param amps number
-            --- @param signed boolean
-            --- @param colored boolean
-            --- @return integer offset
-            --- @return any formatted
-            --- @return number color
-            local function process_amps_text(amps, signed, colored)
-                local abs_amps = math.abs(amps)
-
-                if abs_amps > MAX_AMPS_DISPLAYED then
-                    return 0, (amps > 0 and 1 or -1) * MAX_AMPS_DISPLAYED, colors.orange
-                end
-
-                local num = 10
-                local max_decimals = 6 - PRECISION_AMPS
-                local decimals = 0
-
-                for i = 1, max_decimals do
-                    if abs_amps < num then
-                        decimals = i
-                        break
-                    end
-
-                    num = num * 10
-                end
-
-                -- Display with an offset
-
-                local offset, value, color
-
-                offset = max_decimals - decimals
-
-                if signed then
-                    value, color = fmt.signed_and_color(amps)
-                else
-                    value = amps
-                    color = value > 0 and colors.green or (value < 0 and colors.red or colors.white)
-                end
-
-                return offset, value, colored and color or colors.white
-            end
-
             local color_current
 
             if current < (ALARM_THRESHOLD * 100) then
@@ -289,22 +396,102 @@ local LAST_PERCENTAGE = 0.0
 --- @param current number
 --- @param trend number
 local function display_to_terminal(current, trend)
-    R_terminal.reset_terminal()
+    local color_current
 
-    if not BATTERY_TIER then
-        print("WARNING: Could not determine tier for connected battery")
-        print("Set the default tier by running \"launcher config\" and modifying the \"POWER_OVERRIDE\" setting")
-        print()
+    if current < (ALARM_THRESHOLD * 100) then
+        color_current = colors.red
+    elseif current < (CHARGE_THRESHOLD * 100) then
+        color_current = colors.yellow
+    else
+        color_current = colors.green
     end
 
-    local net, net_tier = metrics_net:amps()
+    local offset_current = current == 100 and 1 or 0
 
-    print("Current percentage: " .. current .. "%")
-    print("Trend: " .. fmt.signed(trend) .. "%")
-    print()
-    print("Input: " .. metrics_incoming:report())
-    print("Output: " .. metrics_outgoing:report())
-    print("Net: " .. fmt.signed(net) .. " A (" .. net_tier .. ")")
+    terminal_state_painter:store("CHARGE_COLOR", color_current)
+    terminal_state_painter:store("CHARGE_AREA", build_charged_bar_area(current))
+    terminal_state_painter:store("OFFSET_CURRENT", { x = offset_current })
+    terminal_state_painter:store("CURRENT_TEXT", current .. "%")
+
+    local in_amps, in_tier = metrics_incoming:amps()
+    local out_amps, out_tier = metrics_outgoing:amps()
+    local net_amps, net_tier = metrics_net:amps()
+
+    local offset, formatted, color
+    offset, formatted, _ = process_amps_text(in_amps, false, false)
+    terminal_state_painter:store("OFFSET_AMPS_IN", { x = offset })
+    terminal_state_painter:store("AMPS_IN", formatted)
+    terminal_state_painter:store("COLOR_IN_TIER", tiers.get_color(in_tier))
+    terminal_state_painter:store("IN_TIER", in_tier)
+
+    offset, formatted, _ = process_amps_text(out_amps, false, false)
+    terminal_state_painter:store("OFFSET_AMPS_OUT", { x = offset })
+    terminal_state_painter:store("AMPS_OUT", formatted)
+    terminal_state_painter:store("COLOR_OUT_TIER", tiers.get_color(out_tier))
+    terminal_state_painter:store("OUT_TIER", out_tier)
+
+    offset, formatted, color = process_amps_text(net_amps, true, true)
+    terminal_state_painter:store("OFFSET_AMPS_NET", { x = offset })
+    terminal_state_painter:store("AMPS_NET", formatted)
+    terminal_state_painter:store("COLOR_NET", color)
+    terminal_state_painter:store("COLOR_NET_TIER", tiers.get_color(net_tier))
+    terminal_state_painter:store("NET_TIER", net_tier)
+
+    terminal_state_painter:repaint(current_terminal)
+
+    if #terminal_graph_slices < NUM_GRAPH_SLICES then
+        local slice_painter = create_graph_slice_painter()
+        table.insert(terminal_graph_slices, slice_painter)
+        front_slice_index = #terminal_graph_slices
+    end
+
+    -- Record the measurement
+
+    local slice_painter = terminal_graph_slices[front_slice_index]
+    local measurement = math.max(-GRAPH_MAX_AMPS_NET, math.min(GRAPH_MAX_AMPS_NET, net_amps))
+    local scaled_measurement = R_math.integer((measurement / GRAPH_MAX_AMPS_NET) * (measurement > 0 and GRAPH_HALFHEIGHT_TOP or GRAPH_HALFHEIGHT_BOTTOM))
+
+    local graph_position = GRAPH_MIDPOINT - scaled_measurement
+
+    if #terminal_graph_slices == 1 then
+        -- First slice should have both measurements at the same height
+
+        slice_painter:store("MEASURE_PREV", { x = 1, y = graph_position })
+    else
+        -- Use the previous slice's measurement
+
+        local previous_index = front_slice_index == 1 and #terminal_graph_slices or front_slice_index - 1
+        local previous_slice = terminal_graph_slices[previous_index]
+        slice_painter:store("MEASURE_PREV", previous_slice:recall("MEASURE"))
+    end
+
+    slice_painter:store("MEASURE", { x = 1, y = graph_position })
+
+    local slice_color = measurement > 0 and colors.green or (measurement < 0 and colors.red or colors.white)
+    slice_painter:store("COLOR", slice_color)
+
+    local iter_index = front_slice_index
+    local position_index = 1
+
+    repeat
+        -- Set the position of the slices
+
+        local next_index = iter_index == 1 and #terminal_graph_slices or iter_index - 1
+
+        slice_painter = terminal_graph_slices[iter_index]
+        slice_painter:set_origin(GRAPH_RIGHT - 1 - position_index * 2, GRAPH_TOP + 1)
+
+        iter_index = next_index
+        position_index = position_index + 1
+    until iter_index == front_slice_index
+
+    -- Prepare for the next render tick
+
+    front_slice_index = front_slice_index == #terminal_graph_slices and 1 or front_slice_index + 1
+
+    for _, slice in ipairs(terminal_graph_slices) do
+        slice:repaint(current_terminal)
+    end
 end
 
 --- @return GTCEu_EnergyInfoPeripheral
@@ -370,6 +557,13 @@ exec.loop_forever(
                 monitor_template_painter:paint(monitor)
             end
         )
+
+        term.clear()
+
+        terminal_template_painter:paint(current_terminal)
+
+        terminal_graph_slices = {}
+        front_slice_index = 0
     end,
     -- body
     function()
