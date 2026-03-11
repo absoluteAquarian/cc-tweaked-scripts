@@ -451,7 +451,7 @@ local function display_to_terminal(current, trend)
     local measurement = math.max(-GRAPH_MAX_AMPS_NET, math.min(GRAPH_MAX_AMPS_NET, net_amps))
     local scaled_measurement = R_math.integer((measurement / GRAPH_MAX_AMPS_NET) * (measurement > 0 and GRAPH_HALFHEIGHT_TOP or GRAPH_HALFHEIGHT_BOTTOM))
 
-    local graph_position = GRAPH_MIDPOINT - scaled_measurement
+    local graph_position = GRAPH_MIDPOINT - GRAPH_TOP - scaled_measurement
 
     if #terminal_graph_slices == 1 then
         -- First slice should have both measurements at the same height
