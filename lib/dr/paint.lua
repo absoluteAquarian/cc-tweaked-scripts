@@ -715,7 +715,7 @@ function DrawBoxPixelPaintOperation:new(area)
 
         local iter_x, iter_y = left, top
         local iter_color = painter_params.color.fg
-        local iter_state = 0
+        local iter_state = 1
 
         --- @type PixelCanvasIterationFunction[]
         local iter_funcs =
