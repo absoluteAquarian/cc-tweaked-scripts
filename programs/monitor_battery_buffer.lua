@@ -204,7 +204,7 @@ terminal_state_painter
     :text(terminal_state_painter:recall("NET_TIER"))
 
 local function build_charged_bar_area(percent)
-    local filled_height = math.floor((h - 7) * percent)
+    local filled_height = math.floor((h - 7) * (percent / 100))
     return { x = w - 9, y = h - 3 - filled_height, width = 2, height = filled_height }
 end
 
@@ -462,10 +462,12 @@ local function display_to_terminal(current, trend)
 
         local previous_index = front_slice_index == 1 and #terminal_graph_slices or front_slice_index - 1
         local previous_slice = terminal_graph_slices[previous_index]
-        slice_painter:store("MEASURE_PREV", previous_slice:recall("MEASURE"))
+        --- @type { x: integer, y: integer }
+        local previous_measurement = previous_slice:recall("MEASURE")
+        slice_painter:store("MEASURE_PREV", { x = 1, y = previous_measurement.y })
     end
 
-    slice_painter:store("MEASURE", { x = 1, y = graph_position })
+    slice_painter:store("MEASURE", { x = 2, y = graph_position })
 
     local slice_color = measurement > 0 and colors.green or (measurement < 0 and colors.red or colors.white)
     slice_painter:store("COLOR", slice_color)
