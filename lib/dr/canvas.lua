@@ -1109,7 +1109,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         end
 
         local existing_column = existing_row[texel_x]
-        if existing_column > 0 then
+        if existing_column and existing_column > 0 then
             -- The texel was already being updated, force both colors to be updated
             existing_row[texel_x] = 3
         else
