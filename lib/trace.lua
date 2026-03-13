@@ -21,6 +21,7 @@ local function trim_error_message(msg, max_lines, max_width)
 
         local filtered = {}
         local count = 0
+        local found_stacktrace_message = false
 
         for line in trimmed:gmatch("[^\r\n]+") do
             if max_lines and count >= max_lines then
@@ -28,8 +29,14 @@ local function trim_error_message(msg, max_lines, max_width)
                 break
             end
 
+            if not found_stacktrace_message then
+                if line:find("stack traceback:", nil, true) then
+                    found_stacktrace_message = true
+                end
+            end
+
             if not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true) or line:find("tail calls", nil, true)) then
-                if max_width and count > 1 and #line > max_width then
+                if max_width and found_stacktrace_message and #line > max_width then
                     line = line:sub(1, max_width) .. " ... (truncated)"
                 end
 
