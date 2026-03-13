@@ -2,6 +2,35 @@
 --- @class TracedError
 --- @field __scall_message string
 
+--- Trims the provided error message to include only relevant functions for errors
+--- @param msg any  The error message to trim<br/>If not a string, the message will be returned as-is
+--- @param max_lines integer?  If not <code>nil</code>, the maximum number of lines to include in the trimmed message
+--- @return any
+local function trim_error_message(msg, max_lines)
+    if type(msg) == "string" then
+        --- @cast msg string
+
+        local filtered = {}
+        local count = 0
+
+        for line in msg:gmatch("[^\r\n]+") do
+            if max_lines and count >= max_lines then
+                table.insert(filtered, " ... (truncated)")
+                break
+            end
+
+            if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) then
+                table.insert(filtered, line)
+                count = count + 1
+            end
+        end
+
+        msg = table.concat(filtered, "\n")
+    end
+
+    return msg
+end
+
 --- Calls the specified function with the given arguments, throwing an error with the full stacktrace if the function throws an error<br/>
 --- This function effectively acts as a wrapper around xpcall()
 --- @param func fun(...) : ...  The function to call with the given arguments
@@ -20,19 +49,7 @@ local function scall(func, ...)
             function(msg)
                 -- Remove any lines that mention scall or xpcall
 
-                if type(msg) == "string" then
-                    --- @cast msg string
-
-                    local filtered = {}
-
-                    for line in msg:gmatch("[^\r\n]+") do
-                        if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) then
-                            table.insert(filtered, line)
-                        end
-                    end
-
-                    msg = table.concat(filtered, "\n")
-                end
+                msg = trim_error_message(msg)
 
                 -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
 
@@ -83,5 +100,6 @@ end
 
 return {
     scall = scall,
-    wrap = wrap
+    wrap = wrap,
+    trim_error_message = trim_error_message
 }
