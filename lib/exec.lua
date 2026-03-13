@@ -197,10 +197,10 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
 
                     if not running then
                         -- The error needs to be re-raised to allow the trace handler to catch the stackrace
-                        return true
+                        return false
                     end
 
-                    return false
+                    return true
                 end
             end
         }
