@@ -456,27 +456,6 @@ local function class(name, base)
     --- @param field string  The name of the field to mark as read-only
     function definition:mark_readonly(field) trace.scall(__tag_field_readonly, self, field, true) end
 
-    setmetatable(
-        definition,
-        {
-            __name = name .. " definition",
-            __index = trace.wrap(
-                --- @param self ClassDefinition
-                --- @param key string
-                --- @return any
-                function(self, key)
-                    if __is_readonly_field(self, key) then
-                        -- Field must be defined on this definition, so just access it directly
-                        return rawget(self, key)
-                    else
-                        -- Resolve the field using base classes
-                        return __get_field(self, key)
-                    end
-                end
-            )
-        }
-    )
-
     -- Wrap the definition in a proxy to handle field assignment with inheritance and protections
 
     local proxy = __create_oop_proxy(
@@ -497,6 +476,27 @@ local function class(name, base)
 
     --- The class definition (itself)
     definition.class = proxy
+
+    setmetatable(
+        definition,
+        {
+            __name = name .. " definition",
+            __index = trace.wrap(
+                --- @param self ClassDefinition
+                --- @param key string
+                --- @return any
+                function(self, key)
+                    if __is_readonly_field(self, key) then
+                        -- Field must be defined on this definition, so just access it directly
+                        return rawget(self, key)
+                    else
+                        -- Resolve the field using base classes
+                        return __get_field(self, key)
+                    end
+                end
+            )
+        }
+    )
 
     return proxy
 end

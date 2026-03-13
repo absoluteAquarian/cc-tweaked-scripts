@@ -27,7 +27,7 @@ local function trim_error_message(msg, max_lines, max_width)
                 end
             end
 
-            if SHOW_TRACE_LINES or not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true) or line:find("tail calls", nil, true)) then
+            if SHOW_TRACE_LINES or not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true)) then
                 if max_width and found_stacktrace_message and #line > max_width then
                     line = line:sub(1, max_width) .. " ... (truncated)"
                 end
