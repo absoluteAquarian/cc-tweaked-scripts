@@ -5,8 +5,9 @@
 --- Trims the provided error message to include only relevant functions for errors
 --- @param msg any  The error message to trim<br/>If not a string, the message will be returned as-is
 --- @param max_lines integer?  If not <code>nil</code>, the maximum number of lines to include in the trimmed message
+--- @param max_width integer?  If not <code>nil</code>, the maximum width of each line in the trimmed message
 --- @return any
-local function trim_error_message(msg, max_lines)
+local function trim_error_message(msg, max_lines, max_width)
     if type(msg) == "string" then
         --- @cast msg string
 
@@ -17,6 +18,10 @@ local function trim_error_message(msg, max_lines)
             if max_lines and count >= max_lines then
                 table.insert(filtered, " ... (truncated)")
                 break
+            end
+
+            if max_width and #line > max_width then
+                line = line:sub(1, max_width) .. " ... (truncated)"
             end
 
             if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) then

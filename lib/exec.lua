@@ -173,7 +173,7 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
                     R_terminal.reset_terminal()
 
                     print("Detected error:")
-                    print(trace.trim_error_message(error, 8))
+                    print(trace.trim_error_message(error, 8, 30))
                     print()
                     print("r -> restart")
                     print("q -> quit")
