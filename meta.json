@@ -287,7 +287,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 10,
+            "version": 11,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",

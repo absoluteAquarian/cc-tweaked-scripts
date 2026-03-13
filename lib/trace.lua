@@ -29,7 +29,7 @@ local function trim_error_message(msg, max_lines, max_width)
             end
 
             if not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true) or line:find("tail calls", nil, true)) then
-                if max_width and #line > max_width then
+                if max_width and count > 1 and #line > max_width then
                     line = line:sub(1, max_width) .. " ... (truncated)"
                 end
 
