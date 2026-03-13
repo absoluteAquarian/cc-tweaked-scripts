@@ -493,12 +493,12 @@ local function class(name, base)
                 __assign_field(target, key, value)
             end
         end
-    )
+    ) --[[@as ClassDefinition]]
 
     --- The class definition (itself)
-    definition.class = proxy  --[[@as ClassDefinition]]
+    definition.class = proxy
 
-    return proxy --[[@as ClassDefinition]]
+    return proxy
 end
 
 local module_table = {}
