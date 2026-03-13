@@ -69,7 +69,7 @@ end
 
 --- @param func fun(...) : ...
 --- @param ... any
---- @return ...
+--- @return table
 local function scall(func, ...)
     --- @param err any
     --- @return TracedError
@@ -82,7 +82,7 @@ local function scall(func, ...)
 
         return {
             root = true,
-            message = debug.traceback(err and tostring(err) or "Caught unspecified error via lib.trace.scall()", 3)
+            message = debug.traceback(err and tostring(err) or "Caught unspecified error via lib.trace.scall()", 0)
         }
     end
 
@@ -94,11 +94,9 @@ local function scall(func, ...)
         if traced.root then
             pcall(record_error_message, traced.message)
         end
-
-        return false, traced
     end
 
-    return true, results
+    return results
 end
 
 local module_table = {}
@@ -107,16 +105,16 @@ local module_table = {}
 --- This function effectively acts as a wrapper around xpcall()
 --- @param func fun(...) : ...  The function to call with the given arguments
 --- @param ... any  The arguments to call the function with
---- @return ...  The return values of the function, if the call was successful
+--- @return any ...  The return values of the function, if the call was successful
 function module_table.scall(func, ...)
-    local results = { scall(func, ...) }
+    local results = scall(func, ...)
 
     if not results[1] then
         local traced = results[2]  --[[@as TracedError]]
         error(traced.message, 0)
     end
 
-    return table.unpack(results[2], 2)
+    return table.unpack(results, 2)
 end
 
 --- Wraps the function call in a call to scall()
