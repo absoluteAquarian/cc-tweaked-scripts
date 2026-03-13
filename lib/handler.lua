@@ -3,19 +3,23 @@
 local trace = require "lib.trace"
 
 --- @class TryBlock
---- @field [1] fun(...) : ...  The function to be called as the "try" block
+--- @field [1] fun() : ...  The function to be called as the "try" block
 --- @field [2] (fun(error: any) : boolean, ...)?  An optional function to be called as the "catch" block if an error occurs, with the error passed as an argument
 
 --- @param what TryBlock
 local function try(what)
     --- @type table<boolean, ...>
-    local results = { pcall(what[1]) }
+    local results = { trace.scallx(what[1]) }
 
     if not results[1] then
         local msg = results[2]
         local catch = what[2]
 
-        if (not catch) or (not catch(msg)) then
+        if catch then
+            results = { catch(msg) }
+        end
+
+        if not results[1] then
             error(msg, 2)
         end
     end

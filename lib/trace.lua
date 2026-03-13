@@ -43,6 +43,9 @@ local function trim_error_message(msg, max_lines, max_width)
     return trimmed
 end
 
+--- Writes the provided error message to a log file whose name is based on the currently running program<br/>
+--- Log files are written to a <code>logs</code> subdirectory of the currently running program's directory
+--- @param msg any  The error to log
 local function record_error_message(msg)
     -- Remove any lines that mention scall or xpcall
 
@@ -71,14 +74,14 @@ end
 
 --- @param func fun(...) : ...
 --- @param ... any
---- @return table
+--- @return table<boolean, ...>
 local function scall(func, ...)
     --- @param err any
     --- @return TracedError
     local function __handler(err)
         -- Forward the error message through nested scall() calls
         -- Only the source of the error will be missing the stacktrace, so if it's present then this scall() was further up the call stack
-        if type(err) == "string" and (err:find("error in error handling", nil, true) or err:find("stack traceback:", nil, true)) then
+        if type(err) == "string" and err:find("stack traceback:", nil, true) then
             return { root = false, message = err }
         end
 
@@ -101,19 +104,39 @@ local function scall(func, ...)
     return results
 end
 
-local module_table = {}
+local module_table = {
+    --- @private
+    --- @type boolean
+    tracing = false
+}
+
+--- Calls the specified function with the given arguments, returning a table whose first value is a boolean indicating success or failure and whose second value is either the return value of the function (if successful) or an error message with a stacktrace (if an error was thrown)<br/>
+--- This function effectively acts as a wrapper around <code>xpcall()</code>
+--- @param func fun(...) : ...  The function to call with the given arguments
+--- @param ... any  The arguments to call the function with
+--- @return table<boolean, ...>
+function module_table.scallx(func, ...)
+    -- Due to how Lua handles errors, nested error handlers causes problems
+    if module_table.tracing then return func(...) end
+
+    module_table.tracing = true
+    local results = scall(func, ...)
+    module_table.tracing = false
+
+    return results
+end
 
 --- Calls the specified function with the given arguments, throwing an error with the full stacktrace if the function throws an error<br/>
---- This function effectively acts as a wrapper around xpcall()
+--- This function effectively acts as a wrapper around <code>xpcall()</code>
 --- @param func fun(...) : ...  The function to call with the given arguments
 --- @param ... any  The arguments to call the function with
 --- @return any ...  The return values of the function, if the call was successful
 function module_table.scall(func, ...)
-    local results = scall(func, ...)
+    local results = module_table.scallx(func, ...)
 
     if not results[1] then
         local traced = results[2]  --[[@as TracedError]]
-        error(traced.message or traced, 0)
+        error(traced.message, 0)
     end
 
     return table.unpack(results, 2)
@@ -127,5 +150,7 @@ function module_table.wrap(func)
 end
 
 module_table.trim_error_message = trim_error_message
+
+module_table.record_error_message = record_error_message
 
 return module_table
