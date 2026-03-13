@@ -28,11 +28,11 @@ local function trim_error_message(msg, max_lines, max_width)
                 break
             end
 
-            if max_width and #line > max_width then
-                line = line:sub(1, max_width) .. " ... (truncated)"
-            end
+            if (not line:find("xpcall", nil, true)) and (not line:find("lib/trace.lua", nil, true)) and (not line:find("tail calls", nil, true)) then
+                if max_width and #line > max_width then
+                    line = line:sub(1, max_width) .. " ... (truncated)"
+                end
 
-            if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) and (not line:find("tail calls")) then
                 table.insert(filtered, line)
                 count = count + 1
             end

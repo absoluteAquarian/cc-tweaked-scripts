@@ -212,7 +212,7 @@
         },
         {
             "name": "lib.exec",
-            "version": 11,
+            "version": 12,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",
@@ -287,7 +287,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 8,
+            "version": 9,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",
