@@ -1,7 +1,3 @@
---- @private
---- @class TracedError
---- @field __scall_message string
-
 --- Trims the provided error message to include only relevant functions for errors
 --- @param msg any  The error message to trim<br/>If not a string, the message will be returned as-is
 --- @param max_lines integer?  If not <code>nil</code>, the maximum number of lines to include in the trimmed message
@@ -9,12 +5,6 @@
 --- @return any
 local function trim_error_message(msg, max_lines, max_width)
     local trimmed = msg
-
-    if type(trimmed) == "table" and rawget(trimmed, "__scall_message") then
-        --- @cast trimmed TracedError
-
-        trimmed = trimmed.__scall_message
-    end
 
     if type(trimmed) == "string" then
         --- @cast trimmed string
@@ -51,6 +41,32 @@ local function trim_error_message(msg, max_lines, max_width)
     return trimmed
 end
 
+local function record_error_message(msg)
+    -- Remove any lines that mention scall or xpcall
+
+    msg = trim_error_message(msg)
+
+    -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
+
+    local program = shell.getRunningProgram()
+    local path = fs.getDir(program) .. "/logs/" .. fs.getName(program) .. "-" .. os.time()
+
+    local tries = 1
+    while fs.exists(path .. ".log") do
+        tries = tries + 1
+        path = path .. "-" .. tries
+    end
+
+    local handle = fs.open(path .. ".log", "w")
+    handle.write(tostring(msg))
+    handle.flush()
+    handle.close()
+end
+
+--- @class TracedError
+--- @field root boolean
+--- @field message string
+
 --- @param func fun(...) : ...
 --- @param ... any
 --- @return ...
@@ -59,51 +75,27 @@ local function scall(func, ...)
     --- @return TracedError
     local function __handler(err)
         -- Forward the error message through nested scall() calls
-        if type(err) == "table" and rawget(err, "__scall_message") then return err end
+        -- Only the source of the error will be missing the stacktrace, so if it's present then this scall() was further up the call stack
+        if type(err) == "string" and err:find("stack traceback:", nil, true) then
+            return { root = false, message = err }
+        end
 
-        local message = debug.traceback(err or "Caught unspecified error via lib.trace.scall()", 3)
-
-        pcall(
-            function(msg)
-                -- Remove any lines that mention scall or xpcall
-
-                msg = trim_error_message(msg)
-
-                -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
-
-                local program = shell.getRunningProgram()
-                local path = fs.getDir(program) .. "/logs/" .. fs.getName(program) .. "-" .. os.time()
-
-                local tries = 1
-                while fs.exists(path .. ".log") do
-                    tries = tries + 1
-                    path = path .. "-" .. tries
-                end
-
-                local handle = fs.open(path .. ".log", "w")
-                handle.write(msg)
-                handle.flush()
-                handle.close()
-            end,
-            message
-        )
-
-        return setmetatable(
-            {
-                __scall_message = message
-            },
-            {
-                --- @param self TracedError
-                --- @return string
-                __tostring = function(self) return self.__scall_message end
-            }
-        )
+        return {
+            root = true,
+            message = debug.traceback(err and tostring(err) or "Caught unspecified error via lib.trace.scall()", 3)
+        }
     end
 
     local results = { xpcall(func, __handler, ...) }
 
     if not results[1] then
-        return false, results[2]
+        local traced = results[2]  --[[@as TracedError]]
+
+        if traced.root then
+            pcall(record_error_message, traced.message)
+        end
+
+        return false, traced
     end
 
     return true, results
@@ -120,7 +112,8 @@ function module_table.scall(func, ...)
     local results = { scall(func, ...) }
 
     if not results[1] then
-        error(results[2], 2)
+        local traced = results[2]  --[[@as TracedError]]
+        error(traced.message, 0)
     end
 
     return table.unpack(results[2], 2)
