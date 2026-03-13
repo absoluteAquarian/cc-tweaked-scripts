@@ -117,7 +117,7 @@ local module_table = {
 --- @return table<boolean, ...>
 function module_table.scallx(func, ...)
     -- Due to how Lua handles errors, nested error handlers causes problems
-    if module_table.tracing then return func(...) end
+    if module_table.tracing then return { true, func(...) } end
 
     module_table.tracing = true
     local results = scall(func, ...)
