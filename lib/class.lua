@@ -33,13 +33,13 @@ end
 --- @param field string  The name of the field to check for
 --- @return boolean
 local function __has_field_directly(klass, field)
-    return rawget(__resolve_proxy(klass), "__fields")[field] == true
+    return __resolve_proxy_field(klass, "__fields")[field] == true
 end
 
 --- @param klass Classlike  The class-like object to define the field on
 --- @param field string  The name of the field to define
 local function __define_field(klass, field)
-    rawget(__resolve_proxy(klass), "__fields")[field] = true
+    __resolve_proxy_field(klass, "__fields")[field] = true
 end
 
 --- Iterates through the class-like object's hierarchy to find a class-like object that satisfies the given predicate, and returns that object or <code>nil</code> if no such object exists
@@ -105,7 +105,7 @@ end
 --- @param field string  The name of the field to check
 --- @return boolean
 local function __is_readonly_field(klass, field)
-    return rawget(__resolve_proxy(klass), "__fields")[field] == true
+    return __resolve_proxy_field(__resolve_proxy_field(klass, "__fields"), "readonly")[field] == true
 end
 
 --- Tags a field on a class-like object as read-only or not, for use with internal assignments of readonly fields after instance creation
@@ -311,7 +311,8 @@ local function class(name, base)
 
                     local klass = rawget(self, "class")
                     if __has_field(klass, key) then
-                        error(string.format("Field '%s' is defined on class definition '%s' and cannot be accessed through a class instance", key, klass:nameof()), 2)
+                        local class_name = __resolve_proxy_field(klass, "__name")
+                        error(string.format("Field '%s' is defined on class definition '%s' and cannot be accessed through a class instance", key, class_name), 2)
                     else
                         -- Resolve the field using base classes
                         return __get_field(self, key)
@@ -328,12 +329,6 @@ local function class(name, base)
         --- The base class definition
         base = base
     }
-
-    __define_field(definition, "nameof")
-    __define_field(definition, "new")
-
-    --- The class definition (itself)
-    definition.class = definition
 
     --- @private
     --- @param self ClassDefinition
@@ -359,22 +354,47 @@ local function class(name, base)
             __type = "instance",
             --- @type ClassInstance?  The class instance of the class definition's base class definition
             base = nil,
-            class = self
+            --- @type ClassDefinition  The class definition for this class instance
+            class = rawget(self, "class")
         }
 
-        --- A reference to the actual class instance, even when accessed through a base class instance
-        instance.this = instance
+        local proxy = __create_oop_proxy(
+            -- klass
+            instance,
+            -- __newindex
+            --- @param target ClassInstance
+            --- @param key any
+            --- @param value any
+            function(target, key, value)
+                local klass = rawget(target, "class")
+                if __has_field(klass, key) then
+                    local class_name = __resolve_proxy_field(klass, "__name")
+                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, class_name), 3)
+                elseif __is_readonly_field(target, key) then
+                    local class_name = __resolve_proxy_field(klass, "__name")
+                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, class_name), 3)
+                else
+                    __assign_field(target, key, value)
+                end
+            end
+        )
 
-        if self.base then
-            instance.base = self.base:new(...)
+        --- @type ClassInstance  A reference to the actual class instance, even when accessed through a base class instance
+        instance.this = proxy --[[@as ClassInstance]]
+
+        --- @type ClassDefinition?
+        local base_class = rawget(self, "base")
+        if base_class then
+            local base_instance = base_class:new(...)
+            rawset(instance, "base", base_instance)
 
             -- Ensure that the "this" field on all base class instances in the hierarchy points to this instance, to allow upcasting to work properly
             __foreach_in_hierarchy(
-                instance.base,
+                base_instance,
                 --- @param c ClassInstance
                 function(c)
                     __tag_field_readonly(c, "this", false)
-                    rawset(c, "this", instance)
+                    rawset(c, "this", proxy)
                     __tag_field_readonly(c, "this", true)
                 end,
                 true
@@ -408,23 +428,7 @@ local function class(name, base)
 
         setmetatable(instance, self.__instance_mt)
 
-        -- Wrap the instance in a proxy to handle field assignment with inheritance and protections
-        --- @type ClassInstance
-        return __create_oop_proxy(
-            -- klass
-            instance,
-            -- __newindex
-            function(target, key, value)
-                local klass = rawget(target, "class")
-                if __has_field(klass, key) then
-                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, klass:nameof()), 3)
-                elseif __is_readonly_field(target, key) then
-                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, klass:nameof()), 3)
-                else
-                    __assign_field(target, key, value)
-                end
-            end
-        )
+        return proxy --[[@as ClassInstance]]
     end
 
     --- @protected
@@ -440,7 +444,7 @@ local function class(name, base)
 
     --- Gets the name assigned to this class definition
     --- @return string
-    function definition:nameof() return self.__name end
+    function definition:nameof() return rawget(self, "__name") end
 
     --- Whether this class definition is the same as or inherits from another class definition
     --- @param klass ClassDefinition  The class definition to check
@@ -474,19 +478,27 @@ local function class(name, base)
     )
 
     -- Wrap the definition in a proxy to handle field assignment with inheritance and protections
-    --- @type ClassDefinition
-    return __create_oop_proxy(
+
+    local proxy = __create_oop_proxy(
         -- klass
         definition,
         -- __newindex
+        --- @param target ClassDefinition
+        --- @param key any
+        --- @param value any
         function(target, key, value)
             if __is_readonly_field(target, key) then
-                error(string.format("Field '%s' on class definition '%s' is read-only and cannot be modified.", key, target:nameof()), 3)
+                error(string.format("Field '%s' on class definition '%s' is read-only and cannot be modified.", key, rawget(target, "__name")), 3)
             else
                 __assign_field(target, key, value)
             end
         end
     )
+
+    --- The class definition (itself)
+    definition.class = proxy  --[[@as ClassDefinition]]
+
+    return proxy --[[@as ClassDefinition]]
 end
 
 local module_table = {}
