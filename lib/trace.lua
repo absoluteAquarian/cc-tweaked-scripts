@@ -82,7 +82,7 @@ local function scall(func, ...)
 
         return {
             root = true,
-            message = debug.traceback(err and tostring(err) or "Caught unspecified error via lib.trace.scall()", 0)
+            message = debug.traceback(err and tostring(err) or "Caught unspecified error via lib.trace.scall()", 3)
         }
     end
 
