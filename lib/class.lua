@@ -112,7 +112,7 @@ local function __tag_field_readonly(klass, field, is_readonly)
     local proxy_target = __resolve_proxy(klass)
 
     if not __has_field_directly(proxy_target, field) then
-        error("Field '" .. field .. "' is not defined on class " .. proxy_target.__type .. " '" .. proxy_target.class:nameof() .. "'", 2)
+        error(string.format("Field '%s' is not defined on class %s '%s'", field, proxy_target.__type, proxy_target.class:nameof()), 2)
     else
         -- Need to redirect the assignment to the original table directly
         __resolve_proxy(proxy_target.__fields.readonly)[field] = is_readonly
@@ -229,7 +229,7 @@ local function __create_fields_stringset(...)
                     local target = __resolve_proxy(self)
 
                     if target.readonly[key] then
-                        error("Field definition '" .. key .. "' is reserved and cannot be modified.", 2)
+                        error(string.format("Field definition '%s' is reserved and cannot be modified.", key), 2)
                     else
                         target.names[key] = value
                     end
@@ -306,7 +306,7 @@ local function class(name, base)
 
                     local klass = rawget(self, "class")
                     if __has_field(klass, key) then
-                        error("Field '" .. key .. "' is defined on class definition '" .. klass:nameof() .. "' and cannot be accessed through a class instance", 2)
+                        error(string.format("Field '%s' is defined on class definition '%s' and cannot be accessed through a class instance", key, klass:nameof()), 2)
                     else
                         -- Resolve the field using base classes
                         return __get_field(self, key)
@@ -395,7 +395,7 @@ local function class(name, base)
         --- @param field string  The name of the field to mark as read-only
         function instance:mark_readonly(field)
             if self.class ~= self.this.class then
-                error("Deriving class instances cannot mark fields on their base class instances as read-only ('" .. field .. "')", 2)
+                error(string.format("Deriving class instances cannot mark fields on their base class instances as read-only ('%s')", field), 2)
             end
 
             trace.scall(__tag_field_readonly, self, field, true)
@@ -411,9 +411,9 @@ local function class(name, base)
             -- __newindex
             function(target, key, value)
                 if __has_field(target.class, key) then
-                    error("Field '" .. key .. "' is defined on class definition '" .. target.class:nameof() .. "' and cannot be modified through a class instance", 3)
+                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, target.class:nameof()), 3)
                 elseif __is_readonly_field(target, key) then
-                    error("Field '" .. key .. "' on class instance of '" .. target.class:nameof() .. "' is read-only and cannot be modified.", 3)
+                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, target.class:nameof()), 3)
                 else
                     __assign_field(target, key, value)
                 end
@@ -475,7 +475,7 @@ local function class(name, base)
         -- __newindex
         function(target, key, value)
             if __is_readonly_field(target, key) then
-                error("Field '" .. key .. "' on class definition '" .. target:nameof() .. "' is read-only and cannot be modified.", 3)
+                error(string.format("Field '%s' on class definition '%s' is read-only and cannot be modified.", key, target:nameof()), 3)
             else
                 __assign_field(target, key, value)
             end

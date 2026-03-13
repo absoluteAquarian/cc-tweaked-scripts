@@ -56,7 +56,7 @@ local function get_json(url)
     local response = http.get(url) --[[@as HttpResponse?]]
 
     if not response then
-        error("Could not connect to " .. url)
+        error(string.format("Could not connect to %s", url))
     end
 
     local json = response.readAll()
@@ -67,7 +67,7 @@ local function get_json(url)
     --- @cast tbl table?
 
     if not tbl then
-        error("Failed to parse JSON: " .. msg)
+        error(string.format("Failed to parse JSON: %s", msg))
     end
 
     return tbl
@@ -176,7 +176,7 @@ local function get_dependencies(name, meta)
     --- @param current string
     local function visit(current)
         local file = meta.__lookup_programs[current] or meta.__lookup_libs[current]
-        if not file then error("Unknown program or library: " .. current) end
+        if not file then error(string.format("Unknown program or library: %s", current)) end
 
         if visited[current] then return end
         visited[current] = true
@@ -198,7 +198,7 @@ end
 local function foreach_file_and_dependency(name, meta, callback)
     local function visit(current)
         local file = meta.__lookup_programs[current] or meta.__lookup_libs[current]
-        if not file then error("Unknown program or library: " .. current) end
+        if not file then error(string.format("Unknown program or library: %s", current)) end
         callback(file)
     end
 
@@ -252,7 +252,7 @@ local function download_program_and_dependencies(program, meta, directory)
             local json_tbl = textutils.unserialiseJSON(program_file.config, { nbt_style = true })
 
             if not json_tbl then
-                error("Default config for requested program was malformed")
+                error(string.format("Default config for requested program ('%s') was malformed", program_file.name))
             end
 
             -- Make it look nice for the user

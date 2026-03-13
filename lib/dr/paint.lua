@@ -143,7 +143,7 @@ function Painter:new(target)
         elseif side == "bottom" then
             self.terminal.setCursorPos(x, h)
         else
-            error("Invalid side: " .. tostring(side), 2)
+            error(string.format("Invalid side: %s", tostring(side)), 2)
         end
 
         return self
@@ -1327,14 +1327,12 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
 
     --- Sets the origin point for the painter, which is the coordinate within the terminal that corresponds to (1, 1) on the painter's canvas<br/>
     --- <b>Calling this function does not clear where the canvas was previously painted!</b>
-    --- @param x integer  The horizontal coordinate of the origin point within the terminal<br/>If negative, it is interpreted as a coordinate from the right edge of the terminal, so for example <code>x = -1</code> would set the origin to be at the rightmost column of the terminal
-    --- @param y integer  The vertical coordinate of the origin point within the terminal<br/>If negative, it is interpreted as a coordinate from the bottom edge of the terminal, so for example <code>y = -1</code> would set the origin to be at the bottommost row of the terminal
+    --- @param x integer  The horizontal texel coordinate of the origin point within the terminal
+    --- @param y integer  The vertical texel coordinate of the origin point within the terminal
     function instance:set_origin(x, y)
         local origin = self.params.origin
-        local target_x = x < 0 and (self.canvas.texel_width + x + 1) or x
-        local target_y = y < 0 and (self.canvas.texel_height + y + 1) or y
-        origin.x = native.math.max(1, native.math.min(target_x, self.canvas.texel_width))
-        origin.y = native.math.max(1, native.math.min(target_y, self.canvas.texel_height))
+        origin.x = x
+        origin.y = y
     end
 
     --- Sets a value in the painter's data cache<br/>

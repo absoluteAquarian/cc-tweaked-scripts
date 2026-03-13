@@ -4,6 +4,7 @@ local fmt = require "lib.cc.fmt"
 local R_monitor = require "lib.cc.monitor"
 local R_terminal = require "lib.cc.terminal"
 
+local canvas = require "lib.dr.canvas"
 local paint = require "lib.dr.paint"
 
 local machine = require "lib.gt.machine"
@@ -39,6 +40,10 @@ cfg_file:save()
 
 -- The displays have a fixed max length, so the precision has to be limited to prevent overdraw
 local PRECISION_PERCENTS = math.min(2, PRECISION_DISPLAYED)  -- ex. "--.--%"
+
+local TREND_MINIMUM = math.pow(10, -PRECISION_PERCENTS)  -- ex. 0.01 for PRECISION_PERCENTS = 2
+local TREND_MINIMUM_AT_100 = PRECISION_DISPLAYED > 0 and math.pow(10, -PRECISION_DISPLAYED + 1) or TREND_MINIMUM
+
 local PRECISION_AMPS = math.min(3, PRECISION_DISPLAYED)  -- ex. "---.--- A"
 
 local MAX_AMPS_DISPLAYED = math.pow(10, 6 - PRECISION_AMPS) - math.pow(10, -PRECISION_AMPS)  -- ex. "999.999 A" for PRECISION_AMPS = 3
@@ -114,11 +119,12 @@ monitor_state_painter
     :text(monitor_state_painter:recall("NET_TIER"))
 
 local current_terminal = term.current()
+--- @type integer, integer
 local w, h = current_terminal.getSize()
 w = w * 2
 h = h * 3
 
-local GRAPH_LEFT = 2
+local GRAPH_LEFT = 3
 local GRAPH_RIGHT = w - 13
 local GRAPH_TOP = 14 * 3 + 1
 local GRAPH_BOTTOM = h - 1 * 3 - 2
@@ -134,6 +140,7 @@ terminal_template_painter
     :color(colors.blue, nil)
     :box({ x = w - 10, y = 2, width = 4, height = h - 5 })
     :move({ x = -1, y = -1 })
+    :color("reset", nil)
     :text("--.--%", { tail_align = true })
     -- Reports
     :move({ x = 1, y = 1 })
@@ -145,9 +152,8 @@ terminal_template_painter
     :move({ x = 1, y = 4 })
     :text("Net: | +---.--- |  ---")
     -- Value graph
-    :color(colors.white, colors.gray)
     :group()
-    :fill({ x = GRAPH_LEFT, y = GRAPH_TOP, width = GRAPH_WIDTH, height = GRAPH_HEIGHT }, false)
+    :fill({ x = GRAPH_LEFT, y = GRAPH_TOP, width = GRAPH_WIDTH, height = GRAPH_HEIGHT }, true)
     :line({ x = GRAPH_LEFT, y = GRAPH_TOP }, { x = GRAPH_LEFT, y = GRAPH_BOTTOM })
     :end_group()
 
@@ -175,6 +181,7 @@ terminal_state_painter
     :color(terminal_state_painter:recall("CHARGE_COLOR"), nil)
     :fill(terminal_state_painter:recall("CHARGE_AREA"), true)
     :move({ x = -1, y = -1 })
+    :color(nil, "reset")
     :offset(terminal_state_painter:recall("OFFSET_CURRENT"))
     :text(terminal_state_painter:recall("CURRENT_TEXT"), { tail_align = true })
     -- Reports
@@ -188,6 +195,7 @@ terminal_state_painter
     :color(terminal_state_painter:recall("COLOR_OUT_TIER"), nil)
     :text(terminal_state_painter:recall("OUT_TIER"))
     :move({ x = 1 + #"In:  |  ", y = 3 })
+    :color("reset", "reset")
     :clear({ count = #"---.---" })
     :offset(terminal_state_painter:recall("OFFSET_AMPS_IN"))
     :obj(terminal_state_painter:recall("AMPS_IN"))
@@ -196,11 +204,13 @@ terminal_state_painter
     :color(terminal_state_painter:recall("COLOR_IN_TIER"), nil)
     :text(terminal_state_painter:recall("IN_TIER"))
     :move({ x = 1 + #"Net: | ", y = 4 })
+    :color("reset", "reset")
     :clear({ count = #"+---.---" })
     :offset(terminal_state_painter:recall("OFFSET_AMPS_NET"))
     :color(terminal_state_painter:recall("COLOR_NET"), nil)
     :obj(terminal_state_painter:recall("AMPS_NET"))
     :move({ x = 1 + #"Net: | +---.--- |  ", y = 4 })
+    :color("reset", nil)
     :clear({ count = 3 })
     :color(terminal_state_painter:recall("COLOR_NET_TIER"), nil)
     :text(terminal_state_painter:recall("NET_TIER"))
@@ -311,6 +321,13 @@ local function process_amps_text(amps, signed, colored)
     return offset, value, colored and color or colors.white
 end
 
+--- @type GTCEu_EnergyInfoPeripheral
+local BATTERY
+--- @type string
+local BATTERY_TIER
+local LAST_PERCENTAGE = 0.0
+local TREND_SIGN = 0
+
 --- @param current number
 --- @param trend number
 local function display_to_monitors(current, trend)
@@ -340,10 +357,18 @@ local function display_to_monitors(current, trend)
             end
 
             local offset_trend
+            local too_small = false
 
             if trend == 0 then
                 -- Special case
                 offset_trend = (current == 100) and 2 or 1
+
+                if TREND_SIGN ~= 0 then
+                    -- Not actually zero, just too small
+                    trend = TREND_SIGN * (current == 100 and TREND_MINIMUM_AT_100 or TREND_MINIMUM)
+                    offset_trend = offset_trend - 1
+                    too_small = true
+                end
             elseif math.abs(trend) < 10 then
                 offset_trend = 1
             else
@@ -362,7 +387,7 @@ local function display_to_monitors(current, trend)
 
             monitor_state_painter:store("OFFSET_TREND", { x = offset_trend })
             monitor_state_painter:store("COLOR_TREND", color_trend)
-            monitor_state_painter:store("TREND", trend_fmt)
+            monitor_state_painter:store("TREND", too_small and ("<" .. trend_fmt) or trend_fmt)
 
             local offset, formatted, color
             offset, formatted, _ = process_amps_text(in_amps, false, false)
@@ -388,12 +413,6 @@ local function display_to_monitors(current, trend)
         end
     )
 end
-
---- @type GTCEu_EnergyInfoPeripheral
-local BATTERY
---- @type string
-local BATTERY_TIER
-local LAST_PERCENTAGE = 0.0
 
 --- @param current number
 --- @param trend number
@@ -483,7 +502,9 @@ local function display_to_terminal(current, trend)
         local next_index = iter_index == 1 and #terminal_graph_slices or iter_index - 1
 
         slice_painter = terminal_graph_slices[iter_index]
-        slice_painter:set_origin(GRAPH_RIGHT - 1 - position_index * 2, GRAPH_TOP + 1)
+
+        local origin_texel_x, origin_texel_y = canvas.pixel_to_texel(GRAPH_RIGHT - position_index * 2, GRAPH_TOP)
+        slice_painter:set_origin(origin_texel_x, origin_texel_y)
 
         iter_index = next_index
         position_index = position_index + 1
@@ -580,6 +601,8 @@ exec.loop_forever(
 
             local percentage = BATTERY.getEnergyStored() / BATTERY.getEnergyCapacity()
             local trend = percentage - LAST_PERCENTAGE
+
+            TREND_SIGN = trend > 0 and 1 or (trend < 0 and -1 or 0)
 
             local rounded_current = R_math.round(percentage * 100, PRECISION_DISPLAYED)
             local rounded_trend = R_math.round(trend * 100, PRECISION_DISPLAYED)

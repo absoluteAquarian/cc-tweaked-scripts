@@ -116,7 +116,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- When a texel is marked dirty, the canvas's internal cache will be updated when it is drawn next
     --- @param y integer  The vertical texel row
     function instance:mark_dirty_text(y)
-        if not self:contains_texel(1, y) then return end
+        if not self:contains_texel(1, y) then
+            error(string.format("Texel row %d is out of bounds", y), 2)
+        end
 
         -- contains() already verifies the coordinates
 
@@ -128,7 +130,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- When a texel is marked dirty, the canvas's internal cache will be updated when it is drawn next
     --- @param y integer  The vertical texel row
     function instance:mark_dirty_foreground(y)
-        if not self:contains_texel(1, y) then return end
+        if not self:contains_texel(1, y) then
+            error(string.format("Texel row %d is out of bounds", y), 2)
+        end
 
         -- contains() already verifies the coordinates
 
@@ -140,7 +144,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- When a texel is marked dirty, the canvas's internal cache will be updated when it is drawn next
     --- @param y integer  The vertical texel row
     function instance:mark_dirty_background(y)
-        if not self:contains_texel(1, y) then return end
+        if not self:contains_texel(1, y) then
+            error(string.format("Texel row %d is out of bounds", y), 2)
+        end
 
         -- contains() already verifies the coordinates
 
@@ -166,7 +172,7 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param y integer  The vertical texel coordinate
     --- @return boolean
     function instance:hidden(x, y)
-        if not self:contains_texel(x, y) then return false end
+        if not self:contains_texel(x, y) then return true end
 
         -- contains() already verifies the coordinates
 
@@ -233,7 +239,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param y integer
     --- @param value boolean
     function instance:updatePass(x, y, value)
-        if not self:contains_texel(x, y) then return end
+        if not self:contains_texel(x, y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
 
         -- contains() already verifies the coordinates
 
@@ -260,15 +268,15 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x_end, "x_end")
         self.verify_integer_coordinate(y, "y")
 
-        if x_start > x_end then return end
-
-        -- Allow for partial updates by only considering the points within the canvas bounds
-        if x_start > self.texel_width or x_end < 1 or y < 1 or y > self.texel_height then return end
-
-        -- At this point, at least part of the texels to update are within bounds
-        -- Clamp the coordinates to stay within bounds
-        x_start = native.math.max(1, x_start)
-        x_end = native.math.min(self.texel_width, x_end)
+        if not self:contains_texel(x_start, y) then
+            error(string.format("Start of texel range (%d, %d) is out of bounds", x_start, y), 2)
+        end
+        if not self:contains_texel(x_end, y) then
+            error(string.format("End of texel range (%d, %d) is out of bounds", x_end, y), 2)
+        end
+        if x_start > x_end then
+            error(string.format("Start of texel range (%d) cannot be greater than end of texel range (%d)", x_start, x_end), 2)
+        end
 
         local tbl_pass = self.pass
         local row = tbl_pass.flags[y]
@@ -366,7 +374,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param char string  The texel to paint
     --- @param params TexelSetParameters  The parameters for painting the texel
     function instance:set_texel(x, y, char, params)
-        if not self:contains_texel(x, y) then return end
+        if not self:contains_texel(x, y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
 
         -- contains() already verifies the coordinates
 
@@ -392,7 +402,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
     --- @param color number|string  The color to update as a <code>colors</code> value or <code>"-"</code> to defer to the terminal's color when painting
     --- @param background boolean  If <code>true</code>, the background color will be updated; otherwise, the foreground color will be updated
     function instance:set_texel_color(x, y, color, background)
-        if not self:contains_texel(x, y) then return end
+        if not self:contains_texel(x, y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
 
         -- contains() already verifies the coordinates
 
@@ -430,13 +442,13 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(y, "y")
 
         if #text == 0 then
-            return x, y, text, 1, 0, 0
+            return x, y, text, 1, 1, 0
         end
 
         local coordinate = params.vertical and y or x
         local dimension = params.vertical and self.texel_height or self.texel_width
 
-        if coordinate + #text < 2 or coordinate > dimension then return x, y, text, 1, 0, 0 end
+        if coordinate + #text < 2 or coordinate > dimension then return x, y, text, 1, 1, 0 end
 
         local temp_text = text
 
@@ -571,6 +583,10 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
+        if not self:contains_texel(x, y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
+
         if params then
             local coordinate = params.vertical and y or x
             local dimension = params.vertical and self.texel_height or self.texel_width
@@ -610,9 +626,11 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
         local terminal_bg = terminal.getBackgroundColor()
         local forced_dirty_bg = tbl_cache.terminal_bg ~= terminal_bg
 
+        local x_prev, y_prev = terminal.getCursorPos()
+        local x, y = x_prev, y_prev
+
         for r = 1, self.texel_height do
             local pass = self.pass
-            local x, y = terminal.getCursorPos()
 
             -- Preprocess any deferred colors
             if tbl_dirty.text[r] then
@@ -674,9 +692,13 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
                 end
             end
 
-            -- Move the cursor to the start of the next line for the next iteration
-            terminal.setCursorPos(x, y + 1)
+            -- Move the cursor to the next line for the next iteration
+            y = y + 1
         end
+
+        terminal.setCursorPos(x_prev, y_prev + self.texel_height)
+        terminal.setTextColor(terminal_fg)
+        terminal.setBackgroundColor(terminal_bg)
     end
 
     return instance
@@ -754,14 +776,14 @@ local __bits_to_char_lookup = {}
 local __char_to_bits_lookup = {}
 for i = 0, 31 do
     local code = i + 128
-    local char = native.string.char(i + 128)
+    local char = native.string.char(code)
     __bits_to_char_lookup[i] = char
     __char_to_bits_lookup[char] = i
     __char_to_bits_lookup[code] = i
 end
 for i = 32, 63 do
     local code = (63 - i) + 128
-    local char = native.string.char((63 - i) + 128)
+    local char = native.string.char(code)
     __bits_to_char_lookup[i] = char
     __char_to_bits_lookup[char] = i
     __char_to_bits_lookup[code] = i
@@ -809,10 +831,10 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
     local instance = self:create_instance(native.math.ceil(width / 2), native.math.ceil(height / 3), fg, bg, transparent)
     -- TexelCanvas:new(width, height, fg, bg, transparent)
 
-    --- The width of the canvas in pixels.<br/>Not to be confused with <code>TexelCanvas.width</code>
+    --- The width of the canvas in pixels.<br/>Not to be confused with <code>TexelCanvas.texel_width</code>
     instance.pixel_width = width
     instance:mark_readonly("pixel_width")
-    --- The height of the canvas in pixels.<br/>Not to be confused with <code>TexelCanvas.height</code>
+    --- The height of the canvas in pixels.<br/>Not to be confused with <code>TexelCanvas.texel_height</code>
     instance.pixel_height = height
     instance:mark_readonly("pixel_height")
 
@@ -963,8 +985,11 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
-        local texel_x, texel_y = pixel_to_texel(x, y)
-        return self.base:contains_texel(texel_x, texel_y)
+        if not self:contains_pixel(x, y) then
+            error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
+
+        return x >= 1 and x <= self.pixel_width and y >= 1 and y <= self.pixel_height
     end
 
     --- Gets the color of the specified pixel on the canvas
@@ -976,7 +1001,15 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
+        if not self:contains_pixel(x, y) then
+            error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
+
         local texel_x, texel_y = pixel_to_texel(x, y)
+
+        if not self:contains_texel(texel_x, texel_y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds (from pixel coordinates (%d, %d))", texel_x, texel_y, x, y), 2)
+        end
 
         if self:hidden(texel_x, texel_y) then
             -- The pixel is transparent
@@ -1015,11 +1048,20 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
     --- @return boolean changed
     --- @return 0|1|2|3 updated_colors  Indicates whether the update is for the foreground color (1), background color (2), both (3) or neither (0)
     function instance:update_pixel(x, y, color, active)
+        if not self:contains_pixel(x, y) then
+            error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
+
         local changed = false
         local updated_colors = 0
 
         local texel_x, texel_y = pixel_to_texel(x, y)
-        local bit_to_check = bit32.lshift(1, (y % 3) * 2 + (x % 2))
+
+        if not self:contains_texel(texel_x, texel_y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds (from pixel coordinates (%d, %d))", texel_x, texel_y, x, y), 2)
+        end
+
+        local bit_to_check = bit32.lshift(1, ((y - 1) % 3) * 2 + ((x - 1) % 2))
 
         local map = self.map
         local texel_state_row = map.texel_state[texel_y]
@@ -1138,6 +1180,10 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
+        if not self:contains_pixel(x, y) then
+            error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
+
         local changed, updated_colors = self:update_pixel(x, y, color, active)
 
         if changed then
@@ -1157,6 +1203,10 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
     function instance:set_pixel_state(x, y, active)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
+
+        if not self:contains_pixel(x, y) then
+            error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
 
         local texel_x, texel_y = pixel_to_texel(x, y)
         local bit_to_check = bit32.lshift(1, (y % 3) * 2 + (x % 2))
@@ -1188,8 +1238,12 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
+        if not self:contains_texel(x, y) then
+            error(string.format("Texel coordinates (%d, %d) are out of bounds", x, y), 2)
+        end
+
         if active_bits < 0 or active_bits > 63 then
-            error("active_bits must be between 0 and 63 (inclusive)", 2)
+            error(string.format("active_bits must be between 0 and 63 (inclusive), was %d", active_bits), 2)
         end
 
         local map = self.map
@@ -1219,7 +1273,13 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         local x, y, color, active = iter()
 
         while x ~= nil and y ~= nil do
-            --- @cast active boolean
+            if not self:contains_pixel(x, y) then
+                error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
+            end
+            if active == nil then
+                error(string.format("Attempted to set a nil active state for pixel coordinates (%d, %d)", x, y), 2)
+            end
+
             local texel_x, texel_y = pixel_to_texel(x, y)
             local changed, updated_colors = self:update_pixel(x, y, color, active)
 
