@@ -168,7 +168,7 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
             function(error)
                 R_monitor.bsod_external_monitors()
 
-                error = trace.trim_error_message(error, 13, 30)
+                error = trace.trim_error_message(error, 13, 32)
 
                 local valid = false
                 while not valid do

@@ -24,11 +24,11 @@ local function trim_error_message(msg, max_lines, max_width)
 
         for line in trimmed:gmatch("[^\r\n]+") do
             if max_lines and count >= max_lines then
-                table.insert(filtered, " ... (truncated)")
+                table[#table] = " ... (truncated)"
                 break
             end
 
-            if (not line:find("xpcall", nil, true)) and (not line:find("lib/trace.lua", nil, true)) and (not line:find("tail calls", nil, true)) then
+            if not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true) or line:find("tail calls", nil, true)) then
                 if max_width and #line > max_width then
                     line = line:sub(1, max_width) .. " ... (truncated)"
                 end
@@ -44,11 +44,9 @@ local function trim_error_message(msg, max_lines, max_width)
     return trimmed
 end
 
---- Calls the specified function with the given arguments, throwing an error with the full stacktrace if the function throws an error<br/>
---- This function effectively acts as a wrapper around xpcall()
---- @param func fun(...) : ...  The function to call with the given arguments
---- @param ... any  The arguments to call the function with
---- @return ...  The return values of the function, if the call was successful
+--- @param func fun(...) : ...
+--- @param ... any
+--- @return ...
 local function scall(func, ...)
     --- @param err any
     --- @return TracedError
@@ -98,21 +96,36 @@ local function scall(func, ...)
     local results = { xpcall(func, __handler, ...) }
 
     if not results[1] then
-        error(results[2], 0)
+        return false, results[2]
     end
 
-    return table.unpack(results, 2)
+    return true, results
+end
+
+local module_table = {}
+
+--- Calls the specified function with the given arguments, throwing an error with the full stacktrace if the function throws an error<br/>
+--- This function effectively acts as a wrapper around xpcall()
+--- @param func fun(...) : ...  The function to call with the given arguments
+--- @param ... any  The arguments to call the function with
+--- @return ...  The return values of the function, if the call was successful
+function module_table.scall(func, ...)
+    local results = { scall(func, ...) }
+
+    if not results[1] then
+        error(results[2], 2)
+    end
+
+    return table.unpack(results[2], 2)
 end
 
 --- Wraps the function call in a call to scall()
 --- @param func function  The function to wrap
 --- @return function
-local function wrap(func)
-    return function(...) return scall(func, ...) end
+function module_table.wrap(func)
+    return function(...) return module_table.scall(func, ...) end
 end
 
-return {
-    scall = scall,
-    wrap = wrap,
-    trim_error_message = trim_error_message
-}
+module_table.trim_error_message = trim_error_message
+
+return module_table
