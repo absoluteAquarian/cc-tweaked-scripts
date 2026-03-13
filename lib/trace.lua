@@ -8,13 +8,21 @@
 --- @param max_width integer?  If not <code>nil</code>, the maximum width of each line in the trimmed message
 --- @return any
 local function trim_error_message(msg, max_lines, max_width)
-    if type(msg) == "string" then
-        --- @cast msg string
+    local trimmed = msg
+
+    if type(trimmed) == "table" and rawget(trimmed, "__scall_message") then
+        --- @cast trimmed TracedError
+
+        trimmed = trimmed.__scall_message
+    end
+
+    if type(trimmed) == "string" then
+        --- @cast trimmed string
 
         local filtered = {}
         local count = 0
 
-        for line in msg:gmatch("[^\r\n]+") do
+        for line in trimmed:gmatch("[^\r\n]+") do
             if max_lines and count >= max_lines then
                 table.insert(filtered, " ... (truncated)")
                 break
@@ -30,10 +38,10 @@ local function trim_error_message(msg, max_lines, max_width)
             end
         end
 
-        msg = table.concat(filtered, "\n")
+        trimmed = table.concat(filtered, "\n")
     end
 
-    return msg
+    return trimmed
 end
 
 --- Calls the specified function with the given arguments, throwing an error with the full stacktrace if the function throws an error<br/>

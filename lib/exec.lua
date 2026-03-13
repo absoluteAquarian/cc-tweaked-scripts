@@ -168,12 +168,14 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
             function(error)
                 R_monitor.bsod_external_monitors()
 
+                error = trace.trim_error_message(error, 8, 30)
+
                 local valid = false
                 while not valid do
                     R_terminal.reset_terminal()
 
                     print("Detected error:")
-                    print(trace.trim_error_message(error, 8, 30))
+                    print(error)
                     print()
                     print("r -> restart")
                     print("q -> quit")
