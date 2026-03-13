@@ -1,3 +1,5 @@
+local SHOW_TRACE_LINES = false
+
 --- Trims the provided error message to include only relevant functions for errors
 --- @param msg any  The error message to trim<br/>If not a string, the message will be returned as-is
 --- @param max_lines integer?  If not <code>nil</code>, the maximum number of lines to include in the trimmed message
@@ -25,7 +27,7 @@ local function trim_error_message(msg, max_lines, max_width)
                 end
             end
 
-            if not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true) or line:find("tail calls", nil, true)) then
+            if SHOW_TRACE_LINES or not (line:find("pcall", nil, true) or line:find("lib/trace.lua", nil, true) or line:find("tail calls", nil, true)) then
                 if max_width and found_stacktrace_message and #line > max_width then
                     line = line:sub(1, max_width) .. " ... (truncated)"
                 end
@@ -76,7 +78,7 @@ local function scall(func, ...)
     local function __handler(err)
         -- Forward the error message through nested scall() calls
         -- Only the source of the error will be missing the stacktrace, so if it's present then this scall() was further up the call stack
-        if type(err) == "string" and err:find("stack traceback:", nil, true) then
+        if type(err) == "string" and (err:find("error in error handling", nil, true) or err:find("stack traceback:", nil, true)) then
             return { root = false, message = err }
         end
 
@@ -111,7 +113,7 @@ function module_table.scall(func, ...)
 
     if not results[1] then
         local traced = results[2]  --[[@as TracedError]]
-        error(traced.message, 0)
+        error(traced.message or traced, 0)
     end
 
     return table.unpack(results, 2)
