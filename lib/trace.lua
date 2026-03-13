@@ -32,7 +32,7 @@ local function trim_error_message(msg, max_lines, max_width)
                 line = line:sub(1, max_width) .. " ... (truncated)"
             end
 
-            if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) then
+            if (not line:find("xpcall")) and (not line:find("lib/trace%.lua")) and (not line:find("tail calls")) then
                 table.insert(filtered, line)
                 count = count + 1
             end
