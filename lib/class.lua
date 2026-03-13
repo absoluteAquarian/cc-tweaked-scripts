@@ -21,6 +21,13 @@ local function __resolve_proxy(proxy)
     return target ~= nil and target or proxy
 end
 
+--- @param proxy table
+--- @param field string
+--- @return any
+local function __resolve_proxy_field(proxy, field)
+    return rawget(__resolve_proxy(proxy), field)
+end
+
 --- Returns whether the given class-like object defines the given field directly on itself, without checking base classes
 --- @param klass Classlike  The class-like object to check
 --- @param field string  The name of the field to check for
@@ -98,9 +105,7 @@ end
 --- @param field string  The name of the field to check
 --- @return boolean
 local function __is_readonly_field(klass, field)
-    --- @type Classlike
-    local proxy_target = __resolve_proxy(klass)
-    return proxy_target.__fields.readonly[field] == true
+    return rawget(__resolve_proxy(klass), "__fields")[field] == true
 end
 
 --- Tags a field on a class-like object as read-only or not, for use with internal assignments of readonly fields after instance creation
@@ -112,10 +117,10 @@ local function __tag_field_readonly(klass, field, is_readonly)
     local proxy_target = __resolve_proxy(klass)
 
     if not __has_field_directly(proxy_target, field) then
-        error(string.format("Field '%s' is not defined on class %s '%s'", field, proxy_target.__type, proxy_target.class:nameof()), 2)
+        error(string.format("Field '%s' is not defined on class %s '%s'", field, rawget(proxy_target, "__type"), rawget(proxy_target, "class"):nameof()), 2)
     else
         -- Need to redirect the assignment to the original table directly
-        __resolve_proxy(proxy_target.__fields.readonly)[field] = is_readonly
+        __resolve_proxy_field(rawget(proxy_target, "__fields"), "readonly")[field] = is_readonly
     end
 end
 
@@ -410,10 +415,11 @@ local function class(name, base)
             instance,
             -- __newindex
             function(target, key, value)
-                if __has_field(target.class, key) then
-                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, target.class:nameof()), 3)
+                local klass = rawget(target, "class")
+                if __has_field(klass, key) then
+                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, klass:nameof()), 3)
                 elseif __is_readonly_field(target, key) then
-                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, target.class:nameof()), 3)
+                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, klass:nameof()), 3)
                 else
                     __assign_field(target, key, value)
                 end
