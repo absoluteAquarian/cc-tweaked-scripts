@@ -11,6 +11,7 @@ local function proxy(tbl)
             __proxy_target = tbl
         },
         {
+            __name = "read-only table proxy",
             __index = trace.wrap(function(self, key) return tbl[key] end),
             __newindex = trace.wrap(function(self, key, value) error("Attempted to modify read-only table", 2) end),
             __pairs = trace.wrap(function(self) return pairs(tbl) end),

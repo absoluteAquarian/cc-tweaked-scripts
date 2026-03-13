@@ -200,12 +200,20 @@ local function __create_fields_stringset(...)
 
     set.readonly = readonly.proxy(set.readonly)
 
+    setmetatable(
+        set,
+        {
+            __name = "FieldTracker"
+        }
+    )
+
     --- @type FieldTracker
     return setmetatable(
         {
             __proxy_target = set
         },
         {
+            __name = "FieldTracker (proxy)",
             __index = trace.wrap(
                 function(self, key)
                     --- @type FieldTracker
@@ -257,6 +265,7 @@ local function __create_oop_proxy(klass, newindex)
             __proxy_target = klass
         },
         {
+            __name = string.format("%s (proxy)", rawget(klass, "__name") or "unknown"),
             __index = trace.wrap(function(self, key) return __resolve_proxy(self)[key] end),
             __newindex = trace.wrap(function(self, key, value) newindex(__resolve_proxy(self), key, value) end),
             __pairs = trace.wrap(function(self) return pairs(__resolve_proxy(self)) end),

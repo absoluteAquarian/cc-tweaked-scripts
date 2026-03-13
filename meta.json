@@ -186,7 +186,7 @@
         },
         {
             "name": "lib.class",
-            "version": 22,
+            "version": 23,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
@@ -256,7 +256,7 @@
         },
         {
             "name": "lib.readonly",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/readonly.lua",
             "install": "lib/readonly.lua",
             "config": "",
@@ -287,7 +287,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 19,
+            "version": 20,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",
