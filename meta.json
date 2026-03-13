@@ -212,7 +212,7 @@
         },
         {
             "name": "lib.exec",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",
@@ -226,7 +226,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",

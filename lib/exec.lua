@@ -194,6 +194,13 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
                         os.pullEvent("FAKE_EVENT")
                         R_terminal.reset_terminal()
                     end
+
+                    if not running then
+                        -- The error needs to be re-raised to allow the trace handler to catch the stackrace
+                        return true
+                    end
+
+                    return false
                 end
             end
         }

@@ -4,7 +4,7 @@ local trace = require "lib.trace"
 
 --- @class TryBlock
 --- @field [1] fun(...) : ...  The function to be called as the "try" block
---- @field [2] (fun(error: any) : ...)?  An optional function to be called as the "catch" block if an error occurs, with the error passed as an argument
+--- @field [2] (fun(error: any) : boolean, ...)?  An optional function to be called as the "catch" block if an error occurs, with the error passed as an argument
 
 --- @param what TryBlock
 local function try(what)
@@ -12,8 +12,12 @@ local function try(what)
     local results = { pcall(what[1]) }
 
     if not results[1] then
+        local msg = results[2]
         local catch = what[2]
-        return catch and catch(results[2]) or nil
+
+        if (not catch) or (not catch(msg)) then
+            error(msg, 2)
+        end
     end
 
     return table.unpack(results, 2)
@@ -37,6 +41,7 @@ local module_table = {}
 ---     -- catch
 ---     function(error)
 ---        -- error handling code goes here, with the error passed as an argument
+---        -- return true to indicate the error should not be re-raised
 ---     end
 --- }
 --- ```
