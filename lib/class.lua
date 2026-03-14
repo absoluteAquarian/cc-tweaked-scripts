@@ -258,17 +258,17 @@ end
 local function __create_oop_function(proxy, func)
     return setmetatable(
         {
-            __proxy_target = proxy.__proxy_target,
+            __proxy = proxy,
             __function_proxy = func
         },
         {
-            __call = function(arg1, ...)
-                if type(arg1) == "table" and proxy == arg1 then
+            __call = function(self, arg1, ...)
+                if type(arg1) == "table" and self.__proxy == arg1 then
                     -- Redirect to the proxy's target
-                    arg1 = __resolve_proxy(arg1)
+                    arg1 = __resolve_proxy(self.__proxy)
                 end
 
-                return func(arg1, ...)
+                return self.__function_proxy(arg1, ...)
             end
         }
     )
@@ -315,14 +315,14 @@ local function __create_oop_proxy(klass, newindex)
                     local proxied_function = value.__function_proxy
                     if proxied_function then value = proxied_function end
                 end
-                
+
                 newindex(__resolve_proxy(self), key, value) end
             ),
             __pairs = trace.wrap(function(self) return pairs(__resolve_proxy(self)) end),
             __ipairs = trace.wrap(function(self) return R_table.create_ipairs(__resolve_proxy(self)) end),
             __len = trace.wrap(function(self) return #__resolve_proxy(self) end),
             __tostring = trace.wrap(function(self) return tostring(__resolve_proxy(self)) end),
-            __call = trace.wrap(function(...) return klass(...) end)
+            __call = trace.wrap(function(self, ...) return __resolve_proxy(self)(...) end)
         }
     )
 end
