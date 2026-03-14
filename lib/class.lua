@@ -252,6 +252,25 @@ local function __create_fields_stringset(...)
     )
 end
 
+--- @param proxy ObjectProxy
+--- @param func function
+--- @return table
+local function __create_oop_function(proxy, func)
+    return setmetatable(
+        {},
+        {
+            __call = function(arg1, ...)
+                if type(arg1) == "table" and proxy == arg1 then
+                    -- Redirect to the proxy's target
+                    arg1 = __resolve_proxy(arg1)
+                end
+
+                return func(arg1, ...)
+            end
+        }
+    )
+end
+
 --- @param klass Classlike  The class-like object to create a proxy for
 --- @param newindex fun(target: Classlike, key: any, value: any)  The <code>__newindex</code> metamethod for the proxy
 --- @return ObjectProxy
@@ -261,18 +280,40 @@ local function __create_oop_proxy(klass, newindex)
         --- @private
         --- @class ObjectProxy : Classlike  A proxy for a class-like object
         --- @field __proxy_target Classlike  The class-like object this is a proxy for
+        --- @field __function_cache { [string]: table }  A cache of function proxies for the proxy target
         {
-            __proxy_target = klass
+            __proxy_target = klass,
+            __function_cache = {}
         },
         {
-            __name = string.format("%s (proxy)", rawget(klass, "__name") or "unknown"),
-            __index = trace.wrap(function(self, key) return __resolve_proxy(self)[key] end),
-            __newindex = trace.wrap(function(self, key, value) newindex(__resolve_proxy(self), key, value) end),
+            __name = string.format("%s (proxy)", getmetatable(klass).__name or "unknown"),
+            --- @param self ObjectProxy
+            --- @param key any
+            --- @return any
+            __index = trace.wrap(function(self, key)
+                local cached = self.__function_cache[key]
+                if cached then return cached end
+
+                local value = __resolve_proxy(self)[key]
+                if type(value) == "function" then
+                    value = __create_oop_function(self, value)
+                    self.__function_cache[key] = value
+                end
+
+                return value
+            end),
+            --- @param self ObjectProxy
+            --- @param key any
+            --- @param value any
+            __newindex = trace.wrap(function(self, key, value)
+                self.__function_cache[key] = nil
+                newindex(__resolve_proxy(self), key, value) end
+            ),
             __pairs = trace.wrap(function(self) return pairs(__resolve_proxy(self)) end),
             __ipairs = trace.wrap(function(self) return R_table.create_ipairs(__resolve_proxy(self)) end),
             __len = trace.wrap(function(self) return #__resolve_proxy(self) end),
             __tostring = trace.wrap(function(self) return tostring(__resolve_proxy(self)) end),
-            __call = trace.wrap(function(self, ...) return __resolve_proxy(self)(...) end)
+            __call = trace.wrap(function(...) return klass(...) end)
         }
     )
 end
