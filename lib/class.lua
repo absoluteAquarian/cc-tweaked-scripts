@@ -336,7 +336,9 @@ local function class(name, base)
         --- The classification of this class-like object
         __type = "definition",
         --- The base class definition
-        base = base
+        base = base,
+        --- @type ClassDefinition  The class definition (itself)
+        class = nil
     }
 
     __define_field(definition, "nameof")
@@ -367,51 +369,10 @@ local function class(name, base)
             --- @type ClassInstance?  The class instance of the class definition's base class definition
             base = nil,
             --- @type ClassDefinition  The class definition for this class instance
-            class = rawget(self, "class")
+            class = rawget(self, "class"),
+            --- @type ClassInstance  A reference to the actual class instance, even when accessed through a base class instance
+            this = nil
         }
-
-        local proxy = __create_oop_proxy(
-            -- klass
-            instance,
-            -- __newindex
-            --- @param target ClassInstance
-            --- @param key any
-            --- @param value any
-            function(target, key, value)
-                local klass = rawget(target, "class")
-                if __has_field(klass, key) then
-                    local class_name = __resolve_proxy_field(klass, "__name")
-                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, class_name), 3)
-                elseif __is_readonly_field(target, key) then
-                    local class_name = __resolve_proxy_field(klass, "__name")
-                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, class_name), 3)
-                else
-                    __assign_field(target, key, value)
-                end
-            end
-        )
-
-        --- @type ClassInstance  A reference to the actual class instance, even when accessed through a base class instance
-        instance.this = proxy --[[@as ClassInstance]]
-
-        --- @type ClassDefinition?
-        local base_class = rawget(self, "base")
-        if base_class then
-            local base_instance = base_class:new(...)
-            rawset(instance, "base", base_instance)
-
-            -- Ensure that the "this" field on all base class instances in the hierarchy points to this instance, to allow upcasting to work properly
-            __foreach_in_hierarchy(
-                base_instance,
-                --- @param c ClassInstance
-                function(c)
-                    __tag_field_readonly(c, "this", false)
-                    rawset(c, "this", proxy)
-                    __tag_field_readonly(c, "this", true)
-                end,
-                true
-            )
-        end
 
         --- Retrieves the class instance from this class instance's hierarchy whose class field matches the given class definition, or returns <code>nil</code> if no such instance exists<br/>
         --- If this class instance is a base class instance created by a deriving class instance, upcasting the deriving class is possible
@@ -439,6 +400,48 @@ local function class(name, base)
         end
 
         setmetatable(instance, self.__instance_mt)
+
+        local proxy = __create_oop_proxy(
+            -- klass
+            instance,
+            -- __newindex
+            --- @param target ClassInstance
+            --- @param key any
+            --- @param value any
+            function(target, key, value)
+                local klass = rawget(target, "class")
+                if __has_field(klass, key) then
+                    local class_name = __resolve_proxy_field(klass, "__name")
+                    error(string.format("Field '%s' is defined on class definition '%s' and cannot be modified through a class instance", key, class_name), 3)
+                elseif __is_readonly_field(target, key) then
+                    local class_name = __resolve_proxy_field(klass, "__name")
+                    error(string.format("Field '%s' on class instance of '%s' is read-only and cannot be modified.", key, class_name), 3)
+                else
+                    __assign_field(target, key, value)
+                end
+            end
+        )
+
+        rawset(instance, "this", proxy)
+
+        --- @type ClassDefinition?
+        local base_class = rawget(self, "base")
+        if base_class then
+            local base_instance = base_class:new(...)
+            rawset(instance, "base", base_instance)
+
+            -- Ensure that the "this" field on all base class instances in the hierarchy points to this instance, to allow upcasting to work properly
+            __foreach_in_hierarchy(
+                base_instance,
+                --- @param c ClassInstance
+                function(c)
+                    __tag_field_readonly(c, "this", false)
+                    rawset(c, "this", proxy)
+                    __tag_field_readonly(c, "this", true)
+                end,
+                true
+            )
+        end
 
         return proxy --[[@as ClassInstance]]
     end
@@ -470,25 +473,6 @@ local function class(name, base)
 
     -- Wrap the definition in a proxy to handle field assignment with inheritance and protections
 
-    local proxy = __create_oop_proxy(
-        -- klass
-        definition,
-        -- __newindex
-        --- @param target ClassDefinition
-        --- @param key any
-        --- @param value any
-        function(target, key, value)
-            if __is_readonly_field(target, key) then
-                error(string.format("Field '%s' on class definition '%s' is read-only and cannot be modified.", key, rawget(target, "__name")), 3)
-            else
-                __assign_field(target, key, value)
-            end
-        end
-    ) --[[@as ClassDefinition]]
-
-    --- The class definition (itself)
-    definition.class = proxy
-
     setmetatable(
         definition,
         {
@@ -509,6 +493,24 @@ local function class(name, base)
             )
         }
     )
+
+    local proxy = __create_oop_proxy(
+        -- klass
+        definition,
+        -- __newindex
+        --- @param target ClassDefinition
+        --- @param key any
+        --- @param value any
+        function(target, key, value)
+            if __is_readonly_field(target, key) then
+                error(string.format("Field '%s' on class definition '%s' is read-only and cannot be modified.", key, rawget(target, "__name")), 3)
+            else
+                __assign_field(target, key, value)
+            end
+        end
+    ) --[[@as ClassDefinition]]
+
+    rawset(definition, "class", proxy)
 
     return proxy
 end
