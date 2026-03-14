@@ -339,6 +339,9 @@ local function class(name, base)
         base = base
     }
 
+    __define_field(definition, "nameof")
+    __define_field(definition, "new")
+
     --- @private
     --- @param self ClassDefinition
     --- @param ... any
