@@ -292,7 +292,7 @@ local function __create_oop_proxy(klass, newindex)
 
                 local value = __resolve_proxy(self)[key]
                 if type(value) == "function" then
-                    value = __create_oop_function(self, value)
+                    value = __create_oop_function(self, value) --[[@as table]]
                     self.__function_cache[key] = value
                 end
 

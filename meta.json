@@ -186,7 +186,7 @@
         },
         {
             "name": "lib.class",
-            "version": 30,
+            "version": 31,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
@@ -226,7 +226,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 7,
+            "version": 8,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",
