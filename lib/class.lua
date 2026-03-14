@@ -120,7 +120,7 @@ local function __tag_field_readonly(klass, field, is_readonly)
         error(string.format("Field '%s' is not defined on class %s '%s'", field, rawget(proxy_target, "__type"), rawget(proxy_target, "class"):nameof()), 2)
     else
         -- Need to redirect the assignment to the original table directly
-        __resolve_proxy_field(rawget(proxy_target, "__fields"), "readonly")[field] = is_readonly
+        __resolve_proxy(__resolve_proxy_field(rawget(proxy_target, "__fields"), "readonly"))[field] = is_readonly
     end
 end
 
