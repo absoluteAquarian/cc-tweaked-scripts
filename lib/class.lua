@@ -117,7 +117,7 @@ local function __tag_field_readonly(klass, field, is_readonly)
     local proxy_target = __resolve_proxy(klass)
 
     if not __has_field_directly(proxy_target, field) then
-        error(string.format("Field '%s' is not defined on class %s '%s'", field, rawget(proxy_target, "__type"), rawget(proxy_target, "class"):nameof()), 2)
+        error(string.format("Field '%s' is not defined on class %s '%s'", field, rawget(proxy_target, "__type"), rawget(rawget(proxy_target, "class"), "__name")), 2)
     else
         -- Need to redirect the assignment to the original table directly
         __resolve_proxy(__resolve_proxy_field(rawget(proxy_target, "__fields"), "readonly"))[field] = is_readonly
@@ -170,14 +170,7 @@ end
 --- @param other ClassDefinition  The class to check against
 --- @return boolean
 local function __instanceof(klass, other)
-    --- @type Classlike
-    klass = __resolve_proxy(klass)
-
-    if rawget(klass, "class") == other then return true end
-
-    --- @type Classlike?
-    local base = rawget(klass, "base")
-    return (base and __instanceof(base, other)) == true
+    return __find_in_hierarchy(klass, function(c) return rawget(c, "class") == other end) ~= nil
 end
 
 --- Defines a new table for tracking fields in a class-like object
