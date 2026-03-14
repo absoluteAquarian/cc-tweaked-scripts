@@ -257,7 +257,10 @@ end
 --- @return table
 local function __create_oop_function(proxy, func)
     return setmetatable(
-        {},
+        {
+            __proxy_target = proxy.__proxy_target,
+            __function_proxy = func
+        },
         {
             __call = function(arg1, ...)
                 if type(arg1) == "table" and proxy == arg1 then
@@ -307,6 +310,12 @@ local function __create_oop_proxy(klass, newindex)
             --- @param value any
             __newindex = trace.wrap(function(self, key, value)
                 self.__function_cache[key] = nil
+
+                if type(value) == "table" then
+                    local proxied_function = value.__function_proxy
+                    if proxied_function then value = proxied_function end
+                end
+                
                 newindex(__resolve_proxy(self), key, value) end
             ),
             __pairs = trace.wrap(function(self) return pairs(__resolve_proxy(self)) end),
