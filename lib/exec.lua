@@ -229,6 +229,6 @@ function module_table.sleep_with_polling(seconds, watcher) return trace.scall(sl
 --- @param body fun()  The function to run every loop iteration
 --- @param sleep_watcher EventWatcher?  An optional EventWatcher to pull events from while sleeping between loop iterations
 --- @param quit fun()?  An optional function to run when the program is quitting after an error
-function module_table.loop_forever(wait_interval, init, body, sleep_watcher, quit) return trace.scall(loop_forever, wait_interval, init, body, sleep_watcher, quit) end
+function module_table.loop_forever(wait_interval, init, body, sleep_watcher, quit) return loop_forever(wait_interval, init, body, sleep_watcher, quit) end
 
 return module_table
