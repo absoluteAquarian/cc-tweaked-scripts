@@ -985,10 +985,6 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         self.verify_integer_coordinate(x, "x")
         self.verify_integer_coordinate(y, "y")
 
-        if not self:contains_pixel(x, y) then
-            error(string.format("Pixel coordinates (%d, %d) are out of bounds", x, y), 2)
-        end
-
         return x >= 1 and x <= self.pixel_width and y >= 1 and y <= self.pixel_height
     end
 
