@@ -22,11 +22,9 @@ local __ignoring = false
 
 --- @class DebugStackEntry
 --- @field depth integer
---- @field src string
---- @field line integer
---- @field name string
---- @field func function
 --- @field tail boolean
+--- @field caller debuginfo
+--- @field callee debuginfo
 
 --- @type DebugStackEntry[]
 local __stack = {}
@@ -42,48 +40,18 @@ local function __debug_hook(event)
 
     -- Indicate in the stack whether a call is a tail call, for future reference
     if event == "call" or event == "tail call" then
-        local caller = debug.getinfo(3, "Sl")
-        local info = debug.getinfo(2, "nf")
-
         table.insert(
             __stack,
             {
                 depth = #__stack + 1,
-                src = caller.short_src,
-                line = caller.currentline,
-                name = info.name or "?",
-                func = info.func,
-                tail = event == "tail call"
+                tail = event == "tail call",
+                caller = debug.getinfo(3, "Sl"),
+                callee = debug.getinfo(2, "nf")
             }
         )
-
-        if #__stack >= module_table.MAX_DEPTH then
-            __file.writeLine(string.format("Function call depth exceeded %d:", module_table.MAX_DEPTH))
-            __file.writeLine(debug.traceback(nil, 2))
-            __file.writeLine("")
-            __file.writeLine("")
-
-            for _, entry in ipairs(__stack) do
-                local src = entry.src
-                local after = src:match(".*/()")
-                if after then src = src:sub(after) end
-
-                local report = entry.line > 0
-                    and string.format("%d: %s:L%d (%s)", entry.depth, src, entry.line, entry.name)
-                    or string.format("%d: %s (%s)", entry.depth, src, entry.name)
-
-                __file.write(report)
-
-                if entry.tail then __file.write(" [tail call]") end
-
-                __file.writeLine("")
-            end
-
-            debug.sethook(nil)
-        end
     -- Return event will clear any "tail returns" in the call stack as well
     elseif event == "return" then
-        local caller = debug.getinfo(3, "f")
+        local caller_func = debug.getinfo(3, "f").func
 
         --- @type DebugStackEntry
         local current
@@ -91,7 +59,7 @@ local function __debug_hook(event)
         -- First remove any tail calls leading up to this return
         repeat
             current = table.remove(__stack)--[[@as DebugStackEntry]]
-        until current == nil or current.func == caller.func
+        until current == nil or current.callee.func == caller_func
 
         -- Then any tail calls after it
         while current and current.tail do
@@ -112,7 +80,39 @@ end
 
 function module_table.cleanup()
     debug.sethook(nil)
-    pcall(__file.close)
+
+    if #__stack < module_table.MAX_DEPTH then
+        __file.writeLine(string.format("Function call stack did not exceed %d depth.", module_table.MAX_DEPTH))
+    else
+        __file.writeLine(string.format("Function call depth met or exceeded %d:", module_table.MAX_DEPTH))
+        __file.writeLine(debug.traceback(nil, 2))
+        __file.writeLine("")
+        __file.writeLine("")
+
+        for _, entry in ipairs(__stack) do
+            local caller = entry.caller
+            local callee = entry.callee
+
+            local depth = entry.depth
+            local src = caller.short_src
+            local after = src:match(".*/()")
+            if after then src = src:sub(after) end
+            local line = caller.currentline
+            local name = callee.name or "?"
+
+            local report = line > 0
+                and string.format("%d: %s:L%d (%s)", depth, src, line, name)
+                or string.format("%d: %s (%s)", depth, src, name)
+
+            __file.write(report)
+
+            if entry.tail then __file.write(" [tail call]") end
+
+            __file.writeLine("")
+        end
+    end
+    
+    __file.close()
 end
 
 return module_table
