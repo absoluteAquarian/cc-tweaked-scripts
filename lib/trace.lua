@@ -66,7 +66,7 @@ local function record_error_message(msg)
 
     if fs.exists(path) then fs.delete(path) end
 
-    local handle = fs.open(path .. ".log", "w")
+    local handle = fs.open(path, "w")
     handle.write(tostring(msg))
     handle.flush()
     handle.close()
