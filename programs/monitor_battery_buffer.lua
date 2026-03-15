@@ -1,3 +1,6 @@
+-- Included for debugging purposes
+local inject = require "lib.inject"
+
 -- Based on: https://github.com/Poeschl/computercraft-scripts/blob/main/simple_energy_monitor.lua
 
 local fmt = require "lib.cc.fmt"

@@ -54,7 +54,11 @@ local function record_error_message(msg)
     -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
 
     local program = shell.getRunningProgram()
-    local path = string.format("%s/logs/%s.log", fs.getDir(program), fs.getName(program))
+    local name = fs.getName(program)
+    local extension = name:match(".*%.()")
+    if extension then name = string.format("%s.log", name:sub(1, extension - 2)) end
+
+    local path = string.format("%s/logs/%s", fs.getDir(program), name)
 
     --[[
     local tries = 1

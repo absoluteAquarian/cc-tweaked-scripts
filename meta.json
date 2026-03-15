@@ -16,7 +16,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 22,
+            "version": 23,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5, GRAPH_MAX_AMPS:64, GRAPH_MAX_AMPS_NET:32 }",
@@ -33,6 +33,7 @@
                 "lib.class",
                 "lib.config",
                 "lib.exec",
+                "lib.inject",
                 "lib.math",
                 "lib.table"
             ]
@@ -236,6 +237,14 @@
             ]
         },
         {
+            "name": "lib.inject",
+            "version": 1,
+            "url": "$REPO$/lib/inject.lua",
+            "install": "lib/inject.lua",
+            "config": "",
+            "deps": []
+        },
+        {
             "name": "lib.json",
             "version": 3,
             "url": "$REPO$/lib/json.lua",
@@ -287,7 +296,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 22,
+            "version": 23,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",
