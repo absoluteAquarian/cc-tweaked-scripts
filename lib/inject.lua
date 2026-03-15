@@ -85,7 +85,7 @@ function module_table.cleanup()
     debug.sethook(nil)
 
     if #__stack < module_table.MAX_DEPTH then
-        __file.writeLine(string.format("Function call stack reached %d/%d depth.", #__stack, __max_stacked))
+        __file.writeLine(string.format("Function call stack reached %d/%d depth.", __max_stacked, module_table.MAX_DEPTH))
     else
         __file.writeLine(string.format("Function call depth met or exceeded %d:", module_table.MAX_DEPTH))
         __file.writeLine(debug.traceback(nil, 2))
