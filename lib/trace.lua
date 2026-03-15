@@ -54,13 +54,17 @@ local function record_error_message(msg)
     -- Save the stacktrace to a file since the terminal likely won't be large enough to display it
 
     local program = shell.getRunningProgram()
-    local path = fs.getDir(program) .. "/logs/" .. fs.getName(program) .. "-" .. os.time()
+    local path = string.format("%s/logs/%s.log", fs.getDir(program), fs.getName(program))
 
+    --[[
     local tries = 1
     while fs.exists(path .. ".log") do
         tries = tries + 1
         path = path .. "-" .. tries
     end
+    --]]
+
+    if fs.exists(path) then fs.delete(path) end
 
     local handle = fs.open(path .. ".log", "w")
     handle.write(tostring(msg))
