@@ -213,12 +213,12 @@ local function __create_fields_stringset(...)
                     local target = __resolve_proxy(self)
 
                     if key == "readonly" then
-                        return target.readonly
+                        return rawget(target, "readonly")
                     end
 
-                    local defined = target.names[key]
+                    local defined = rawget(target, "names")[key]
                     if defined == nil then
-                        target.names[key] = false
+                        rawget(target, "names")[key] = false
                         return false
                     else
                         return defined
@@ -234,10 +234,10 @@ local function __create_fields_stringset(...)
                     --- @type FieldTracker
                     local target = __resolve_proxy(self)
 
-                    if target.readonly[key] then
+                    if rawget(target, "readonly")[key] then
                         error(string.format("Field definition '%s' is reserved and cannot be modified.", key), 2)
                     else
-                        target.names[key] = value
+                        rawget(target, "names")[key] = value
                     end
                 end
             )
@@ -287,13 +287,13 @@ local function __create_oop_proxy(klass, newindex)
             --- @param key any
             --- @return any
             __index = trace.wrap(function(self, key)
-                local cached = self.__function_cache[key]
+                local cached = rawget(self, "__function_cache")[key]
                 if cached then return cached end
 
                 local value = __resolve_proxy(self)[key]
                 if type(value) == "function" then
-                    value = __create_oop_function(self, value) --[[@as table]]
-                    self.__function_cache[key] = value
+                    value = __create_oop_function(self, value)
+                    rawget(self, "__function_cache")[key] = value
                 end
 
                 return value
@@ -302,10 +302,10 @@ local function __create_oop_proxy(klass, newindex)
             --- @param key any
             --- @param value any
             __newindex = trace.wrap(function(self, key, value)
-                self.__function_cache[key] = nil
+                rawget(self, "__function_cache")[key] = nil
 
                 if type(value) == "table" then
-                    local proxied_function = value.__function_proxy
+                    local proxied_function = rawget(value, "__function_proxy")
                     if proxied_function then value = proxied_function end
                 end
 
