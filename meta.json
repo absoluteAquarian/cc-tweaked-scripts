@@ -238,7 +238,7 @@
         },
         {
             "name": "lib.inject",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/inject.lua",
             "install": "lib/inject.lua",
             "config": "",

@@ -21,9 +21,12 @@ local module_table = {}
 local __ignoring = false
 
 --- @class DebugStackEntry
---- @field report string
---- @field tail boolean
+--- @field depth integer
+--- @field src string
+--- @field line integer
+--- @field name string
 --- @field func function
+--- @field tail boolean
 
 --- @type DebugStackEntry[]
 local __stack = {}
@@ -37,26 +40,20 @@ local function __debug_hook(event)
 
     __ignoring = true
 
-    local info = debug.getinfo(2, "nSlf")
-
     -- Indicate in the stack whether a call is a tail call, for future reference
     if event == "call" or event == "tail call" then
-        local src = info.short_src
-        local after = src:match(".*/()")
-        if after then src = src:sub(after) end
-        local line = info.currentline
-        local name = info.name or "?"
-
-        local depth = #__stack + 1
+        local caller = debug.getinfo(3, "Sl")
+        local info = debug.getinfo(2, "nf")
 
         table.insert(
             __stack,
             {
-                report = line > 0
-                    and string.format("%d: %s:L%d (%s)", depth, src, line, name)
-                    or string.format("%d: %s (%s)", depth, src, name),
-                tail = event == "tail call",
-                func = info.func
+                depth = #__stack + 1,
+                src = caller.short_src,
+                line = caller.currentline,
+                name = info.name or "?",
+                func = info.func,
+                tail = event == "tail call"
             }
         )
 
@@ -67,8 +64,18 @@ local function __debug_hook(event)
             __file.writeLine("")
 
             for _, entry in ipairs(__stack) do
-                __file.write(entry.report)
+                local src = entry.src
+                local after = src:match(".*/()")
+                if after then src = src:sub(after) end
+
+                local report = entry.line > 0
+                    and string.format("%d: %s:L%d (%s)", entry.depth, src, entry.line, entry.name)
+                    or string.format("%d: %s (%s)", entry.depth, src, entry.name)
+
+                __file.write(report)
+
                 if entry.tail then __file.write(" [tail call]") end
+
                 __file.writeLine("")
             end
 
@@ -76,13 +83,15 @@ local function __debug_hook(event)
         end
     -- Return event will clear any "tail returns" in the call stack as well
     elseif event == "return" then
+        local caller = debug.getinfo(3, "f")
+
         --- @type DebugStackEntry
         local current
 
         -- First remove any tail calls leading up to this return
         repeat
             current = table.remove(__stack)--[[@as DebugStackEntry]]
-        until current == nil or current.func == info.func
+        until current == nil or current.func == caller.func
 
         -- Then any tail calls after it
         while current and current.tail do
