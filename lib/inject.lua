@@ -28,6 +28,7 @@ local __ignoring = false
 
 --- @type DebugStackEntry[]
 local __stack = {}
+local __max_stacked = 0
 
 local __file
 
@@ -49,6 +50,8 @@ local function __debug_hook(event)
                 callee = debug.getinfo(2, "nf")
             }
         )
+
+        if #__stack > __max_stacked then __max_stacked = #__stack end
     -- Return event will clear any "tail returns" in the call stack as well
     elseif event == "return" then
         local caller_func = debug.getinfo(3, "f").func
@@ -82,7 +85,7 @@ function module_table.cleanup()
     debug.sethook(nil)
 
     if #__stack < module_table.MAX_DEPTH then
-        __file.writeLine(string.format("Function call stack did not exceed %d depth.", module_table.MAX_DEPTH))
+        __file.writeLine(string.format("Function call stack reached %d/%d depth.", #__stack, __max_stacked))
     else
         __file.writeLine(string.format("Function call depth met or exceeded %d:", module_table.MAX_DEPTH))
         __file.writeLine(debug.traceback(nil, 2))
