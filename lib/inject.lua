@@ -18,10 +18,16 @@
 --- ```
 local module_table = {}
 
-local __depth = 0
 local __ignoring = false
---- @type function[]
+
+--- @class DebugStackEntry
+--- @field report string
+--- @field tail boolean
+--- @field func function
+
+--- @type DebugStackEntry[]
 local __stack = {}
+
 local __file
 
 module_table.MAX_DEPTH = 2000
@@ -31,34 +37,57 @@ local function __debug_hook(event)
 
     __ignoring = true
 
-    if event == "call" then
-        __depth = __depth + 1
+    local info = debug.getinfo(2, "nSlf")
 
-        local info = debug.getinfo(2, "nSl")
+    -- Indicate in the stack whether a call is a tail call, for future reference
+    if event == "call" or event == "tail call" then
         local src = info.short_src
         local after = src:match(".*/()")
         if after then src = src:sub(after) end
         local line = info.currentline
         local name = info.name or "?"
 
+        local depth = #__stack + 1
+
         table.insert(
             __stack,
-            line > 0
-                and string.format("%d: %s:L%d (%s)", __depth, src, line, name)
-                or string.format("%d: %s (%s)", __depth, src, name)
+            {
+                report = line > 0
+                    and string.format("%d: %s:L%d (%s)", depth, src, line, name)
+                    or string.format("%d: %s (%s)", depth, src, name),
+                tail = event == "tail call",
+                func = info.func
+            }
         )
 
-        if __depth >= module_table.MAX_DEPTH then
+        if #__stack >= module_table.MAX_DEPTH then
             __file.writeLine(string.format("Function call depth exceeded %d:", module_table.MAX_DEPTH))
             __file.writeLine(debug.traceback(nil, 2))
             __file.writeLine("")
             __file.writeLine("")
-            __file.writeLine(table.concat(__stack, "\n"))
+
+            for _, entry in ipairs(__stack) do
+                __file.write(entry.report)
+                if entry.tail then __file.write(" [tail call]") end
+                __file.writeLine("")
+            end
+
             debug.sethook(nil)
         end
+    -- Return event will clear any "tail returns" in the call stack as well
     elseif event == "return" then
-        __depth = __depth - 1
-        table.remove(__stack)
+        --- @type DebugStackEntry
+        local current
+
+        -- First remove any tail calls leading up to this return
+        repeat
+            current = table.remove(__stack)--[[@as DebugStackEntry]]
+        until current == nil or current.func == info.func
+
+        -- Then any tail calls after it
+        while current and current.tail do
+            current = table.remove(__stack)--[[@as DebugStackEntry]]
+        end
     end
 
     __ignoring = false
