@@ -227,7 +227,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 10,
+            "version": 11,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",

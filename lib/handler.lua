@@ -28,7 +28,7 @@ local trace = require "lib.trace"
 --- ```
 local function try(what)
     --- @type table<boolean, ...>
-    local results = { trace.scallx(what[1]) }
+    local results = trace.scallx(what[1])
 
     if not results[1] then
         local msg = results[2] --[[@as TracedError]]
