@@ -59,7 +59,7 @@ local eu_out = average_value.class.AverageValue:new(20)
 --- @type number
 local eu_net = 0.0
 
-local monitor_template_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black)
+local monitor_template_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black, true)
 monitor_template_painter
     :move({ x = 1, y = 1 })
     :text("Current: --.--%")
@@ -78,7 +78,7 @@ monitor_template_painter
     :move({ x = 1, y = 8 })
     :text("+---.--- A  ---")
 
-local monitor_state_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black)
+local monitor_state_painter = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black, true)
 monitor_state_painter
     :move({ x = 1 + #"Current: ", y = 1 })
     :clear({ count = #"--.--%" })
@@ -137,7 +137,7 @@ local GRAPH_MIDPOINT = math.ceil(GRAPH_TOP + GRAPH_HEIGHT / 2)
 local GRAPH_HALFHEIGHT_TOP = GRAPH_MIDPOINT - GRAPH_TOP
 local GRAPH_HALFHEIGHT_BOTTOM = GRAPH_BOTTOM - GRAPH_MIDPOINT
 
-local terminal_template_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black)
+local terminal_template_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black, true)
 terminal_template_painter
     -- Large energy bar
     :color(colors.blue, nil)
@@ -176,7 +176,7 @@ local terminal_graph_slices = {}
 local graph_measure_locations = {}
 local front_slice_index = 0
 
-local terminal_state_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black)
+local terminal_state_painter = paint.class.DeferredPixelPainter:new(w, h, nil, nil, colors.white, colors.black, true)
 terminal_state_painter
     -- Large energy bar
     :color(nil, colors.brown)
