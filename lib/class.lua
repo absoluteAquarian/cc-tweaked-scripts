@@ -256,12 +256,29 @@ local function __create_oop_function(proxy, func)
         },
         {
             __call = function(self, arg1, ...)
-                if type(arg1) == "table" and self.__proxy == arg1 then
+                --- @type ObjectProxy
+                local self_proxy = rawget(self, "__proxy")
+                local target = __resolve_proxy(self_proxy)
+
+                if type(arg1) == "table" and self_proxy == arg1 then
                     -- Redirect to the proxy's target
-                    arg1 = __resolve_proxy(self.__proxy)
+                    arg1 = target
                 end
 
-                return self.__function_proxy(arg1, ...)
+                local results = { rawget(self, "__function_proxy")(arg1, ...) }
+
+                if rawget(results, 1) == target then
+                    rawset(results, 1, self_proxy)
+                end
+
+                -- Redirect builder-like functions to return the proxy
+                for i, v in ipairs(results) do
+                    if v == target then
+                        rawset(results, i, self_proxy)
+                    end
+                end
+
+                return table.unpack(results)
             end
         }
     )
@@ -287,13 +304,13 @@ local function __create_oop_proxy(klass, newindex)
             --- @param key any
             --- @return any
             __index = trace.wrap(function(self, key)
-                local cached = rawget(self, "__function_cache")[key]
+                local cached = rawget(rawget(self, "__function_cache"), key)
                 if cached then return cached end
 
                 local value = __resolve_proxy(self)[key]
                 if type(value) == "function" then
                     value = __create_oop_function(self, value)
-                    rawget(self, "__function_cache")[key] = value
+                    rawset(rawget(self, "__function_cache"), key, value)
                 end
 
                 return value
@@ -302,7 +319,7 @@ local function __create_oop_proxy(klass, newindex)
             --- @param key any
             --- @param value any
             __newindex = trace.wrap(function(self, key, value)
-                rawget(self, "__function_cache")[key] = nil
+                rawset(rawget(self, "__function_cache"), key, nil)
 
                 if type(value) == "table" then
                     local proxied_function = rawget(value, "__function_proxy")
@@ -493,7 +510,11 @@ local function class(name, base)
     --- The native function for creating class instances
     --- @param ... any  The arguments to pass to the base class definition's <code>new()</code> function
     --- @return ClassInstance
-    function definition:create_instance(...) return trace.scall(self.__instance, self, ...) end
+    function definition:create_instance(...)
+        --- @type ClassDefinition
+        self = __resolve_proxy(self)
+        return trace.scall(self.__instance, self, ...)
+    end
 
     --- A function to create a new class instance from this class definition
     --- @param ... any  The arguments to pass to the class instance constructor
@@ -502,7 +523,7 @@ local function class(name, base)
 
     --- Gets the name assigned to this class definition
     --- @return string
-    function definition:nameof() return rawget(self, "__name") end
+    function definition:nameof() return rawget(__resolve_proxy(self), "__name") end
 
     --- Whether this class definition is the same as or inherits from another class definition
     --- @param klass ClassDefinition  The class definition to check

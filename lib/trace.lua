@@ -112,11 +112,7 @@ local function scall(func, ...)
     return results
 end
 
-local module_table = {
-    --- @private
-    --- @type boolean
-    tracing = false
-}
+local module_table = { }
 
 --- Calls the specified function with the given arguments, returning a table whose first value is a boolean indicating success or failure and whose second value is either the return value of the function (if successful) or an error message with a stacktrace (if an error was thrown)<br/>
 --- This function effectively acts as a wrapper around <code>xpcall()</code>
@@ -124,14 +120,7 @@ local module_table = {
 --- @param ... any  The arguments to call the function with
 --- @return table<boolean, ...>
 function module_table.scallx(func, ...)
-    -- Due to how Lua handles errors, nested error handlers causes problems
-    if module_table.tracing then return { true, func(...) } end
-
-    module_table.tracing = true
-    local results = scall(func, ...)
-    module_table.tracing = false
-
-    return results
+    return scall(func, ...)
 end
 
 --- Calls the specified function with the given arguments, throwing an error with the full stacktrace if the function throws an error<br/>

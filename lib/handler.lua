@@ -31,11 +31,11 @@ local function try(what)
     local results = { trace.scallx(what[1]) }
 
     if not results[1] then
-        local msg = results[2]
+        local msg = results[2] --[[@as TracedError]]
         local catch = what[2]
 
         if catch then
-            results = { catch(msg) }
+            results = { catch(msg.message) }
         end
 
         if not results[1] then

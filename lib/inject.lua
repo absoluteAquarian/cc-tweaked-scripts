@@ -30,11 +30,10 @@ local __max_stacked = 0
 
 local __file
 
-local __iter = 0
 local __iter_count = 0
-local MAX_ITER = 6000
+local __auto = false
 
-module_table.MAX_DEPTH = 2000
+module_table.MAX_DEPTH = 50
 
 local function record_current_call_stack()
     for _, entry in ipairs(__stack) do
@@ -66,32 +65,6 @@ end
 local function __debug_hook(event)
     -- Indicate in the stack whether a call is a tail call, for future reference
     if event == "call" or event == "tail call" then
-        __iter = __iter + 1
-        if #__stack >= 20 or __iter >= MAX_ITER then
-            __iter = 1
-            __iter_count = __iter_count + 1
-
-            print(string.format(
-                "Debug yield %d times (#stack = %d)",
-                __iter_count,
-                #__stack
-            ))
-
-            local evt, data = os.pullEventRaw()
-            if evt == "terminate" then
-                error("Debug Terminated", 0)
-            elseif evt == "key" and data == keys.s then
-                __file.writeLine(string.format(
-                    "Call stack (iteration %d):",
-                    __iter_count
-                ))
-                __file.writeLine("")
-                __file.writeLine("")
-
-                record_current_call_stack()
-            end
-        end
-
         table.insert(
             __stack,
             {
@@ -118,6 +91,57 @@ local function __debug_hook(event)
         -- Then any tail calls after it
         while current and current.tail do
             current = table.remove(__stack)--[[@as DebugStackEntry]]
+        end
+    end
+
+     __iter_count = __iter_count + 1
+
+    print(string.format(
+        "%d: event '%s' (#stack = %d)",
+        __iter_count,
+        event,
+        #__stack
+    ))
+
+    if __auto then
+        local timer = os.startTimer(0.05)
+
+        while true do
+            local evt, data = os.pullEventRaw()
+
+            if evt == "terminate" then
+                error("Debug Terminated", 0)
+            elseif evt == "timer" and data == timer then
+                break
+            elseif evt == "key" then
+                if data == keys.a then
+                    __auto = not __auto
+                    print("Auto-stepping " .. (__auto and "enabled" or "disabled") .. ".")
+                    break
+                end
+            end
+        end
+    else
+        local evt, data = os.pullEventRaw()
+
+        if evt == "terminate" then
+            error("Debug Terminated", 0)
+        elseif evt == "key" then
+            if data == keys.s then
+                __file.writeLine(string.format(
+                    "Call stack (iteration %d):",
+                    __iter_count
+                ))
+                __file.writeLine("")
+                __file.writeLine("")
+
+                record_current_call_stack()
+
+                print("Call stack recorded to log file.")
+            elseif data == keys.a then
+                __auto = not __auto
+                print("Auto-stepping " .. (__auto and "enabled" or "disabled") .. ".")
+            end
         end
     end
 end
