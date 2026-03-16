@@ -12,12 +12,13 @@ local trace = require "lib.trace"
 --- @field class ClassDefinition  The class definition for this class-like object
 --- @field instanceof fun(self: Classlike, klass: ClassDefinition) : boolean  Whether this class-like object is an instance of the given class definition or any of its base classes
 
-local FIELD_PROXY = "__proxy_target"
+local FIELD_PROXY_TARGET = "__proxy_target"
+local FIELD_PROXY = "__proxy"
 
 --- @param proxy table
 --- @return table
 local function __resolve_proxy(proxy)
-    local target = rawget(proxy, FIELD_PROXY)
+    local target = rawget(proxy, FIELD_PROXY_TARGET)
     return target ~= nil and target or proxy
 end
 
@@ -26,6 +27,13 @@ end
 --- @return any
 local function __resolve_proxy_field(proxy, field)
     return rawget(__resolve_proxy(proxy), field)
+end
+
+--- @param obj table
+--- @return table
+local function __wrap_to_proxy(obj)
+    local proxy = rawget(obj, FIELD_PROXY)
+    return proxy ~= nil and proxy or obj
 end
 
 --- Returns whether the given class-like object defines the given field directly on itself, without checking base classes
@@ -255,26 +263,22 @@ local function __create_oop_function(proxy, func)
             __function_proxy = func
         },
         {
-            __call = function(self, arg1, ...)
-                --- @type ObjectProxy
-                local self_proxy = rawget(self, "__proxy")
-                local target = __resolve_proxy(self_proxy)
+            __call = function(self, ...)
+                local args = { ... }
 
-                if type(arg1) == "table" and self_proxy == arg1 then
-                    -- Redirect to the proxy's target
-                    arg1 = target
+                -- Redirect proxies to their object targets
+                for i, arg in ipairs(args) do
+                    if type(arg) == "table" then
+                        args[i] = __resolve_proxy(arg)
+                    end
                 end
 
-                local results = { rawget(self, "__function_proxy")(arg1, ...) }
+                local results = { rawget(self, "__function_proxy")(table.unpack(args)) }
 
-                if rawget(results, 1) == target then
-                    rawset(results, 1, self_proxy)
-                end
-
-                -- Redirect builder-like functions to return the proxy
+                -- Redirect proxied objects to their proxy
                 for i, v in ipairs(results) do
-                    if v == target then
-                        rawset(results, i, self_proxy)
+                    if type(v) == "table" then
+                        results[i] = __wrap_to_proxy(v)
                     end
                 end
 
@@ -355,6 +359,7 @@ local function class(name, base)
             "__instance",
             "__instance_mt",
             "__name",
+            FIELD_PROXY,
             "__type",
             "base",
             "class",
@@ -415,6 +420,7 @@ local function class(name, base)
             --- A set of field names that are defined on this class instance
             __fields = __create_fields_stringset(
                 "__fields",
+                FIELD_PROXY,
                 "__type",
                 "base",
                 "castclass",
@@ -423,6 +429,9 @@ local function class(name, base)
                 "mark_readonly",
                 "this"
             ),
+            --- @private
+            --- @type ObjectProxy  The proxy for this class instance
+            __proxy = nil,
             --- @private
             --- The classification of this class-like object
             __type = "instance",
@@ -483,6 +492,7 @@ local function class(name, base)
         )
 
         rawset(instance, "this", proxy)
+        rawset(instance, FIELD_PROXY, proxy)
 
         --- @type ClassDefinition?
         local base_class = rawget(self, "base")
@@ -575,6 +585,7 @@ local function class(name, base)
     ) --[[@as ClassDefinition]]
 
     rawset(definition, "class", proxy)
+    rawset(definition, FIELD_PROXY, proxy)
 
     return proxy
 end
