@@ -32,6 +32,13 @@ local function try(what)
 
     if not results[1] then
         local msg = results[2] --[[@as TracedError]]
+
+        if msg.message == "Terminated" then
+            -- Force termination to always pass
+            trace.record_error_message(msg.message)
+            error(msg.message, 0)
+        end
+
         local catch = what[2]
 
         if catch then
@@ -39,6 +46,7 @@ local function try(what)
         end
 
         if not results[1] then
+            trace.record_error_message(msg.message)
             error(msg, 2)
         end
     end

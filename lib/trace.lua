@@ -99,17 +99,7 @@ local function scall(func, ...)
         }
     end
 
-    local results = { xpcall(func, __handler, ...) }
-
-    if not results[1] then
-        local traced = results[2]  --[[@as TracedError]]
-
-        if traced.root then
-            pcall(record_error_message, traced.message)
-        end
-    end
-
-    return results
+    return { xpcall(func, __handler, ...) }
 end
 
 local module_table = { }
@@ -133,6 +123,11 @@ function module_table.scall(func, ...)
 
     if not results[1] then
         local traced = results[2]  --[[@as TracedError]]
+
+        if traced.root then
+            pcall(record_error_message, traced.message)
+        end
+
         error(traced.message, 0)
     end
 

@@ -227,7 +227,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 9,
+            "version": 10,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",
@@ -296,7 +296,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 24,
+            "version": 25,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",
