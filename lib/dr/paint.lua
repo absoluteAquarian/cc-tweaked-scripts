@@ -1142,7 +1142,9 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
         --- @type number
         brush_fg = brush_fg or colors.white,
         --- @type number
-        brush_bg = brush_bg or colors.black
+        brush_bg = brush_bg or colors.black,
+        --- @type boolean
+        transparent = transparent == true
     }
 
     --- Controls related to where and what is painted on the canvas
@@ -1308,7 +1310,7 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
     function instance:repaint(terminal)
         local canvas = self.canvas
 
-        canvas:clear(true)
+        canvas:clear(self.cache.transparent)
 
         local params = self.params
         local cursor = params.cursor
