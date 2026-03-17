@@ -1313,10 +1313,6 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
     --- Resets the painter's canvas and brush to their initial states, then applies all painting operations again before painting the canvas to the terminal
     --- @param terminal table  The terminal to paint to
     function instance:repaint(terminal)
-        local canvas = self.canvas
-
-        canvas:clear(self.cache.transparent)
-
         local params = self.params
         local cursor = params.cursor
         cursor.x = 1
