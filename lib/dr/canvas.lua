@@ -696,6 +696,9 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
             y = y + 1
         end
 
+        tbl_cache.terminal_fg = terminal_fg
+        tbl_cache.terminal_bg = terminal_bg
+
         terminal.setCursorPos(x_prev, y_prev + self.texel_height)
         terminal.setTextColor(terminal_fg)
         terminal.setBackgroundColor(terminal_bg)

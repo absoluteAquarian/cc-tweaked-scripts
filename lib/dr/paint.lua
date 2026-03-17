@@ -1275,6 +1275,11 @@ function DeferredPixelPainter:new(w, h, canvas_fg, canvas_bg, brush_fg, brush_bg
         local tbl_work = self.work
 
         if tbl_work.index < #tbl_work.list then
+            if tbl_work.index == 0 then
+                -- If no work has been done yet, clear the canvas before starting to paint
+                self.canvas:clear(self.cache.transparent)
+            end
+
             for i = tbl_work.index + 1, #tbl_work.list do
                 local work = tbl_work.list[i]
                 if work then work.this:execute(self) end
