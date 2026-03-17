@@ -915,6 +915,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
     --- @return integer end_x  The horizontal texel coordinate of the texel after the end of the painted text
     --- @return integer end_y  The vertical texel coordinate of the texel after the end of the painted text
     function instance:set_texel_many(x, y, text, params)
+        local orig_x, orig_y, orig_text = x, y, text
         local count, end_x, end_y = self.base:set_texel_many(x, y, text, params)
 
         if count > 0 and not params.vertical then
@@ -924,7 +925,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
             local bg = params.bg
 
             local text_start, text_end, length
-            x, y, text, text_start, text_end, length = self:__set_texel_many_resolve_parameters(x, y, text, params)
+            x, y, text, text_start, text_end, length = self:__set_texel_many_resolve_parameters(orig_x, orig_y, orig_text, params)
 
             if length > 0 and text_start <= text_end then
                 local map = self.map
