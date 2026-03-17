@@ -253,39 +253,32 @@ local function __create_fields_stringset(...)
     )
 end
 
---- @param proxy ObjectProxy
 --- @param func function
---- @return table
-local function __create_oop_function(proxy, func)
-    return setmetatable(
-        {
-            __proxy = proxy,
-            __function_proxy = func
-        },
-        {
-            __call = function(self, ...)
-                local args = { ... }
+--- @return function
+local function __create_oop_function(func)
+    return function(...)
+        local args = table.pack(...)
 
-                -- Redirect proxies to their object targets
-                for i, arg in ipairs(args) do
-                    if type(arg) == "table" then
-                        args[i] = __resolve_proxy(arg)
-                    end
-                end
-
-                local results = { rawget(self, "__function_proxy")(table.unpack(args)) }
-
-                -- Redirect proxied objects to their proxy
-                for i, v in ipairs(results) do
-                    if type(v) == "table" then
-                        results[i] = __wrap_to_proxy(v)
-                    end
-                end
-
-                return table.unpack(results)
+        -- Redirect proxies to their object targets
+        for i = 1, args.n do
+            local arg = args[i]
+            if type(arg) == "table" then
+                args[i] = __resolve_proxy(arg)
             end
-        }
-    )
+        end
+
+        local results = table.pack(func(table.unpack(args)))
+
+        -- Redirect proxied objects to their proxy
+        for i = 1, results.n do
+            local v = results[i]
+            if type(v) == "table" then
+                results[i] = __wrap_to_proxy(v)
+            end
+        end
+
+        return table.unpack(results)
+    end
 end
 
 --- @param klass Classlike  The class-like object to create a proxy for
@@ -313,7 +306,7 @@ local function __create_oop_proxy(klass, newindex)
 
                 local value = __resolve_proxy(self)[key]
                 if type(value) == "function" then
-                    value = __create_oop_function(self, value)
+                    value = __create_oop_function(value)
                     rawset(rawget(self, "__function_cache"), key, value)
                 end
 
@@ -324,12 +317,6 @@ local function __create_oop_proxy(klass, newindex)
             --- @param value any
             __newindex = trace.wrap(function(self, key, value)
                 rawset(rawget(self, "__function_cache"), key, nil)
-
-                if type(value) == "table" then
-                    local proxied_function = rawget(value, "__function_proxy")
-                    if proxied_function then value = proxied_function end
-                end
-
                 newindex(__resolve_proxy(self), key, value) end
             ),
             __pairs = trace.wrap(function(self) return pairs(__resolve_proxy(self)) end),

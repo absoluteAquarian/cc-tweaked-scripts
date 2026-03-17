@@ -11,7 +11,9 @@ local native = {
     },
     table = {
         insert = table.insert,
-        remove = table.remove
+        pack = table.pack,
+        remove = table.remove,
+        unpack = table.unpack
     }
 }
 
@@ -50,9 +52,11 @@ end
 --- @param ... any
 --- @return boolean
 local function has_any_value(tbl, ...)
-    for _, value in native.ipairs(tbl) do
-        for _, check in native.ipairs({...}) do
-            if value == check then return true end
+    local args = native.table.pack(...)
+
+    for _, value in native.pairs(tbl) do
+        for i = 1, args.n do
+            if value == args[i] then return true end
         end
     end
     return false
@@ -63,7 +67,7 @@ end
 --- @return boolean
 local function has_value(tbl, value)
     if not value then return false end
-    for _, v in native.ipairs(tbl) do
+    for _, v in native.pairs(tbl) do
         if v == value then return true end
     end
     return false
@@ -72,9 +76,10 @@ end
 --- @param tbl table
 --- @param ... any
 local function remove_keys(tbl, ...)
+    local args = native.table.pack(...)
     for key, _ in native.pairs(tbl) do
-        for _, remove in native.ipairs({...}) do
-            if key == remove then
+        for i = 1, args.n do
+            if key == args[i] then
                 tbl[key] = nil
                 break
             end
@@ -93,31 +98,22 @@ end
 --- @param tbl table
 --- @param ... any
 local function remove_values(tbl, ...)
-    local removing = {}
-    for index, value in native.ipairs(tbl) do
-        for _, remove in native.ipairs({...}) do
-            if value == remove then
-                native.table.insert(removing, index)
+    local args = native.table.pack(...)
+    for key, value in native.pairs(tbl) do
+        for i = 1, args.n do
+            if value == args[i] then
+                tbl[key] = nil
                 break
             end
         end
-    end
-
-    for i = #removing, 1, -1 do
-        native.table.remove(tbl, removing[i])
     end
 end
 
 --- @param tbl table
 --- @param predicate fun(value: any) : boolean
 local function remove_values_where(tbl, predicate)
-    local removing = {}
-    for index, value in native.ipairs(tbl) do
-        if predicate(value) then native.table.insert(removing, index) end
-    end
-
-    for i = #removing, 1, -1 do
-        native.table.remove(tbl, removing[i])
+    for key, value in native.pairs(tbl) do
+        if predicate(value) then tbl[key] = nil end
     end
 end
 

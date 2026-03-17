@@ -187,7 +187,7 @@
         },
         {
             "name": "lib.class",
-            "version": 34,
+            "version": 35,
             "url": "$REPO$/lib/class.lua",
             "install": "lib/class.lua",
             "config": "",
@@ -285,7 +285,7 @@
         },
         {
             "name": "lib.table",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
             "config": "",
