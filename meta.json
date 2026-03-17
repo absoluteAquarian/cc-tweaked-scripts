@@ -124,7 +124,7 @@
         },
         {
             "name": "lib.dr.canvas",
-            "version": 18,
+            "version": 19,
             "url": "$REPO$/lib/dr/canvas.lua",
             "install": "lib/dr/canvas.lua",
             "config": "",

@@ -652,6 +652,7 @@ function TexelCanvas:new(width, height, fg, bg, transparent)
 
             if pass.count[r] == 0 then
                 -- No texels are hidden, push as-is
+                terminal.setCursorPos(x, y)
                 terminal.blit(tbl_cache.blitted_text[r], tbl_cache.blitted_fg[r], tbl_cache.blitted_bg[r])
             elseif pass.count[r] < self.texel_width then
                 -- Some texels are hidden; splice the blit strings to skip them
