@@ -91,30 +91,64 @@ end
 --- @param predicate fun(key: any) : boolean
 local function remove_keys_where(tbl, predicate)
     for key, _ in native.pairs(tbl) do
-        if predicate(key) then tbl[key] = nil end
+        if predicate(key) then
+            tbl[key] = nil
+        end
     end
 end
 
 --- @param tbl table
---- @param ... any
-local function remove_values(tbl, ...)
-    local args = native.table.pack(...)
-    for key, value in native.pairs(tbl) do
-        for i = 1, args.n do
-            if value == args[i] then
+--- @param state any
+--- @param predicate fun(state: any, value: any) : boolean
+local function __remove_values_impl(tbl, state, predicate)
+    if tbl[1] then
+        -- Treat the table like an array
+        for i = #tbl, 1, -1 do
+            if predicate(state, tbl[i]) then
+                native.table.remove(tbl, i)
+            end
+        end
+    else
+        -- Treat the table like a dictionary
+        for key, value in native.pairs(tbl) do
+            if predicate(state, value) then
                 tbl[key] = nil
-                break
             end
         end
     end
 end
 
 --- @param tbl table
+--- @param ... any
+local function remove_values(tbl, ...)
+    __remove_values_impl(
+        -- tbl
+        tbl,
+        -- state
+        native.table.pack(...),
+        -- predicate
+        function(state, value)
+            for i = 1, state.n do
+                if value == state[i] then return true end
+            end
+            return false
+        end
+    )
+end
+
+--- @param tbl table
 --- @param predicate fun(value: any) : boolean
 local function remove_values_where(tbl, predicate)
-    for key, value in native.pairs(tbl) do
-        if predicate(value) then tbl[key] = nil end
-    end
+    __remove_values_impl(
+        -- tbl
+        tbl,
+        -- state
+        predicate,
+        -- predicate
+        function(state, value)
+            return state(value)
+        end
+    )
 end
 
 --- @param tbl table

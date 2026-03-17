@@ -285,7 +285,7 @@
         },
         {
             "name": "lib.table",
-            "version": 6,
+            "version": 7,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
             "config": "",
