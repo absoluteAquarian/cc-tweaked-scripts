@@ -75,6 +75,14 @@ end
 --- @param ... any
 local function send(command, ...) send_with_channels(command, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX, ...) end
 
+local function __pinged_by(sender)
+    R_table.remove_values(__targets, sender)
+    table.insert(__targets, sender)
+    __alive[sender] = true
+
+    print(string.format("[]: Received ping from computer %d", sender))
+end
+
 local COMMAND_PING = 1
 local COMMAND_PING_REPLY = 2
 local WATCHDOG_CHECK = 3
@@ -84,17 +92,14 @@ local WATCHDOG_RESPONSE = 4
 local receive_funcs =
 {
     [COMMAND_PING] = function(sender, command, ...)
+        __pinged_by(sender)
         send(COMMAND_PING_REPLY, sender)
     end,
     [COMMAND_PING_REPLY] = function(sender, command, ...)
         local target_id = select(1, ...)
 
         if target_id == __id then
-            R_table.remove_values(__targets, sender)
-            table.insert(__targets, sender)
-            __alive[sender] = true
-
-            print(string.format("[]: Received ping reply from computer %d", sender))
+            __pinged_by(sender)
         end
     end,
     [WATCHDOG_CHECK] = function(sender, command, ...)
