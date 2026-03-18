@@ -378,10 +378,69 @@ end
 --- @field y integer?  The vertical position or offset within the painter's canvas.
 
 --- @class CanvasArea
---- @field x integer  The horizontal position of the top-left corner within the painter's canvas
---- @field y integer  The vertical position of the top-left corner within the painter's canvas
---- @field width integer  The width of the area
---- @field height integer  The height of the area
+--- @field x integer?  The horizontal position of the top-left corner within the painter's canvas.<br/>If <code>nil</code>, <code>left</code> must be defined.<br/>Negative values are interpreted as offsets from the right edge of the canvas.
+--- @field y integer?  The vertical position of the top-left corner within the painter's canvas.<br/>If <code>nil</code>, <code>top</code> must be defined.<br/>Negative values are interpreted as offsets from the bottom edge of the canvas.
+--- @field width integer?  The width of the area.<br/>If <code>nil</code>, <code>right</code> must be defined.<br/>Negative values are interpreted a relative size compared to the canvas width.
+--- @field height integer?  The height of the area.<br/>If <code>nil</code>, <code>bottom</code> must be defined.<br/>Negative values are interpreted a relative size compared to the canvas height.
+--- @field left integer?  The horizontal position of the left edge within the painter's canvas.<br/>If <code>nil</code>, <code>x</code> must be defined.<br/>Negative values are interpreted as offsets from the right edge of the canvas.
+--- @field top integer?  The vertical position of the top edge within the painter's canvas.<br/>If <code>nil</code>, <code>y</code> must be defined.<br/>Negative values are interpreted as offsets from the bottom edge of the canvas.
+--- @field right integer?  The horizontal position of the right edge within the painter's canvas.<br/>If <code>nil</code>, <code>x</code> (or <code>left</code>) and <code>width</code> must be defined.<br/>Negative values are interpreted as offsets from the right edge of the canvas.
+--- @field bottom integer?  The vertical position of the bottom edge within the painter's canvas.<br/>If <code>nil</code>, <code>y</code> (or <code>top</code>) and <code>height</code> must be defined.<br/>Negative values are interpreted as offsets from the bottom edge of the canvas.
+
+--- @param area CanvasArea
+--- @return integer left
+--- @return integer top
+--- @return integer right
+--- @return integer bottom
+local function __resolve_area_bounds(area, enclosing_width, enclosing_height)
+    --- @type integer, integer, integer, integer
+    local left, top, right, bottom
+
+    --- @param coordinate integer
+    --- @param enclosing_dimension integer
+    --- @return integer
+    local function __resolve_to_absolute(coordinate, enclosing_dimension)
+        if coordinate < 0 then
+            return enclosing_dimension + coordinate + 1
+        else
+            return coordinate
+        end
+    end
+
+    if area.left ~= nil then
+        left = __resolve_to_absolute(area.left, enclosing_width)
+    elseif area.x ~= nil then
+        left = __resolve_to_absolute(area.x, enclosing_width)
+    else
+        error("Defined area must specify one of ('x') or ('left')", 2)
+    end
+
+    if area.top ~= nil then
+        top = __resolve_to_absolute(area.top, enclosing_height)
+    elseif area.y ~= nil then
+        top = __resolve_to_absolute(area.y, enclosing_height)
+    else
+        error("Defined area must specify one of ('y') or ('top')", 2)
+    end
+
+    if area.right ~= nil then
+        right = __resolve_to_absolute(area.right, enclosing_width)
+    elseif area.width ~= nil then
+        right = left + __resolve_to_absolute(area.width, enclosing_width) - 1
+    else
+        error("Defined area must specify one of (('x' or 'left') and 'width') or ('right')", 2)
+    end
+
+    if area.bottom ~= nil then
+        bottom = __resolve_to_absolute(area.bottom, enclosing_height)
+    elseif area.height ~= nil then
+        bottom = top + __resolve_to_absolute(area.height, enclosing_height) - 1
+    else
+        error("Defined area must specify one of (('y' or 'top') and 'height') or ('bottom')", 2)
+    end
+
+    return left, top, right, bottom
+end
 
 --- @private
 --- @class MovePaintOperationDefinition : AbstractPaintOperationDefinition
@@ -911,13 +970,10 @@ function FillAreaPixelPaintOperation:new(area, background)
         local area = __extract(self.area) --[[@as CanvasArea]]
         local background = __extract(self.background) --[[@as boolean]]
 
-        if area.width < 0 then area.width = painter_canvas.pixel_width + area.width + 1 end
-        if area.height < 0 then area.height = painter_canvas.pixel_height + area.height + 1 end
+        local left, top, right, bottom = __resolve_area_bounds(area)
 
-        local left = area.x
-        local right = area.x + area.width - 1
-        local top = area.y
-        local bottom = area.y + area.height - 1
+        -- Skip the calculations if the size of the area is "negative"
+        if left > right or top > bottom then return end
 
         --[[
 
@@ -987,9 +1043,12 @@ function FillAreaPixelPaintOperation:new(area, background)
 
         --]]
 
+        local width = right - left + 1
+        local height = bottom - top + 1
+
         local new_group = painter_canvas:try_begin_update_group()
 
-        if area.width >= 5 - ((left - 1) % 2) and area.height >= 7 - ((top - 1) % 3) then
+        if width >= 5 - ((left - 1) % 2) and height >= 7 - ((top - 1) % 3) then
             local start_texel_x, start_texel_y = canvas.pixel_to_texel(left, top)
             local stop_texel_x, stop_texel_y = canvas.pixel_to_texel(right, bottom)
 

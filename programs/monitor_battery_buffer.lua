@@ -141,7 +141,7 @@ local terminal_template_painter = paint.class.DeferredPixelPainter:new(w, h, nil
 terminal_template_painter
     -- Large energy bar
     :color(colors.blue, nil)
-    :box({ x = w - 10, y = 2, width = 4, height = h - 5 })
+    :box({ left = -11, top = 3, right = -8, bottom = -6 })
     :move({ x = -1, y = -1 })
     :color("reset", nil)
     :text("--.--%", { tail_align = true })
@@ -180,14 +180,14 @@ local terminal_state_painter = paint.class.DeferredPixelPainter:new(w, h, nil, n
 terminal_state_painter
     -- Large energy bar
     :color(nil, colors.brown)
-    :fill({ x = w - 9, y = 3, width = 2, height = h - 7 }, true)
+    :fill({ left = -10, top = 4, right = -9, bottom = -7 }, true)
     :color(terminal_state_painter:recall("CHARGE_COLOR"), nil)
     :fill(terminal_state_painter:recall("CHARGE_AREA"), true)
-    :move({ x = -1, y = -1 })
+    :move({ x = -#"--.--%", y = -1 })
     :color(nil, "reset")
-    :clear({ count = #"--.--%", tail_align = true })
+    :clear({ count = #"--.--%" })
     :offset(terminal_state_painter:recall("OFFSET_CURRENT"))
-    :text(terminal_state_painter:recall("CURRENT_TEXT"), { tail_align = true })
+    :text(terminal_state_painter:recall("CURRENT_TEXT"))
     -- Reports
     :color("reset", "reset")
     :move({ x = 1 + #"Out: |  ", y = 2 })
@@ -219,9 +219,14 @@ terminal_state_painter
     :color(terminal_state_painter:recall("COLOR_NET_TIER"), nil)
     :text(terminal_state_painter:recall("NET_TIER"))
 
-local function build_charged_bar_area(percent)
-    local filled_height = math.floor((h - 7) * (percent / 100))
-    return { x = w - 9, y = h - 3 - filled_height, width = 2, height = filled_height }
+local function build_charged_bar_area(percent, canvas_height)
+    return
+    {
+        left = -10,
+        top = 4 + math.floor((1 - (percent / 100)) * (canvas_height - 10)),
+        right = -9,
+        bottom = -7
+    }
 end
 
 --- @class MetricsDefinition : ClassDefinition
@@ -431,10 +436,10 @@ local function display_to_terminal(current, trend)
         color_current = colors.green
     end
 
-    local offset_current = current == 100 and 1 or 0
+    local offset_current = current < 10 and 1 or 0
 
     terminal_state_painter:store("CHARGE_COLOR", color_current)
-    terminal_state_painter:store("CHARGE_AREA", build_charged_bar_area(current))
+    terminal_state_painter:store("CHARGE_AREA", build_charged_bar_area(current, h))
     terminal_state_painter:store("OFFSET_CURRENT", { x = offset_current })
     terminal_state_painter:store("CURRENT_TEXT", current .. "%")
 
