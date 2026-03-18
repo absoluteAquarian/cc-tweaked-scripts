@@ -139,6 +139,8 @@ exec.loop_forever
         modem = look_for_modem()
         modem.open(CHANNEL_GENERIC_RX)
         modem.open(CHANNEL_GENERIC_TX)
+        modem.open(CHANNEL_WATCHDOG_RX)
+        modem.open(CHANNEL_WATCHDOG_TX)
 
         write('\n')
         print("[]: Modem found. Sending ping...")
@@ -180,6 +182,7 @@ exec.loop_forever
                         local target = targets[i]
                         if __alive[target] then
                             send_with_channels(WATCHDOG_CHECK, CHANNEL_WATCHDOG_TX, CHANNEL_WATCHDOG_RX, target)
+                            __alive[target] = false  -- Target must respond before next check to be considered alive
                         else
                             print(string.format("[]: Connection to computer %d was lost", target))
                             table.remove(targets, i)
