@@ -30,9 +30,12 @@ local function look_for_modem()
 
     while true do
         -- Search for a wireless modem
-        for _, p in ipairs(peripheral.find("modem", function(n, p) return p--[[@as PeripheralModem]].isWireless() end)) do
-            modem_temp = p
-            break
+        for _, name in ipairs(peripheral.getNames()) do
+            local p = peripheral.wrap(name)
+            if p and p.isWireless and p.isWireless() then
+                modem_temp = p
+                break
+            end
         end
 
         if modem_temp then break end
