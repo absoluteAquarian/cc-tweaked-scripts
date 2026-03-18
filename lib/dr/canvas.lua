@@ -816,6 +816,18 @@ local MIN_TEXEL_STATE = 0x00
 local MAX_TEXEL_STATE = 0x3F
 local INVALID_TEXEL_STATE = 0x40
 
+--- @param state integer
+--- @return 0|1|2 type  0 = normal, 1 = inverted, 2 = invalid
+local function pixel_texel_type(state)
+    if state > MAX_TEXEL_STATE then
+        return 2
+    elseif state > 31 then
+        return 1
+    else
+        return 0
+    end
+end
+
 --- @class PixelCanvasDefinition : TexelCanvasDefinition
 --- @field base TexelCanvasDefinition
 --- @field class PixelCanvasDefinition
@@ -962,7 +974,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
 
         local texel_fg, texel_bg
 
-        if texel_state <= 31 then
+        if pixel_texel_type(texel_state) ~= 1 then
             -- Normal texel characters use the colors as-is
             texel_fg = texel_colors_fg
             texel_bg = texel_colors_bg
@@ -1013,15 +1025,15 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
             error(string.format("Texel coordinates (%d, %d) are out of bounds (from pixel coordinates (%d, %d))", texel_x, texel_y, x, y), 2)
         end
 
-        if self:hidden(texel_x, texel_y) then
-            -- The pixel is transparent
+        local map = self.map
+        local texel_state = map.texel_state[texel_y][texel_x]
+
+        if self:hidden(texel_x, texel_y) or pixel_texel_type(texel_state) == 2 then
+            -- The pixel is transparent or not a pixel grid
             return nil, nil
         end
 
         local bit = bit32.lshift(1, (y % 3) * 2 + (x % 2))
-
-        local map = self.map
-        local texel_state = map.texel_state[texel_y][texel_x]
 
         if native.bit32.btest(texel_state, INVALID_TEXEL_STATE) then
             -- The texel isn't one of the blocky characters
@@ -1031,7 +1043,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         local active = native.bit32.btest(texel_state, bit)
         local color
 
-        if (texel_state <= 31) == active then
+        if (pixel_texel_type(texel_state) == 0) == active then
             -- The pixel uses the foreground color of the texel
             color = map.texel_fg[texel_y][texel_x]
         else
@@ -1068,6 +1080,12 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         local map = self.map
         local texel_state_row = map.texel_state[texel_y]
         local current_state = texel_state_row[texel_x]
+
+        if pixel_texel_type(current_state) == 2 then
+            current_state = 0
+            texel_state_row[texel_x] = 0
+        end
+
         local previous_state = current_state
         local current_active = native.bit32.btest(current_state, bit_to_check)
         local texel_fg_row = map.texel_fg[texel_y]
@@ -1079,7 +1097,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
             texel_state_row[texel_x] = current_state
 
             -- If the texel "group" changed from normal texels to negated texels, the colors will need to be swapped
-            if (current_state <= 31) ~= (previous_state <= 31) then
+            if pixel_texel_type(previous_state) ~= pixel_texel_type(current_state) then
                 local temp_color = texel_fg_row[texel_x]
                 texel_fg_row[texel_x] = texel_bg_row[texel_x]
                 texel_bg_row[texel_x] = temp_color
@@ -1092,7 +1110,7 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
 
         local current_color
 
-        if (current_state <= 31) == active then
+        if (pixel_texel_type(current_state) == 0) == active then
             -- The pixel will use the foreground color
             current_color = texel_fg_row[texel_x]
             texel_fg_row[texel_x] = color
@@ -1227,6 +1245,12 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         local map = self.map
         local texel_state_row = map.texel_state[texel_y]
         local current_state = texel_state_row[texel_x]
+
+        if pixel_texel_type(current_state) == 2 then
+            current_state = 0
+            texel_state_row[texel_x] = 0
+        end
+
         local current_active = native.bit32.btest(current_state, bit_to_check)
 
         if active ~= current_active then
