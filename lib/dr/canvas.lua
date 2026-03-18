@@ -4,6 +4,7 @@ local R_table = require "lib.table"
 
 local native = {
     bit32 = {
+        bor = bit32.bor,
         btest = bit32.btest,
         bxor = bit32.bxor,
         lshift = bit32.lshift
@@ -1067,29 +1068,40 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         local map = self.map
         local texel_state_row = map.texel_state[texel_y]
         local current_state = texel_state_row[texel_x]
+        local previous_state = current_state
         local current_active = native.bit32.btest(current_state, bit_to_check)
+        local texel_fg_row = map.texel_fg[texel_y]
+        local texel_bg_row = map.texel_bg[texel_y]
 
         if active ~= current_active then
             -- The state of the pixel is being flipped
             current_state = native.bit32.bxor(current_state, bit_to_check)
             texel_state_row[texel_x] = current_state
+
+            -- If the texel "group" changed from normal texels to negated texels, the colors will need to be swapped
+            if (current_state <= 31) ~= (previous_state <= 31) then
+                local temp_color = texel_fg_row[texel_x]
+                texel_fg_row[texel_x] = texel_bg_row[texel_x]
+                texel_bg_row[texel_x] = temp_color
+
+                updated_colors = 3
+            end
+
             changed = true
         end
 
-        local texel_fg_row = map.texel_fg[texel_y]
-        local texel_bg_row = map.texel_bg[texel_y]
         local current_color
 
         if (current_state <= 31) == active then
             -- The pixel will use the foreground color
             current_color = texel_fg_row[texel_x]
             texel_fg_row[texel_x] = color
-            updated_colors = 1
+            updated_colors = native.bit32.bor(updated_colors, 1)
         else
             -- The pixel will use the background color
             current_color = texel_bg_row[texel_x]
             texel_bg_row[texel_x] = color
-            updated_colors = 2
+            updated_colors = native.bit32.bor(updated_colors, 2)
         end
 
         if current_color ~= color then
