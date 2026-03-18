@@ -388,6 +388,8 @@ end
 --- @field bottom integer?  The vertical position of the bottom edge within the painter's canvas.<br/>If <code>nil</code>, <code>y</code> (or <code>top</code>) and <code>height</code> must be defined.<br/>Negative values are interpreted as offsets from the bottom edge of the canvas.
 
 --- @param area CanvasArea
+--- @param enclosing_width integer
+--- @param enclosing_height integer
 --- @return integer left
 --- @return integer top
 --- @return integer right
@@ -761,16 +763,11 @@ function DrawBoxPixelPaintOperation:new(area)
 
     function instance:execute(painter)
         local painter_params = painter.params
+        local painter_canvas = painter.canvas
 
         local area = __extract(self.area) --[[@as CanvasArea]]
 
-        if area.width < 0 then area.width = painter.canvas.pixel_width + area.width + 1 end
-        if area.height < 0 then area.height = painter.canvas.pixel_height + area.height + 1 end
-
-        local left = area.x
-        local right = area.x + area.width - 1
-        local top = area.y
-        local bottom = area.y + area.height - 1
+        local left, top, right, bottom = __resolve_area_bounds(area, painter_canvas.pixel_width, painter_canvas.pixel_height)
 
         local iter_x, iter_y = left, top
         local iter_color = painter_params.color.fg
@@ -822,7 +819,7 @@ function DrawBoxPixelPaintOperation:new(area)
             end
         }
 
-        painter.canvas:set_pixel_many(
+        painter_canvas:set_pixel_many(
             function()
                 if iter_state > #iter_funcs then return nil end
                 return iter_funcs[iter_state]()
@@ -970,7 +967,7 @@ function FillAreaPixelPaintOperation:new(area, background)
         local area = __extract(self.area) --[[@as CanvasArea]]
         local background = __extract(self.background) --[[@as boolean]]
 
-        local left, top, right, bottom = __resolve_area_bounds(area)
+        local left, top, right, bottom = __resolve_area_bounds(area, painter_canvas.pixel_width, painter_canvas.pixel_height)
 
         -- Skip the calculations if the size of the area is "negative"
         if left > right or top > bottom then return end
