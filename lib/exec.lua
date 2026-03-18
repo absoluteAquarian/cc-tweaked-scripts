@@ -130,7 +130,7 @@ end
 
 --- @param wait_interval (fun() : integer)|integer
 --- @param init fun()?
---- @param body fun()
+--- @param body fun() : boolean?
 --- @param sleep_watcher EventWatcher?
 --- @param quit fun()?
 local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
@@ -143,12 +143,18 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
         handler.try {
             -- try
             function()
-                if not has_init and init then
-                    init()
+                ::start::
+
+                if not has_init then
+                    if init then init() end
                     has_init = true
                 end
 
-                body()
+                if body() == false then
+                    -- Reinitialize
+                    has_init = false
+                    goto start
+                end
 
                 local ticks
                 if type(wait_interval) == "function" then
@@ -226,7 +232,7 @@ function module_table.sleep_with_polling(seconds, watcher) return trace.scall(sl
 --- A utility function to loop forever, with optional logic to run when quitting or restarting the program.
 --- @param wait_interval (fun() : integer)|integer  The amount of ticks to wait between iterations.  Forced to be at least 1.
 --- @param init fun()?  An optional function to run once before the loop starts or when the program is restarted after an error
---- @param body fun()  The function to run every loop iteration
+--- @param body fun() : boolean?  The function to run every loop iteration.  Return <code>false</code> to re-run the <code>init</code> function before the next iteration.
 --- @param sleep_watcher EventWatcher?  An optional EventWatcher to pull events from while sleeping between loop iterations
 --- @param quit fun()?  An optional function to run when the program is quitting after an error
 function module_table.loop_forever(wait_interval, init, body, sleep_watcher, quit) return loop_forever(wait_interval, init, body, sleep_watcher, quit) end

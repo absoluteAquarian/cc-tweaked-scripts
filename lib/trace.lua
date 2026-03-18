@@ -82,7 +82,7 @@ end
 
 --- @param func fun(...) : ...
 --- @param ... any
---- @return table<boolean, ...>
+--- @return { [1]: boolean, [integer]: any }
 local function scall(func, ...)
     --- @param err any
     --- @return TracedError
@@ -108,7 +108,7 @@ local module_table = { }
 --- This function effectively acts as a wrapper around <code>xpcall()</code>
 --- @param func fun(...) : ...  The function to call with the given arguments
 --- @param ... any  The arguments to call the function with
---- @return table<boolean, ...>
+--- @return { [1]: boolean, [integer]: any }
 function module_table.scallx(func, ...)
     return scall(func, ...)
 end

@@ -602,6 +602,11 @@ exec.loop_forever(
     end,
     -- body
     function()
+        if not peripheral.isPresent(peripheral.getName(BATTERY)) then
+            -- The battery was removed, reinitialize to wait for it again
+            return false
+        end
+
         eu_in:measure(BATTERY.getInputPerSec() / 20)
         eu_out:measure(BATTERY.getOutputPerSec() / 20)
 

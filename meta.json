@@ -16,7 +16,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 26,
+            "version": 27,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5, GRAPH_MAX_AMPS:64, GRAPH_MAX_AMPS_NET:32 }",
@@ -51,6 +51,19 @@
                 "lib.dr.paint",
                 "lib.class",
                 "lib.config",
+                "lib.exec",
+                "lib.table"
+            ]
+        },
+        {
+            "name": "comms",
+            "version": 1,
+            "url": "$REPO$/programs/comms.lua",
+            "install": "comms.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.cc.terminal",
                 "lib.exec",
                 "lib.table"
             ]
@@ -213,7 +226,7 @@
         },
         {
             "name": "lib.exec",
-            "version": 14,
+            "version": 15,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",
@@ -227,7 +240,7 @@
         },
         {
             "name": "lib.handler",
-            "version": 11,
+            "version": 12,
             "url": "$REPO$/lib/handler.lua",
             "install": "lib/handler.lua",
             "config": "",
@@ -296,7 +309,7 @@
         },
         {
             "name": "lib.trace",
-            "version": 25,
+            "version": 26,
             "url": "$REPO$/lib/trace.lua",
             "install": "lib/trace.lua",
             "config": "",
