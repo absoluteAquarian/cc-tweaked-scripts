@@ -30,8 +30,18 @@ local __colbg = colors.black
 local __msgview = 1
 local __msgviwemax = h - 2
 
+local function __get_message_positions()
+    local view_start = __msgview
+    local view_end = native.math.min(view_start + __msgviwemax - 1, #__messages)
+
+    return view_start, view_end
+end
+
 --- @param msg string
 local function record(msg)
+    local _, view_end = __get_message_positions()
+    local bottom = view_end == #__messages
+
     local first, last = 1, native.math.min(w, #msg)
     while first <= #msg do
         -- Restrict the message history
@@ -45,6 +55,9 @@ local function record(msg)
         table.insert(__msgcol, { fg = __colfg, bg = __colbg })
         first, last = last + 1, native.math.min(last + w, #msg)
     end
+
+    -- Move the messages up if the view is at the bottom, to keep it at the bottom as new messages come in
+    if bottom then __msgview = native.math.max(1, #__messages - __msgviwemax + 1) end
 end
 
 --- @param fmt string
@@ -101,7 +114,9 @@ local function refresh_message_display()
     local y = 1
     local fg, bg = colors.white, colors.black
 
-    for i = __msgview, native.math.min(__msgview + __msgviwemax - 1, #__messages) do
+    local view_start, view_end = __get_message_positions()
+
+    for i = view_start, view_end do
         local cols = __msgcol[i]
 
         term.setCursorPos(1, y)
@@ -125,6 +140,8 @@ local function refresh_message_display()
         term.clearLine()
         y = y + 1
     end
+
+    term.setCursorPos(__inputcursor, h)
 end
 
 local function refresh_input_display()
@@ -210,7 +227,9 @@ local function __pinged_by(sender)
     table.insert(__targets, sender)
     __alive[sender] = true
 
-    print(string.format("[]: Received ping from computer %d", sender))
+    recordfmt("[]: Received ping from computer %d", sender)
+
+    refresh_message_display()
 end
 
 local COMMAND_PING = 1
@@ -283,6 +302,7 @@ local function receive(sender, command, ...)
         func(sender, command, ...)
     else
         recordfmt("[]: Received unknown command (%d) from computer %d", command, sender)
+        refresh_message_display()
     end
 end
 
@@ -390,6 +410,7 @@ local commands =
 {
     ["whoami"] = function()
         recordfmt("I am computer %d", __id)
+        refresh_message_display()
     end,
     ["help"] = function(...)
         local num = select("#", ...)
@@ -407,16 +428,19 @@ local commands =
                 recorderrfmt("Unknown command: %s", cmd)
             end
         end
+        refresh_message_display()
     end,
     ["ping"] = function()
         record("Sending ping...")
         send_on_channels(COMMAND_PING, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX)
+        refresh_message_display()
     end,
     ["list"] = function()
         record("Available commands:")
         for cmd, _ in pairs(commands) do
             recordfmt(" - %s", cmd)
         end
+        refresh_message_display()
     end,
     ["clear"] = function()
         __messages = {}
@@ -424,6 +448,7 @@ local commands =
         __msgview = 1
 
         recordfmt("%s%s", INPUTPREFIX, "clear")
+        refresh_message_display()
     end
 }
 
@@ -538,8 +563,12 @@ exec.loop_forever
 
         R_terminal.reset_terminal()
 
-        record("[]: Waiting for wireless modem...")
-        record("[]: Modem found. Sending ping...")
+        record("[]: Waiting for modem...")
+        record("[]: Modem found.")
+        record("[]: Sending ping...")
+
+        refresh_message_display()
+        refresh_input_display()
 
         send_on_channels(COMMAND_PING, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX)
 
