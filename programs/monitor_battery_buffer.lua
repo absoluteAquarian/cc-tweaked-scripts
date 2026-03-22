@@ -3,6 +3,8 @@ local inject = require "lib.inject"
 
 -- Based on: https://github.com/Poeschl/computercraft-scripts/blob/main/simple_energy_monitor.lua
 
+local comms_api = require "lib.api.comms"
+
 local fmt = require "lib.cc.fmt"
 local R_monitor = require "lib.cc.monitor"
 local R_terminal = require "lib.cc.terminal"
@@ -337,88 +339,92 @@ local BATTERY_TIER
 local LAST_PERCENTAGE = 0.0
 local TREND_SIGN = 0
 
+local function display_to_one_monitor(monitor, current, trend)
+    local color_current
+
+    if current < (ALARM_THRESHOLD * 100) then
+        color_current = colors.red
+    elseif current < (CHARGE_THRESHOLD * 100) then
+        color_current = colors.yellow
+    else
+        color_current = colors.green
+    end
+
+    local offset_current
+
+    if current == 100 then
+        offset_current = 0
+
+        -- Force the trend to use at most 1 decimal
+        if PRECISION_PERCENTS > 1 then
+            trend = R_math.round(trend, 1)
+        end
+    else
+        offset_current = current < 10 and 1 or 0
+    end
+
+    local offset_trend
+    local too_small = false
+
+    if trend == 0 then
+        -- Special case
+        offset_trend = (current == 100) and 2 or 1
+
+        if TREND_SIGN ~= 0 then
+            -- Not actually zero, just too small
+            trend = TREND_SIGN * (current == 100 and TREND_MINIMUM_AT_100 or TREND_MINIMUM)
+            offset_trend = offset_trend - 1
+            too_small = true
+        end
+    elseif math.abs(trend) < 10 then
+        offset_trend = 1
+    else
+        offset_trend = 0
+    end
+
+    local trend_fmt, color_trend = fmt.signed_and_color(trend)
+
+    local in_amps, in_tier = metrics_incoming:amps()
+    local out_amps, out_tier = metrics_outgoing:amps()
+    local net_amps, net_tier = metrics_net:amps()
+
+    monitor_state_painter:store("OFFSET_CURRENT", { x = offset_current })
+    monitor_state_painter:store("COLOR_CURRENT", color_current)
+    monitor_state_painter:store("CURRENT", current)
+
+    monitor_state_painter:store("OFFSET_TREND", { x = offset_trend })
+    monitor_state_painter:store("COLOR_TREND", color_trend)
+    monitor_state_painter:store("TREND", too_small and ("<" .. trend_fmt) or trend_fmt)
+
+    local offset, formatted, color
+    offset, formatted, _ = process_amps_text(in_amps, false, false)
+    monitor_state_painter:store("OFFSET_AMPS_IN", { x = offset })
+    monitor_state_painter:store("AMPS_IN", formatted)
+    monitor_state_painter:store("COLOR_IN_TIER", tiers.get_color(in_tier))
+    monitor_state_painter:store("IN_TIER", in_tier)
+
+    offset, formatted, _ = process_amps_text(out_amps, false, false)
+    monitor_state_painter:store("OFFSET_AMPS_OUT", { x = offset })
+    monitor_state_painter:store("AMPS_OUT", formatted)
+    monitor_state_painter:store("COLOR_OUT_TIER", tiers.get_color(out_tier))
+    monitor_state_painter:store("OUT_TIER", out_tier)
+
+    offset, formatted, color = process_amps_text(net_amps, true, true)
+    monitor_state_painter:store("OFFSET_AMPS_NET", { x = offset })
+    monitor_state_painter:store("AMPS_NET", formatted)
+    monitor_state_painter:store("COLOR_NET", color)
+    monitor_state_painter:store("COLOR_NET_TIER", tiers.get_color(net_tier))
+    monitor_state_painter:store("NET_TIER", net_tier)
+
+    monitor_state_painter:repaint(monitor)
+end
+
 --- @param current number
 --- @param trend number
 local function display_to_monitors(current, trend)
     R_monitor.foreach_monitor(
         function(monitor)
-            local color_current
-
-            if current < (ALARM_THRESHOLD * 100) then
-                color_current = colors.red
-            elseif current < (CHARGE_THRESHOLD * 100) then
-                color_current = colors.yellow
-            else
-                color_current = colors.green
-            end
-
-            local offset_current
-
-            if current == 100 then
-                offset_current = 0
-
-                -- Force the trend to use at most 1 decimal
-                if PRECISION_PERCENTS > 1 then
-                    trend = R_math.round(trend, 1)
-                end
-            else
-                offset_current = current < 10 and 1 or 0
-            end
-
-            local offset_trend
-            local too_small = false
-
-            if trend == 0 then
-                -- Special case
-                offset_trend = (current == 100) and 2 or 1
-
-                if TREND_SIGN ~= 0 then
-                    -- Not actually zero, just too small
-                    trend = TREND_SIGN * (current == 100 and TREND_MINIMUM_AT_100 or TREND_MINIMUM)
-                    offset_trend = offset_trend - 1
-                    too_small = true
-                end
-            elseif math.abs(trend) < 10 then
-                offset_trend = 1
-            else
-                offset_trend = 0
-            end
-
-            local trend_fmt, color_trend = fmt.signed_and_color(trend)
-
-            local in_amps, in_tier = metrics_incoming:amps()
-            local out_amps, out_tier = metrics_outgoing:amps()
-            local net_amps, net_tier = metrics_net:amps()
-
-            monitor_state_painter:store("OFFSET_CURRENT", { x = offset_current })
-            monitor_state_painter:store("COLOR_CURRENT", color_current)
-            monitor_state_painter:store("CURRENT", current)
-
-            monitor_state_painter:store("OFFSET_TREND", { x = offset_trend })
-            monitor_state_painter:store("COLOR_TREND", color_trend)
-            monitor_state_painter:store("TREND", too_small and ("<" .. trend_fmt) or trend_fmt)
-
-            local offset, formatted, color
-            offset, formatted, _ = process_amps_text(in_amps, false, false)
-            monitor_state_painter:store("OFFSET_AMPS_IN", { x = offset })
-            monitor_state_painter:store("AMPS_IN", formatted)
-            monitor_state_painter:store("COLOR_IN_TIER", tiers.get_color(in_tier))
-            monitor_state_painter:store("IN_TIER", in_tier)
-
-            offset, formatted, _ = process_amps_text(out_amps, false, false)
-            monitor_state_painter:store("OFFSET_AMPS_OUT", { x = offset })
-            monitor_state_painter:store("AMPS_OUT", formatted)
-            monitor_state_painter:store("COLOR_OUT_TIER", tiers.get_color(out_tier))
-            monitor_state_painter:store("OUT_TIER", out_tier)
-
-            offset, formatted, color = process_amps_text(net_amps, true, true)
-            monitor_state_painter:store("OFFSET_AMPS_NET", { x = offset })
-            monitor_state_painter:store("AMPS_NET", formatted)
-            monitor_state_painter:store("COLOR_NET", color)
-            monitor_state_painter:store("COLOR_NET_TIER", tiers.get_color(net_tier))
-            monitor_state_painter:store("NET_TIER", net_tier)
-
-            monitor_state_painter:repaint(monitor)
+            display_to_one_monitor(monitor, current, trend)
         end
     )
 end
@@ -558,6 +564,96 @@ local function wait_for_battery()
     return battery, battery_tier --[[@as string]]
 end
 
+local COMMS_BATTERY_VALUES = "mbb:values"
+local COMMS_BATTERY_DISCONNECT = "mbb:disconnect"
+
+if pocket then
+    --- @type integer
+    local target_id
+
+    --- @type number, number
+    local eu_in_value, eu_out_value = 0, 0
+
+    local painted_template = false
+
+    -- Use the comms API to get the data for the buffer
+    comms_api.register_data_callback(
+        function(sender, ...)
+            if sender ~= target_id then return end
+
+            local msg = select(1, ...)
+
+            if msg == COMMS_BATTERY_VALUES then
+                -- Update the display with the received values
+
+                --- @type number, number
+                local percentage, trend
+
+                local temp_tier, temp_percentage, temp_trend, temp_eu_in, temp_eu_out = select(2, ...)
+
+                BATTERY_TIER = temp_tier or ""
+                percentage = temp_percentage or 0
+                trend = temp_trend or 0
+                eu_in_value = temp_eu_in or 0
+                eu_out_value = temp_eu_out or 0
+
+                if not painted_template then
+                    monitor_template_painter:repaint(current_terminal)
+                    painted_template = true
+                end
+
+                display_to_one_monitor(
+                    current_terminal,
+                    R_math.round(percentage * 100, PRECISION_DISPLAYED),
+                    R_math.round(trend * 100, PRECISION_DISPLAYED)
+                )
+            elseif msg == COMMS_BATTERY_DISCONNECT then
+                R_terminal.reset_terminal()
+                painted_template = false
+
+                print("Battery disconnected.")
+                write(string.format("Waiting for computer %d...", target_id))
+            end
+        end
+    )
+
+    exec.loop_forever(
+        -- wait_interval
+        1,
+        -- init
+        function()
+            ::retry::
+            R_terminal.reset_terminal()
+            write("Target computer ID: ")
+
+            local temp_id = tonumber(read())
+            if not temp_id or temp_id <= 0 or temp_id > 65535 or temp_id % 1 ~= 0 then
+                goto retry
+            end
+
+            target_id = temp_id
+            R_terminal.reset_terminal()
+            write(string.format("Waiting for computer %d...", target_id))
+
+            metrics_incoming = Metrics:new(function() return eu_in_value end)
+            metrics_outgoing = Metrics:new(function() return eu_out_value end)
+            metrics_net = Metrics:new(function() return eu_in_value - eu_out_value end)
+
+            painted_template = false
+        end,
+        -- body
+        function() end,
+        -- sleep_watchers
+        exec.class.EventWatcher:new()
+            :add(comms_api.get_event_contexts())
+        ,
+        -- quit
+        nil
+    )
+
+    return
+end
+
 local tick = 1
 
 exec.loop_forever(
@@ -602,8 +698,9 @@ exec.loop_forever(
     end,
     -- body
     function()
-        if not peripheral.isPresent(peripheral.getName(BATTERY)) then
+        if (not BATTERY) or (not peripheral.isPresent(peripheral.getName(BATTERY))) then
             -- The battery was removed, reinitialize to wait for it again
+            comms_api.broadcast(COMMS_BATTERY_DISCONNECT)
             return false
         end
 
@@ -611,7 +708,9 @@ exec.loop_forever(
         eu_out:measure(BATTERY.getOutputPerSec() / 20)
 
         if tick == 1 then
-            eu_net = eu_in:get() - eu_out:get()
+            local eu_in_value = eu_in:get()
+            local eu_out_value = eu_out:get()
+            eu_net = eu_in_value - eu_out_value
 
             local percentage = BATTERY.getEnergyStored() / BATTERY.getEnergyCapacity()
             local trend = percentage - LAST_PERCENTAGE
@@ -624,13 +723,18 @@ exec.loop_forever(
             display_to_monitors(rounded_current, rounded_trend)
             display_to_terminal(rounded_current, rounded_trend)
 
+            -- comms API
+            comms_api.broadcast(COMMS_BATTERY_VALUES, BATTERY_TIER, percentage, trend, eu_in_value, eu_out_value)
+
             LAST_PERCENTAGE = percentage
         end
 
         tick = tick == RENDER_TICK_DELAY and 1 or tick + 1
     end,
     -- sleep_watchers
-    nil,
+    exec.class.EventWatcher:new()
+        :add(comms_api.get_event_contexts())
+    ,
     -- quit
     nil
 )

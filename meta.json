@@ -22,6 +22,7 @@
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5, GRAPH_MAX_AMPS:64, GRAPH_MAX_AMPS_NET:32 }",
             "deps":
             [
+                "lib.api.comms",
                 "lib.cc.fmt",
                 "lib.cc.monitor",
                 "lib.cc.terminal",
@@ -63,6 +64,7 @@
             "config": "",
             "deps":
             [
+                "lib.api.comms",
                 "lib.cc.terminal",
                 "lib.exec",
                 "lib.table"
@@ -71,6 +73,18 @@
     ],
     "lib":
     [
+        {
+            "name": "lib/api/comms",
+            "version": 1,
+            "url": "$REPO$/lib/api/comms.lua",
+            "install": "lib/api/comms.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.exec",
+                "lib.trace"
+            ]
+        },
         {
             "name": "lib.cc.filesystem",
             "version": 4,

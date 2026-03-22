@@ -1,3 +1,5 @@
+local comms_api = require "lib.api.comms"
+
 local R_terminal = require "lib.cc.terminal"
 
 local exec = require "lib.exec"
@@ -158,14 +160,21 @@ local __alive = {}
 --- @type integer
 local __watchdog_timer
 
---- @class PeripheralModem
---- @field open fun(channel: number)
---- @field isOpen fun(channel: number) : boolean
---- @field close fun(channel: number)
---- @field closeAll fun()
---- @field transmit fun(channel: number, replyChannel: number, payload: any)
---- @field isWireless fun() : boolean
+--- @type PeripheralModem
 local modem
+
+--- @return PeripheralModem
+local function find_wireless_modem()
+    local modem_temp
+    for _, name in ipairs(peripheral.getNames()) do
+        local p = peripheral.wrap(name)
+        if p and p.isWireless and p.isWireless() then
+            modem_temp = p
+            break
+        end
+    end
+    return modem_temp
+end
 
 --- @return PeripheralModem
 local function look_for_modem()
@@ -174,13 +183,7 @@ local function look_for_modem()
 
     while true do
         -- Search for a wireless modem
-        for _, name in ipairs(peripheral.getNames()) do
-            local p = peripheral.wrap(name)
-            if p and p.isWireless and p.isWireless() then
-                modem_temp = p
-                break
-            end
-        end
+        modem_temp = find_wireless_modem()
 
         if modem_temp then break end
 
@@ -197,27 +200,10 @@ local function look_for_modem()
     return modem_temp
 end
 
---- @class CommandPayload
---- @field command integer
---- @field sender integer
---- @field data table
-
-local CHANNEL_GENERIC_TX = 413
-local CHANNEL_WATCHDOG_TX = 414
-local CHANNEL_GENERIC_RX = 612
-local CHANNEL_WATCHDOG_RX = 613
-
-local function send_with_channels(command, tx, rx, ...)
-    modem.transmit(
-        tx,
-        rx,
-        { command = command, sender = __id, data = table.pack(...) }
-    )
-end
-
---- @param command integer
---- @param ... any
-local function send(command, ...) send_with_channels(command, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX, ...) end
+local CHANNEL_GENERIC_TX = comms_api.consts.channels.GENERIC_TX
+local CHANNEL_WATCHDOG_TX = CHANNEL_GENERIC_TX + 1
+local CHANNEL_GENERIC_RX = comms_api.consts.channels.GENERIC_RX
+local CHANNEL_WATCHDOG_RX = CHANNEL_GENERIC_RX + 1
 
 local function __pinged_by(sender)
     R_table.remove_values(__targets, sender)
@@ -231,13 +217,27 @@ local COMMAND_PING = 1
 local COMMAND_PING_REPLY = 2
 local WATCHDOG_CHECK = 3
 local WATCHDOG_RESPONSE = 4
+local COMMAND_API_BROADCAST = 5
+local COMMAND_API_SPECIFIC = 6
+
+--- @param command integer
+--- @param tx integer
+--- @param rx integer
+--- @param ... any
+local function send_on_channels(command, tx, rx, ...)
+    modem.transmit(
+        tx,
+        rx,
+        { command = command, sender = __id, data = table.pack(...) }
+    )
+end
 
 --- @type table<integer, fun(sender: integer, command: integer, ...: any)>
 local receive_funcs =
 {
     [COMMAND_PING] = function(sender, command, ...)
         __pinged_by(sender)
-        send(COMMAND_PING_REPLY, sender)
+        send_on_channels(COMMAND_PING_REPLY, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX, sender)
     end,
     [COMMAND_PING_REPLY] = function(sender, command, ...)
         local target_id = select(1, ...)
@@ -250,7 +250,7 @@ local receive_funcs =
         local target_id = select(1, ...)
 
         if target_id == __id then
-            send_with_channels(WATCHDOG_RESPONSE, CHANNEL_WATCHDOG_TX, CHANNEL_WATCHDOG_RX, sender)
+            send_on_channels(WATCHDOG_RESPONSE, CHANNEL_WATCHDOG_TX, CHANNEL_WATCHDOG_RX, sender)
         end
     end,
     [WATCHDOG_RESPONSE] = function(sender, command, ...)
@@ -258,6 +258,18 @@ local receive_funcs =
 
         if target_id == __id then
             __alive[sender] = true
+        end
+    end,
+    [COMMAND_API_BROADCAST] = function(sender, command, ...)
+        -- Forward to the API event to other programs
+        os.queueEvent(comms_api.consts.EVENT_DATA_RX, sender, ...)
+    end,
+    [COMMAND_API_SPECIFIC] = function(sender, command, ...)
+        local target_id = select(1, ...)
+
+        if target_id == __id then
+            -- Forward to the API event to other programs
+            os.queueEvent(comms_api.consts.EVENT_DATA_RX, sender, select(2, ...))
         end
     end
 }
@@ -270,7 +282,7 @@ local function receive(sender, command, ...)
     if func then
         func(sender, command, ...)
     else
-        print(string.format("[]: Received unknown command (%d) from computer %d", command, sender))
+        recordfmt("[]: Received unknown command (%d) from computer %d", command, sender)
     end
 end
 
@@ -398,7 +410,7 @@ local commands =
     end,
     ["ping"] = function()
         record("Sending ping...")
-        send(COMMAND_PING)
+        send_on_channels(COMMAND_PING, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX)
     end,
     ["list"] = function()
         record("Available commands:")
@@ -524,10 +536,12 @@ exec.loop_forever
         modem.open(CHANNEL_WATCHDOG_RX)
         modem.open(CHANNEL_WATCHDOG_TX)
 
-        write('\n')
-        print("[]: Modem found. Sending ping...")
+        R_terminal.reset_terminal()
 
-        send(COMMAND_PING)
+        record("[]: Waiting for wireless modem...")
+        record("[]: Modem found. Sending ping...")
+
+        send_on_channels(COMMAND_PING, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX)
 
         __watchdog_timer = os.startTimer(5)
     end,
@@ -563,10 +577,10 @@ exec.loop_forever
                     for i = #targets, 1, -1 do
                         local target = targets[i]
                         if __alive[target] then
-                            send_with_channels(WATCHDOG_CHECK, CHANNEL_WATCHDOG_TX, CHANNEL_WATCHDOG_RX, target)
+                            send_on_channels(WATCHDOG_CHECK, CHANNEL_WATCHDOG_TX, CHANNEL_WATCHDOG_RX, target)
                             __alive[target] = false  -- Target must respond before next check to be considered alive
                         else
-                            print(string.format("[]: Connection to computer %d was lost", target))
+                            recordfmt("[]: Connection to computer %d was lost", target)
                             table.remove(targets, i)
                             __alive[target] = nil
                         end
@@ -604,6 +618,18 @@ exec.loop_forever
             function(char)
                 native.table.insert(__input, __inputcursor, char)
                 __key_cursormove(1, false, false)
+            end
+        )
+        -- API-related events
+        :listen(
+            comms_api.consts.EVENT_DATA_TX,
+            function(target, ...)
+                -- Broadcast the data
+                if target < 0 then
+                    send_on_channels(COMMAND_API_BROADCAST, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX, ...)
+                else
+                    send_on_channels(COMMAND_API_SPECIFIC, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX, target, ...)
+                end
             end
         )
     ,
