@@ -347,7 +347,7 @@ local function __key_holdfunc(held, func, recurse)
     if not held then
         if not recurse then
             -- Reset key hold state
-            __keyhold = 1
+            __keyhold = KEYHOLDMAX
             __keyholdmax = KEYHOLDMAX
         end
 
