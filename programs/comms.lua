@@ -228,8 +228,9 @@ local function __pinged_by(sender)
     __alive[sender] = true
 
     recordfmt("[]: Received ping from computer %d", sender)
-
     refresh_message_display()
+
+    os.queueEvent(comms_api.consts.EVENT_CONNECT, sender)
 end
 
 local COMMAND_PING = 1
@@ -610,6 +611,7 @@ exec.loop_forever
                             __alive[target] = false  -- Target must respond before next check to be considered alive
                         else
                             recordfmt("[]: Connection to computer %d was lost", target)
+                            os.queueEvent(comms_api.consts.EVENT_DISCONNECT, target)
                             table.remove(targets, i)
                             __alive[target] = nil
                         end

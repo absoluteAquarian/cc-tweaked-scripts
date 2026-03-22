@@ -592,6 +592,14 @@ if pocket then
 
     local painted_template = false
 
+    local function __on_target_disconnected()
+        R_terminal.reset_terminal()
+        painted_template = false
+
+        print("Battery disconnected.")
+        write(string.format("Waiting for computer %d...", target_id))
+    end
+
     -- Use the comms API to get the data for the buffer
     comms_api.register_data_callback(
         function(sender, ...)
@@ -644,7 +652,7 @@ if pocket then
                 if not painted_template then
                     term.setBackgroundColor(colors.black)
                     term.setTextColor(colors.white)
-                    term.clear()
+                    R_terminal.reset_terminal()
 
                     monitor_template_painter:repaint(current_terminal)
                     painted_template = true
@@ -656,11 +664,24 @@ if pocket then
                     R_math.round(trend * 100, PRECISION_DISPLAYED)
                 )
             elseif msg == COMMS_BATTERY_DISCONNECT then
-                R_terminal.reset_terminal()
-                painted_template = false
+                __on_target_disconnected()
+            end
+        end
+    )
 
-                print("Battery disconnected.")
-                write(string.format("Waiting for computer %d...", target_id))
+    comms_api.register_disconnect_callback(
+        function(id)
+            if id == target_id then
+                __on_target_disconnected()
+            end
+        end
+    )
+
+    comms_api.register_connect_callback(
+        function(id)
+            if id == target_id then
+                comms_api.send(target_id, COMMS_CONFIG_REQUEST)
+                painted_template = false
             end
         end
     )
