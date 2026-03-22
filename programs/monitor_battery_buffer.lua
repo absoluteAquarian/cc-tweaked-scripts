@@ -25,33 +25,47 @@ local R_table = require "lib.table"
 local cfg_file = config.class.ConfigFile:new("monitor_battery_buffer")
 
 local CHARGE_THRESHOLD = cfg_file:getNumber("CHARGE_THRESHOLD") or 0.6
-cfg_file:setNumber("CHARGE_THRESHOLD", CHARGE_THRESHOLD)
 local ALARM_THRESHOLD = cfg_file:getNumber("ALARM_THRESHOLD") or 0.3
-cfg_file:setNumber("ALARM_THRESHOLD", ALARM_THRESHOLD)
 local PRECISION_DISPLAYED = cfg_file:getNumber("PRECISION_DISPLAYED") or 2
-cfg_file:setNumber("PRECISION_DISPLAYED", PRECISION_DISPLAYED)
 local RENDER_TICK_DELAY = cfg_file:getNumber("RENDER_TICK_DELAY") or 5
-cfg_file:setNumber("RENDER_TICK_DELAY", RENDER_TICK_DELAY)
 local MACHINE = cfg_file:getString("MACHINE") or "battery_buffer"
-cfg_file:setString("MACHINE", MACHINE)
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or ""
-cfg_file:setString("POWER_OVERRIDE", POWER_OVERRIDE)
 local GRAPH_MAX_AMPS = cfg_file:getInt("GRAPH_MAX_AMPS") or 64
-cfg_file:setInt("GRAPH_MAX_AMPS", GRAPH_MAX_AMPS)
 local GRAPH_MAX_AMPS_NET = cfg_file:getInt("GRAPH_MAX_AMPS_NET") or 32
-cfg_file:setInt("GRAPH_MAX_AMPS_NET", GRAPH_MAX_AMPS_NET)
 
-cfg_file:save()
+local function __force_config_values()
+    cfg_file:setNumber("CHARGE_THRESHOLD", CHARGE_THRESHOLD)
+    cfg_file:setNumber("ALARM_THRESHOLD", ALARM_THRESHOLD)
+    cfg_file:setNumber("PRECISION_DISPLAYED", PRECISION_DISPLAYED)
+    cfg_file:setNumber("RENDER_TICK_DELAY", RENDER_TICK_DELAY)
+    cfg_file:setString("MACHINE", MACHINE)
+    cfg_file:setString("POWER_OVERRIDE", POWER_OVERRIDE)
+    cfg_file:setInt("GRAPH_MAX_AMPS", GRAPH_MAX_AMPS)
+    cfg_file:setInt("GRAPH_MAX_AMPS_NET", GRAPH_MAX_AMPS_NET)
+    cfg_file:save()
+end
 
--- The displays have a fixed max length, so the precision has to be limited to prevent overdraw
-local PRECISION_PERCENTS = math.min(2, PRECISION_DISPLAYED)  -- ex. "--.--%"
+__force_config_values()
 
-local TREND_MINIMUM = math.pow(10, -PRECISION_PERCENTS)  -- ex. 0.01 for PRECISION_PERCENTS = 2
-local TREND_MINIMUM_AT_100 = PRECISION_DISPLAYED > 0 and math.pow(10, -PRECISION_DISPLAYED + 1) or TREND_MINIMUM
+local PRECISION_PERCENTS
+local TREND_MINIMUM
+local TREND_MINIMUM_AT_100
+local PRECISION_AMPS
+local MAX_AMPS_DISPLAYED
 
-local PRECISION_AMPS = math.min(3, PRECISION_DISPLAYED)  -- ex. "---.--- A"
+local function __set_display_consts()
+    -- The displays have a fixed max length, so the precision has to be limited to prevent overdraw
+    PRECISION_PERCENTS = math.min(2, PRECISION_DISPLAYED)  -- ex. "--.--%"
 
-local MAX_AMPS_DISPLAYED = math.pow(10, 6 - PRECISION_AMPS) - math.pow(10, -PRECISION_AMPS)  -- ex. "999.999 A" for PRECISION_AMPS = 3
+    TREND_MINIMUM = math.pow(10, -PRECISION_PERCENTS)  -- ex. 0.01 for PRECISION_PERCENTS = 2
+    TREND_MINIMUM_AT_100 = PRECISION_DISPLAYED > 0 and math.pow(10, -PRECISION_DISPLAYED + 1) or TREND_MINIMUM
+
+    PRECISION_AMPS = math.min(3, PRECISION_DISPLAYED)  -- ex. "---.--- A"
+
+    MAX_AMPS_DISPLAYED = math.pow(10, 6 - PRECISION_AMPS) - math.pow(10, -PRECISION_AMPS)  -- ex. "999.999 A" for PRECISION_AMPS = 3
+end
+
+__set_display_consts()
 
 -- Ensure that the defaults get properly saved
 cfg_file:save()
@@ -564,6 +578,8 @@ local function wait_for_battery()
     return battery, battery_tier --[[@as string]]
 end
 
+local COMMS_CONFIG_REQUEST = "mbb:config_request"
+local COMMS_CONFIG_RESPONSE = "mbb:config_response"
 local COMMS_BATTERY_VALUES = "mbb:values"
 local COMMS_BATTERY_DISCONNECT = "mbb:disconnect"
 
@@ -583,21 +599,51 @@ if pocket then
 
             local msg = select(1, ...)
 
-            if msg == COMMS_BATTERY_VALUES then
+            if msg == COMMS_CONFIG_RESPONSE then
+                -- Force the config on this program to match the sender's config
+                local temp_charge_threshold, temp_alarm_threshold, temp_precision_displayed, temp_render_tick_delay, temp_machine, temp_power_override, temp_graph_max_amps, temp_graph_max_amps_net = select(2, ...)
+
+                if temp_charge_threshold then CHARGE_THRESHOLD = temp_charge_threshold end
+                if temp_alarm_threshold then ALARM_THRESHOLD = temp_alarm_threshold end
+                if temp_precision_displayed then PRECISION_DISPLAYED = temp_precision_displayed end
+                if temp_render_tick_delay then RENDER_TICK_DELAY = temp_render_tick_delay end
+                if temp_machine then MACHINE = temp_machine end
+                if temp_power_override then POWER_OVERRIDE = temp_power_override end
+                if temp_graph_max_amps then GRAPH_MAX_AMPS = temp_graph_max_amps end
+                if temp_graph_max_amps_net then GRAPH_MAX_AMPS_NET = temp_graph_max_amps_net end
+
+                __force_config_values()
+                __set_display_consts()
+
+                if POWER_OVERRIDE and #POWER_OVERRIDE > 0 and R_table.has_value(tiers.def, POWER_OVERRIDE) then
+                    BATTERY_TIER = POWER_OVERRIDE
+                end
+
+                metrics_incoming.tier = BATTERY_TIER
+                metrics_outgoing.tier = BATTERY_TIER
+                metrics_net.tier = BATTERY_TIER
+            elseif msg == COMMS_BATTERY_VALUES then
                 -- Update the display with the received values
 
                 --- @type number, number
                 local percentage, trend
 
-                local temp_tier, temp_percentage, temp_trend, temp_eu_in, temp_eu_out = select(2, ...)
+                local temp_percentage, temp_trend, temp_eu_in, temp_eu_out = select(2, ...)
 
-                BATTERY_TIER = temp_tier or ""
                 percentage = temp_percentage or 0
                 trend = temp_trend or 0
                 eu_in_value = temp_eu_in or 0
                 eu_out_value = temp_eu_out or 0
 
+                metrics_incoming.tier = BATTERY_TIER
+                metrics_outgoing.tier = BATTERY_TIER
+                metrics_net.tier = BATTERY_TIER
+
                 if not painted_template then
+                    term.setBackgroundColor(colors.black)
+                    term.setTextColor(colors.white)
+                    term.clear()
+
                     monitor_template_painter:repaint(current_terminal)
                     painted_template = true
                 end
@@ -639,6 +685,8 @@ if pocket then
             metrics_outgoing = Metrics:new(function() return eu_out_value end)
             metrics_net = Metrics:new(function() return eu_in_value - eu_out_value end)
 
+            comms_api.send(target_id, COMMS_CONFIG_REQUEST)
+
             painted_template = false
         end,
         -- body
@@ -653,6 +701,28 @@ if pocket then
 
     return
 end
+
+comms_api.register_data_callback(
+    function(sender, ...)
+        local msg = select(1, ...)
+
+        if msg == COMMS_CONFIG_REQUEST then
+            -- Send the config to the requester
+            comms_api.send(
+                sender,
+                COMMS_CONFIG_RESPONSE,
+                CHARGE_THRESHOLD,
+                ALARM_THRESHOLD,
+                PRECISION_DISPLAYED,
+                RENDER_TICK_DELAY,
+                MACHINE,
+                POWER_OVERRIDE,
+                GRAPH_MAX_AMPS,
+                GRAPH_MAX_AMPS_NET
+            )
+        end
+    end
+)
 
 local tick = 1
 
@@ -724,7 +794,7 @@ exec.loop_forever(
             display_to_terminal(rounded_current, rounded_trend)
 
             -- comms API
-            comms_api.broadcast(COMMS_BATTERY_VALUES, BATTERY_TIER, percentage, trend, eu_in_value, eu_out_value)
+            comms_api.broadcast(COMMS_BATTERY_VALUES, percentage, trend, eu_in_value, eu_out_value)
 
             LAST_PERCENTAGE = percentage
         end
