@@ -469,8 +469,8 @@ comms_commands =
         usage = "list",
         func = function()
             record("Available commands:")
-            for cmd, _ in pairs(commands) do
-                recordfmt(" - %s", cmd)
+            for _, cmd in pairs(comms_commands) do
+                recordfmt(" %s", cmd.usage)
             end
             refresh_message_display()
         end
