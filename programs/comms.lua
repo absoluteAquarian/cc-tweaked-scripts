@@ -114,7 +114,6 @@ local function refresh_message_display()
 
     -- Show the messages
     local y = 1
-    local fg, bg = colors.white, colors.black
 
     local view_start, view_end = __get_message_positions()
 
@@ -122,20 +121,19 @@ local function refresh_message_display()
         local cols = __msgcol[i]
 
         term.setCursorPos(1, y)
-
-        if fg ~= colors.white then term.setTextColor(colors.white) end
-        if bg ~= colors.black then term.setBackgroundColor(colors.black) end
-
-        fg, bg = cols.fg, cols.bg
-
+        term.setTextColor(colors.white)
+        term.setBackgroundColor(colors.black)
         term.clearLine()
 
-        if fg ~= colors.white then term.setTextColor(fg) end
-        if bg ~= colors.black then term.setBackgroundColor(bg) end
+        term.setTextColor(cols.fg)
+        term.setBackgroundColor(cols.bg)
 
         write(__messages[i])
         y = y + 1
     end
+
+    term.setTextColor(colors.white)
+    term.setBackgroundColor(colors.black)
 
     while y <= h do
         term.setCursorPos(1, y)
@@ -396,7 +394,7 @@ end
 local function __input_reset()
     __input = {}
     __inputview = 1
-    __inputcursor = 1
+    __inputcursor = #INPUTPREFIX + 1
 end
 
 local function __input_set(str)
@@ -410,61 +408,86 @@ local function __input_set(str)
     __set_view(#__input + 1)
 end
 
---- @type table<string, string>
-local cmd_descriptions =
-{
-    ["whoami"] = "Display the ID of this computer",
-    ["help"] = "Show details about a command",
-    ["ping"] = "Send a ping to all other computers running this program",
-    ["list"] = "List all known commands",
-    ["clear"] = "Clear the message history"
-}
+--- @class CommsCommand
+--- @field desc string  A description of the command
+--- @field usage string  An example of how to use the command
+--- @field func fun(...)  The function to execute when the command is called
 
---- @type table<string, function>
-local commands =
+--- @type table<string, CommsCommand>
+local comms_commands
+
+comms_commands =
 {
-    ["whoami"] = function()
-        recordfmt("I am computer %d", __id)
-        refresh_message_display()
-    end,
-    ["help"] = function(...)
-        local num = select("#", ...)
-        if num == 0 then
-            recorderr("Expected command as argument")
-        elseif num > 1 then
-            recorderr("Too many arguments")
-        else
-            local cmd = select(1, ...)
-            local desc = cmd_descriptions[cmd]
-            if desc then
-                recordfmt("%s", cmd)
-                recordfmt("  %s", desc)
+    ["whoami"] =
+    {
+        desc = "Display the ID of this computer",
+        usage = "whoami",
+        func = function()
+            recordfmt("I am computer %d", __id)
+            refresh_message_display()
+        end
+    },
+    ["help"] =
+    {
+        desc = "Show details about a command",
+        usage = "help <command>",
+        func = function(...)
+            local num = select("#", ...)
+            if num == 0 then
+                recorderr("Expected command as argument")
+            elseif num > 1 then
+                recorderr("Too many arguments")
             else
-                recorderrfmt("Unknown command: %s", cmd)
+                local cmd = select(1, ...)
+                local command = comms_commands[cmd]
+                if command then
+                    recordfmt("%s", cmd)
+                    recordfmt("  %s", command.desc)
+                    set_record_colors(colors.orange, colors.black)
+                    recordfmt("  Usage: %s", command.usage)
+                    set_record_colors(colors.white, colors.black)
+                else
+                    recorderrfmt("Unknown command: %s", cmd)
+                end
             end
+            refresh_message_display()
         end
-        refresh_message_display()
-    end,
-    ["ping"] = function()
-        record("Sending ping...")
-        send_on_channels(COMMAND_PING, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX)
-        refresh_message_display()
-    end,
-    ["list"] = function()
-        record("Available commands:")
-        for cmd, _ in pairs(commands) do
-            recordfmt(" - %s", cmd)
+    },
+    ["ping"] =
+    {
+        desc = "Send a ping to all other computers running this program",
+        usage = "ping",
+        func = function()
+            record("Sending ping...")
+            send_on_channels(COMMAND_PING, CHANNEL_GENERIC_TX, CHANNEL_GENERIC_RX)
+            refresh_message_display()
         end
-        refresh_message_display()
-    end,
-    ["clear"] = function()
-        __messages = {}
-        __msgcol = {}
-        __msgview = 1
+    },
+    ["list"] =
+    {
+        desc = "List all known commands",
+        usage = "list",
+        func = function()
+            record("Available commands:")
+            for cmd, _ in pairs(commands) do
+                recordfmt(" - %s", cmd)
+            end
+            refresh_message_display()
+        end
+    },
+    ["clear"] =
+    {
+        desc = "Clear the message history",
+        usage = "clear",
+        func = function()
+            __messages = {}
+            __msgcol = {}
+            __msgview = 1
 
-        recordfmt("%s%s", INPUTPREFIX, "clear")
-        refresh_message_display()
-    end
+            recordfmt("%s%s", INPUTPREFIX, "clear")
+            refresh_message_display()
+        end
+    }
 }
 
 --- @type string[]
@@ -481,8 +504,8 @@ local function __key_submit()
         -- Check for commands
         --- @type string, string
         local cmd, rest = str:match("^(%S+)%s*(.*)$")
-        local command_func = commands[cmd]
-        if command_func then
+        local command = comms_commands[cmd]
+        if command then
             local args = {}
 
             while #rest > 0 do
@@ -516,12 +539,15 @@ local function __key_submit()
                 if success then args[i] = deserialized end
             end
 
-            local success, err = pcall(command_func, table.unpack(args))
+            local success, err = pcall(command.func, table.unpack(args))
             if not success then
                 recorderrfmt("Error executing command: %s", err)
             end
         else
             recorderrfmt("Unknown command: %s", cmd)
+            set_record_colors(colors.orange, colors.black)
+            record("Type 'help <command>' for details on a command, or 'list' to see all commands.")
+            set_record_colors(colors.white, colors.black)
         end
 
         ::skip_to_display::
