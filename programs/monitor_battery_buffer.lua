@@ -635,6 +635,8 @@ if pocket then
                 eu_in_value = temp_eu_in or 0
                 eu_out_value = temp_eu_out or 0
 
+                TREND_SIGN = trend > 0 and 1 or (trend < 0 and -1 or 0)
+
                 metrics_incoming.tier = BATTERY_TIER
                 metrics_outgoing.tier = BATTERY_TIER
                 metrics_net.tier = BATTERY_TIER
