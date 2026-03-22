@@ -104,6 +104,8 @@ local function __get_input_positions()
 end
 
 local function refresh_message_display()
+    term.setCursorBlink(false)
+
     -- Erase the lines
     for i = 1, __msgviwemax do
         term.setCursorPos(1, i)
@@ -142,9 +144,12 @@ local function refresh_message_display()
     end
 
     term.setCursorPos(__inputcursor, h)
+    term.setCursorBlink(true)
 end
 
 local function refresh_input_display()
+    term.setCursorBlink(false)
+
     -- Erase the line
     term.setCursorPos(1, h)
     term.clearLine()
@@ -164,6 +169,7 @@ local function refresh_input_display()
     end
 
     term.setCursorPos(__inputcursor, h)
+    term.setCursorBlink(true)
 end
 
 --- @type integer
