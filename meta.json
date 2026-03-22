@@ -75,7 +75,7 @@
     [
         {
             "name": "lib.api.comms",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/lib/api/comms.lua",
             "install": "lib/api/comms.lua",
             "config": "",
