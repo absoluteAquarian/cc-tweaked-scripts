@@ -634,7 +634,7 @@ exec.loop_forever
                 elseif key == keys.home then
                     __key_cursorset(1)
                     __key_viewset(1)
-                elseif key == keys.getName("end") then
+                elseif key == keys["end"] then
                     __key_cursorset(#__input + 1)
                     __key_viewset(#__input + 1)
                 elseif key == keys.delete then
