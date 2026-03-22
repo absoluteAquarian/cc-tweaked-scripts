@@ -674,20 +674,15 @@ exec.loop_forever
                             __key_remove(__inputcursor - #INPUTPREFIX - 1)
                         end
                     )
-                else
-                    -- Might be a character key; process hold times
-                    __key_holdfunc(held, function() end)
                 end
             end
         )
         :listen(
             "char",
             function(char)
-                if __keyhold == __keyholdmax then
-                    native.table.insert(__input, __inputcursor, char)
-                    __key_cursormove(1, false)
-                    refresh_input_display()
-                end
+                native.table.insert(__input, __inputcursor, char)
+                __key_cursormove(1, false)
+                refresh_input_display()
             end
         )
         -- API-related events
