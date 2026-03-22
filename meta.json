@@ -58,7 +58,7 @@
         },
         {
             "name": "comms",
-            "version": 9,
+            "version": 10,
             "url": "$REPO$/programs/comms.lua",
             "install": "comms.lua",
             "config": "",

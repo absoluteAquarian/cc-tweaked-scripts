@@ -318,7 +318,8 @@ end
 local function __set_cursor(new_cursor)
     local old = __inputcursor
 
-    __inputcursor = native.math.max(1 + #INPUTPREFIX, native.math.min(new_cursor, w))
+    local max_cursor = native.math.min(w, #__input + #INPUTPREFIX + 1)
+    __inputcursor = native.math.max(1 + #INPUTPREFIX, native.math.min(new_cursor, max_cursor))
 
     return old ~= __inputcursor
 end
@@ -337,39 +338,46 @@ local function __set_view(new_view)
 end
 
 local KEYHOLDMAX = 15
-local __keyhold = KEYHOLDMAX
+local __keyhold = 1
 local __keyholdmax = KEYHOLDMAX
 
---- @param direction 1|-1
 --- @param held boolean
---- @param recurse boolean
-local function __key_cursormove(direction, held, recurse)
+--- @param func function
+local function __key_holdfunc(held, func, recurse)
     if not held then
         if not recurse then
             -- Reset key hold state
-            __keyhold = KEYHOLDMAX
+            __keyhold = 1
             __keyholdmax = KEYHOLDMAX
         end
 
-        -- Immediately move the cursor
-        if not __set_cursor(__inputcursor + direction) then
-            -- Cursor is at a hard limit, so move the view if possible
-            __set_view(__inputview + direction)
-        end
+        func()
     else
-        -- Held keys should move the cursor after a short delay, and then repeatedly after that delay until released
+        -- Held keys should trigger the function after a short delay, and then repeatedly after that delay until released
         __keyhold = __keyhold - 1
 
         if __keyhold <= 0 then
-            __key_cursormove(direction, false, true)
+            __key_holdfunc(false, func, true)
 
             __keyhold = __keyholdmax
 
-            if __keyholdmax > 2 then __keyholdmax = native.math.max(2, native.math.floor(__keyholdmax / 2)) end
+            if __keyholdmax > 1 then __keyholdmax = native.math.max(1, native.math.floor(__keyholdmax / 2)) end
         end
     end
+end
 
-    refresh_input_display()
+--- @param direction 1|-1
+--- @param held boolean
+local function __key_cursormove(direction, held)
+    __key_holdfunc(
+        held,
+        function()
+            if not __set_cursor(__inputcursor + direction) then
+                -- Cursor is at a hard limit, so move the view if possible
+                __set_view(__inputview + direction)
+            end
+        end
+    )
 end
 
 --- @param pos integer
@@ -631,30 +639,55 @@ exec.loop_forever
             function(key, held)
                 if key == keys.left or key == keys.right then
                     local direction = key == keys.left and -1 or 1
-                    __key_cursormove(direction, held, false)
+                    __key_cursormove(direction, held)
+                    refresh_input_display()
                 elseif key == keys.up or key == keys.down then
-                    local direction = key == keys.up and -1 or 1
-                    __key_gethistory(direction)
+                    if not held then
+                        local direction = key == keys.up and -1 or 1
+                        __key_gethistory(direction)
+                    end
                 elseif key == keys.enter then
-                    __key_submit()
+                    if not held then
+                        __key_submit()
+                    end
                 elseif key == keys.home then
-                    __key_cursorset(1)
-                    __key_viewset(1)
+                    if not held then
+                        __key_cursorset(1)
+                        __key_viewset(1)
+                    end
                 elseif key == keys["end"] then
-                    __key_cursorset(#__input + 1)
-                    __key_viewset(#__input + 1)
+                    if not held then
+                        __key_cursorset(#__input + 1)
+                        __key_viewset(#__input + 1)
+                    end
                 elseif key == keys.delete then
-                    __key_remove(__inputcursor - #INPUTPREFIX)
+                    __key_holdfunc(
+                        held,
+                        function()
+                            __key_remove(__inputcursor - #INPUTPREFIX)
+                        end
+                    )
                 elseif key == keys.backspace then
-                    __key_remove(__inputcursor - #INPUTPREFIX - 1)
+                    __key_holdfunc(
+                        held,
+                        function()
+                            __key_remove(__inputcursor - #INPUTPREFIX - 1)
+                        end
+                    )
+                else
+                    -- Might be a character key; process hold times
+                    __key_holdfunc(held, function() end)
                 end
             end
         )
         :listen(
             "char",
             function(char)
-                native.table.insert(__input, __inputcursor, char)
-                __key_cursormove(1, false, false)
+                if __keyhold == __keyholdmax then
+                    native.table.insert(__input, __inputcursor, char)
+                    __key_cursormove(1, false)
+                    refresh_input_display()
+                end
             end
         )
         -- API-related events
