@@ -680,8 +680,11 @@ exec.loop_forever
         :listen(
             "char",
             function(char)
-                native.table.insert(__input, __inputcursor, char)
-                __key_cursormove(1, false)
+                local _, _, cursor_in_view = __get_input_positions()
+                native.table.insert(__input, cursor_in_view, char)
+                if not __set_cursor(__inputcursor + 1) or __inputcursor == w then
+                    __set_view(__inputview + 1)
+                end
                 refresh_input_display()
             end
         )
