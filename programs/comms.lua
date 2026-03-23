@@ -135,7 +135,7 @@ local function refresh_message_display()
     term.setTextColor(colors.white)
     term.setBackgroundColor(colors.black)
 
-    while y <= h do
+    while y < h do
         term.setCursorPos(1, y)
         term.clearLine()
         y = y + 1
