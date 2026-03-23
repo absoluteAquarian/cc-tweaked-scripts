@@ -514,7 +514,7 @@ local function __key_submit()
                     -- Get the next quoted argument
                     local arg = rest:match('^%s*"([^"]*)"')
                     if arg then
-                        table.insert(args, arg)
+                        table.insert(args, string.format('"%s"', arg))
                         rest = rest:sub(quote + #arg + 2)
                     else
                         recorderr("Mismatched quote in command arguments")
@@ -535,8 +535,8 @@ local function __key_submit()
 
             -- Attempt to deserialize the arguments
             for i, arg in ipairs(args) do
-                local success, deserialized = pcall(textutils.unserialize, arg)
-                if success then args[i] = deserialized end
+                local deserialized = textutils.unserialize(arg)
+                if deserialized then args[i] = deserialized end
             end
 
             local success, err = pcall(command.func, table.unpack(args))
