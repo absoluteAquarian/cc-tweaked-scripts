@@ -590,6 +590,17 @@ local function __key_remove(pos)
     end
 end
 
+local function __scroll(direction)
+    local old = __msgview
+
+    local msg_max = native.math.max(1, #__messages - __msgviwemax + 1)
+    __msgview = native.math.max(1, native.math.min(__msgview + direction, msg_max))
+
+    if old ~= __msgview then
+        refresh_message_display()
+    end
+end
+
 exec.loop_forever
 (
     -- wait_interval
@@ -712,6 +723,12 @@ exec.loop_forever
                     __set_view(__inputview + 1)
                 end
                 refresh_input_display()
+            end
+        )
+        :listen(
+            "mouse_scroll",
+            function(direction, mouse_x, mouse_y)
+                __scroll(direction)
             end
         )
         -- API-related events
