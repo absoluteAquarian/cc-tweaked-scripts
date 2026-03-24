@@ -5,6 +5,10 @@ local R_terminal = require "lib.cc.terminal"
 local config = require "lib.config"
 local R_string = require "lib.string"
 local R_table = require "lib.table"
+local trace = require "lib.trace"
+
+trace.scall(
+function()
 
 --- @type string
 local directory = fs.getDir(shell.getRunningProgram())
@@ -68,7 +72,7 @@ while not build do
     end
 end
 
-print()
+term.clear()
 print("Chosen order:")
 for _, file in ipairs(order) do
     print(string.format("  %s", file))
@@ -100,3 +104,6 @@ startup.close()
 
 print("Done!")
 print("Reboot to run the new startup sequence.")
+
+end
+)
