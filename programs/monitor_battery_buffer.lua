@@ -16,7 +16,6 @@ local machine = require "lib.gt.machine"
 local tiers = require "lib.gt.tiers"
 
 local average_value = require "lib.average_value"
-local class = require "lib.class"
 local config = require "lib.config"
 local exec = require "lib.exec"
 local R_math = require "lib.math"
@@ -66,9 +65,6 @@ local function __set_display_consts()
 end
 
 __set_display_consts()
-
--- Ensure that the defaults get properly saved
-cfg_file:save()
 
 local eu_in = average_value.class.AverageValue:new(20)
 local eu_out = average_value.class.AverageValue:new(20)
@@ -245,58 +241,6 @@ local function build_charged_bar_area(percent, canvas_height)
     }
 end
 
---- @class MetricsDefinition : ClassDefinition
---- @field base nil
---- @field class MetricsDefinition
-local Metrics = class.class("Metrics")
-
---- [override] Creates a new Metrics instance with the given parameters
---- @param get_energy fun() : number  The function from which to get the measured EU
---- @param tier string?  The tier of the machine being tracked, or nil to not rescale measured EU values
---- @return Metrics
-function Metrics:new(get_energy, tier)
-    --- @class Metrics : ClassInstance
-    --- @field base nil
-    --- @field class MetricsDefinition
-    --- @field this Metrics
-    local instance = Metrics:create_instance()
-
-    --- @private
-    --- The object from which to get the measured EU
-    instance.get_energy = get_energy
-    --- The tier of the machine being tracked, or nil to not rescale measured EU values
-    instance.tier = tier
-
-    --- Gets the Amperes and energy tier from the measured EU.<br/>
-    --- If self:tier is set, the Amperes are rescaled to that tier.
-    --- @return number
-    --- @return string
-    function instance:amps()
-        local eu = self.get_energy()
-        local amps, amps_tier
-
-        if self.tier then
-            amps, amps_tier = tiers.get_amps(eu, self.tier), self.tier --[[@as string]]
-        else
-            -- The tier needs to be calculated from the EU
-            local required_tier = tiers.get_tier(eu)
-            amps, amps_tier = tiers.get_amps(eu, required_tier), required_tier
-        end
-
-        amps = R_math.round(amps, PRECISION_DISPLAYED)
-
-        return amps, amps_tier
-    end
-
-    --- Gets a string reporting the Amperes and energy tier
-    function instance:report()
-        local amps, amps_tier = self:amps()
-        return amps .. " A (" .. amps_tier .. ")"
-    end
-
-    return instance
-end
-
 --- @type Metrics
 local metrics_incoming
 --- @type Metrics
@@ -398,9 +342,9 @@ local function display_to_one_monitor(monitor, current, trend)
 
     local trend_fmt, color_trend = fmt.signed_and_color(trend)
 
-    local in_amps, in_tier = metrics_incoming:amps()
-    local out_amps, out_tier = metrics_outgoing:amps()
-    local net_amps, net_tier = metrics_net:amps()
+    local in_amps, in_tier = metrics_incoming:amps(PRECISION_AMPS)
+    local out_amps, out_tier = metrics_outgoing:amps(PRECISION_AMPS)
+    local net_amps, net_tier = metrics_net:amps(PRECISION_AMPS)
 
     monitor_state_painter:store("OFFSET_CURRENT", { x = offset_current })
     monitor_state_painter:store("COLOR_CURRENT", color_current)
@@ -463,9 +407,9 @@ local function display_to_terminal(current, trend)
     terminal_state_painter:store("OFFSET_CURRENT", { x = offset_current })
     terminal_state_painter:store("CURRENT_TEXT", current .. "%")
 
-    local in_amps, in_tier = metrics_incoming:amps()
-    local out_amps, out_tier = metrics_outgoing:amps()
-    local net_amps, net_tier = metrics_net:amps()
+    local in_amps, in_tier = metrics_incoming:amps(PRECISION_AMPS)
+    local out_amps, out_tier = metrics_outgoing:amps(PRECISION_AMPS)
+    local net_amps, net_tier = metrics_net:amps(PRECISION_AMPS)
 
     local offset, formatted, color
     offset, formatted, _ = process_amps_text(in_amps, false, false)
@@ -660,8 +604,8 @@ if pocket then
 
                 display_to_one_monitor(
                     current_terminal,
-                    R_math.round(percentage * 100, PRECISION_DISPLAYED),
-                    R_math.round(trend * 100, PRECISION_DISPLAYED)
+                    R_math.round(percentage * 100, PRECISION_PERCENTS),
+                    R_math.round(trend * 100, PRECISION_PERCENTS)
                 )
             elseif msg == COMMS_BATTERY_DISCONNECT then
                 __on_target_disconnected()
@@ -704,9 +648,9 @@ if pocket then
             R_terminal.reset_terminal()
             write(string.format("Waiting for computer %d...", target_id))
 
-            metrics_incoming = Metrics:new(function() return eu_in_value end)
-            metrics_outgoing = Metrics:new(function() return eu_out_value end)
-            metrics_net = Metrics:new(function() return eu_in_value - eu_out_value end)
+            metrics_incoming = tiers.class.Metrics:new(function() return eu_in_value end)
+            metrics_outgoing = tiers.class.Metrics:new(function() return eu_out_value end)
+            metrics_net = tiers.class.Metrics:new(function() return eu_in_value - eu_out_value end)
 
             comms_api.send(target_id, COMMS_CONFIG_REQUEST)
 
@@ -764,9 +708,9 @@ exec.loop_forever(
         eu_out:clear()
         eu_net = 0.0
 
-        metrics_incoming = Metrics:new(function() return eu_in:get() end, BATTERY_TIER)
-        metrics_outgoing = Metrics:new(function() return eu_out:get() end, BATTERY_TIER)
-        metrics_net = Metrics:new(function() return eu_net end, BATTERY_TIER)
+        metrics_incoming = tiers.class.Metrics:new(function() return eu_in:get() end, BATTERY_TIER)
+        metrics_outgoing = tiers.class.Metrics:new(function() return eu_out:get() end, BATTERY_TIER)
+        metrics_net = tiers.class.Metrics:new(function() return eu_net end, BATTERY_TIER)
 
         -- Initialize the monitors with the base template
 
@@ -810,8 +754,8 @@ exec.loop_forever(
 
             TREND_SIGN = trend > 0 and 1 or (trend < 0 and -1 or 0)
 
-            local rounded_current = R_math.round(percentage * 100, PRECISION_DISPLAYED)
-            local rounded_trend = R_math.round(trend * 100, PRECISION_DISPLAYED)
+            local rounded_current = R_math.round(percentage * 100, PRECISION_PERCENTS)
+            local rounded_trend = R_math.round(trend * 100, PRECISION_PERCENTS)
 
             display_to_monitors(rounded_current, rounded_trend)
             display_to_terminal(rounded_current, rounded_trend)

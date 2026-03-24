@@ -1,4 +1,5 @@
 local class = require "lib.class"
+local R_math = require "lib.math"
 local R_string = require "lib.string"
 local trace = require "lib.trace"
 
@@ -158,7 +159,65 @@ local function tier_offset(tier, offset)
     return def[math.min(1, math.max(#def, obj.index + offset))].name
 end
 
+--- @class MetricsDefinition : ClassDefinition
+--- @field base nil
+--- @field class MetricsDefinition
+local Metrics = class.class("Metrics")
+
+--- [override] Creates a new Metrics instance with the given parameters
+--- @param get_energy fun() : number  The function from which to get the measured EU
+--- @param tier string?  The tier of the machine being tracked, or nil to not rescale measured EU values
+--- @return Metrics
+function Metrics:new(get_energy, tier)
+    --- @class Metrics : ClassInstance
+    --- @field base nil
+    --- @field class MetricsDefinition
+    --- @field this Metrics
+    local instance = self:create_instance()
+
+    --- @private
+    --- The object from which to get the measured EU
+    instance.get_energy = get_energy
+    --- The tier of the machine being tracked, or nil to not rescale measured EU values
+    instance.tier = tier
+
+    --- Gets the Amperes and energy tier from the measured EU.<br/>
+    --- If <code>self:tier</code> is set, the Amperes are rescaled to that tier.
+    --- @param precision integer?  The number of decimal places to round the Amperes to, or <code>nil</code> to not round
+    --- @return number
+    --- @return string
+    function instance:amps(precision)
+        local eu = self.get_energy()
+        local amps, amps_tier
+
+        if self.tier then
+            amps, amps_tier = get_amps(eu, self.tier), self.tier --[[@as string]]
+        else
+            -- The tier needs to be calculated from the EU
+            local required_tier = get_tier(eu)
+            amps, amps_tier = get_amps(eu, required_tier), required_tier
+        end
+
+        if precision then
+            amps = R_math.round(amps, precision)
+        end
+
+        return amps, amps_tier
+    end
+
+    --- Gets a string reporting the Amperes and energy tier
+    function instance:report()
+        local amps, amps_tier = self:amps()
+        return amps .. " A (" .. amps_tier .. ")"
+    end
+
+    return instance
+end
+
 local module_table = {
+    class = {
+        Metrics = Metrics
+    },
     def = { "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", "UHV", "UEV", "MAX" },
     ulv = "ULV",
     lv = "LV",

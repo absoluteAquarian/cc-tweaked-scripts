@@ -3,7 +3,7 @@
     [
         {
             "name": "launcher",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/launcher.lua",
             "install": "launcher.lua",
             "config": "",
@@ -16,7 +16,7 @@
         },
         {
             "name": "monitor_battery_buffer",
-            "version": 30,
+            "version": 31,
             "url": "$REPO$/programs/monitor_battery_buffer.lua",
             "install": "monitor_battery_buffer.lua",
             "config": "{ MACHINE:\"battery_buffer\", POWER_OVERRIDE:\"\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5, GRAPH_MAX_AMPS:64, GRAPH_MAX_AMPS_NET:32 }",
@@ -31,7 +31,6 @@
                 "lib.gt.machine",
                 "lib.gt.tiers",
                 "lib.average_value",
-                "lib.class",
                 "lib.config",
                 "lib.exec",
                 "lib.inject",
@@ -67,6 +66,58 @@
                 "lib.api.comms",
                 "lib.cc.terminal",
                 "lib.exec",
+                "lib.table"
+            ]
+        },
+        {
+            "name": "startup_builder",
+            "version": 1,
+            "url": "$REPO$/programs/startup_builder.lua",
+            "install": "startup_builder.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.cc.terminal",
+                "lib.config",
+                "lib.string",
+                "lib.table"
+            ]
+        },
+        {
+            "name": "turbine_report",
+            "version": 1,
+            "url": "$REPO$/programs/turbine_report.lua",
+            "install": "turbine_report.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.api.comms",
+                "lib.cc.terminal",
+                "lib.gt.machine",
+                "lib.exec",
+                "lib.string"
+            ]
+        },
+        {
+            "name": "power_monitor",
+            "version": 1,
+            "url": "$REPO$/programs/power_monitor.lua",
+            "install": "power_monitor.lua",
+            "config": "{ MACHINE:\"power_substation\", POWER_OVERRIDE:\"IV\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
+            "deps":
+            [
+                "lib.api.comms",
+                "lib.cc.fmt",
+                "lib.cc.monitor",
+                "lib.cc.terminal",
+                "lib.dr.canvas",
+                "lib.dr.paint",
+                "lib.gt.machine",
+                "lib.gt.tiers",
+                "lib.average_value",
+                "lib.config",
+                "lib.exec",
+                "lib.math",
                 "lib.table"
             ]
         }
@@ -151,7 +202,7 @@
         },
         {
             "name": "lib.dr.canvas",
-            "version": 21,
+            "version": 22,
             "url": "$REPO$/lib/dr/canvas.lua",
             "install": "lib/dr/canvas.lua",
             "config": "",
@@ -190,7 +241,7 @@
         },
         {
             "name": "lib.gt.tiers",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/gt/tiers.lua",
             "install": "lib/gt/tiers.lua",
             "config": "",

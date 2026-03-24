@@ -27,7 +27,7 @@ if directory == "" then directory = "." end
 
 local programs = fs.list(directory) --[[@as string[]=]]
 
-R_table.remove_values(programs, "installer.lua", "launcher.lua", "lib", config.DIRECTORY)
+R_table.remove_values(programs, "installer.lua", "launcher.lua", "lib", "logs", config.DIRECTORY)
 R_table.remove_values_where(programs, function(file) return not R_string.ends_with(file, ".lua") end)
 R_table.transform_values(programs, function(file) return file:sub(1, -5) end)
 

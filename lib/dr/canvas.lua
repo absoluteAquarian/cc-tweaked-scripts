@@ -1043,11 +1043,11 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
         local active = native.bit32.btest(texel_state, bit)
         local color
 
-        if (pixel_texel_type(texel_state) == 0) == active then
-            -- The pixel uses the foreground color of the texel
+        if active then
+            -- The pixel uses the foreground color
             color = map.texel_fg[texel_y][texel_x]
         else
-            -- The pixel uses the background color of the texel
+            -- The pixel uses the background color
             color = map.texel_bg[texel_y][texel_x]
         end
 
@@ -1086,7 +1086,6 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
             texel_state_row[texel_x] = 0
         end
 
-        local previous_state = current_state
         local current_active = native.bit32.btest(current_state, bit_to_check)
         local texel_fg_row = map.texel_fg[texel_y]
         local texel_bg_row = map.texel_bg[texel_y]
@@ -1095,22 +1094,12 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
             -- The state of the pixel is being flipped
             current_state = native.bit32.bxor(current_state, bit_to_check)
             texel_state_row[texel_x] = current_state
-
-            -- If the texel "group" changed from normal texels to negated texels, the colors will need to be swapped
-            if pixel_texel_type(previous_state) ~= pixel_texel_type(current_state) then
-                local temp_color = texel_fg_row[texel_x]
-                texel_fg_row[texel_x] = texel_bg_row[texel_x]
-                texel_bg_row[texel_x] = temp_color
-
-                updated_colors = 3
-            end
-
             changed = true
         end
 
         local current_color
 
-        if (pixel_texel_type(current_state) == 0) == active then
+        if active then
             -- The pixel will use the foreground color
             current_color = texel_fg_row[texel_x]
             texel_fg_row[texel_x] = color
