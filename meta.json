@@ -71,7 +71,7 @@
         },
         {
             "name": "startup_builder",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/programs/startup_builder.lua",
             "install": "startup_builder.lua",
             "config": "",

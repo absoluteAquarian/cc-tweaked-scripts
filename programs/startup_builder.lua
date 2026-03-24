@@ -66,7 +66,7 @@ while not build do
         end
 
         build = true
-    elseif R_table.contains(programs, choice) then
+    elseif R_table.has_value(programs, choice) then
         table.insert(order, choice)
         R_table.remove_values(programs, choice)
     end
