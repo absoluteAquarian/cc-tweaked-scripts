@@ -26,12 +26,12 @@ local MACHINE = cfg_file:getString("MACHINE") or "power_substation"
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or "IV"
 
 local function __force_config_values()
-    cfg_file:set("CHARGE_THRESHOLD", CHARGE_THRESHOLD)
-    cfg_file:set("ALARM_THRESHOLD", ALARM_THRESHOLD)
-    cfg_file:set("PRECISION_DISPLAYED", PRECISION_DISPLAYED)
-    cfg_file:set("RENDER_TICK_DELAY", RENDER_TICK_DELAY)
-    cfg_file:set("MACHINE", MACHINE)
-    cfg_file:set("POWER_OVERRIDE", POWER_OVERRIDE)
+    cfg_file:setNumber("CHARGE_THRESHOLD", CHARGE_THRESHOLD)
+    cfg_file:setNumber("ALARM_THRESHOLD", ALARM_THRESHOLD)
+    cfg_file:setNumber("PRECISION_DISPLAYED", PRECISION_DISPLAYED)
+    cfg_file:setNumber("RENDER_TICK_DELAY", RENDER_TICK_DELAY)
+    cfg_file:setString("MACHINE", MACHINE)
+    cfg_file:setString("POWER_OVERRIDE", POWER_OVERRIDE)
     cfg_file:save()
 end
 
