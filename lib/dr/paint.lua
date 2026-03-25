@@ -1072,21 +1072,21 @@ function FillAreaPixelPaintOperation:new(area, background)
         --- @param b integer
         local function __fill_pixels(l, t, r, b)
             local iter_x, iter_y = l, t
+            if r < l or b < t then return end  -- No pixels to fill
+
             painter_canvas:set_pixel_many(
                 function()
-                    ::again::
+                    if iter_x > r then
+                        -- Move to the next row
+                        iter_x = l
+                        iter_y = iter_y + 1
+                    end
 
-                    if iter_y > b then return nil end
+                    if iter_y > b then return nil end  -- No more pixels to fill
 
                     local pixel_x, pixel_y = iter_x, iter_y
 
                     iter_x = iter_x + 1
-
-                    if iter_x > r then
-                        iter_x = l
-                        iter_y = iter_y + 1
-                        goto again
-                    end
 
                     return pixel_x, pixel_y, iter_color, pixel_active
                 end
