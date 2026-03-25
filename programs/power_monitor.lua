@@ -293,7 +293,7 @@ local function display(target, state_painter, current, trend, load, inner_space)
     --- @type CanvasArea
     local area = {
         left = 2,
-        right = -2 - math.ceil((current / 100) * (w - 4)),
+        right = -2 - math.ceil((1 - current / 100) * (w - 4)),
         top = 1 * 3 + 1,
         bottom = 2 * 3
     }
