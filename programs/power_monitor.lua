@@ -560,7 +560,7 @@ else
             elseif msg == COMMS_GENERATED_POWER then
                 local temp_eu_in = select(2, ...)
 
-                if temp_eu_in then eu_in_value = temp_eu_in end
+                if temp_eu_in then eu_in_value = temp_eu_in * 20 end
             end
         end
     )

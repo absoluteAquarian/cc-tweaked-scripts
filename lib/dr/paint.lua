@@ -1095,15 +1095,17 @@ function FillAreaPixelPaintOperation:new(area, background)
         bottom_of_top = bottom_of_top * 3
 
         local left_of_right, top_of_bottom = canvas.pixel_to_texel(right, bottom)
+        left_of_right = left_of_right * 2 - 1
+        top_of_bottom = top_of_bottom * 3 - 2
 
         -- Top corners and edge
-        __fill_pixels(left, right, top, bottom_of_top)
+        __fill_pixels(left, top, right, bottom_of_top)
         -- Left edge
-        __fill_pixels(left, right_of_left, bottom_of_top + 1, top_of_bottom - 1)
+        __fill_pixels(left, bottom_of_top + 1, right_of_left, top_of_bottom - 1)
         -- Right edge
-        __fill_pixels(left_of_right, right, bottom_of_top + 1, top_of_bottom - 1)
+        __fill_pixels(left_of_right, bottom_of_top + 1, right, top_of_bottom - 1)
         -- Bottom corners and edge
-        __fill_pixels(left, right, top_of_bottom, bottom)
+        __fill_pixels(left, top_of_bottom, right, bottom)
 
         if new_group then
             painter_canvas:end_update_group()

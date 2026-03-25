@@ -1306,10 +1306,10 @@ function PixelCanvas:new(width, height, fg, bg, transparent)
                 error(string.format("Attempted to set a nil active state for pixel coordinates (%d, %d)", x, y), 2)
             end
 
-            local texel_x, texel_y = pixel_to_texel(x, y)
             local changed, updated_colors = self:update_pixel(x, y, color, active)
 
             if changed then
+                local texel_x, texel_y = pixel_to_texel(x, y)
                 __mark_texel_for_updates(texel_x, texel_y, updates, updated_colors)
             end
 

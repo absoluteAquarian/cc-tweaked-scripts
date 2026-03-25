@@ -100,7 +100,7 @@
         },
         {
             "name": "power_monitor",
-            "version": 10,
+            "version": 11,
             "url": "$REPO$/programs/power_monitor.lua",
             "install": "power_monitor.lua",
             "config": "{ MACHINE:\"power_substation\", POWER_OVERRIDE:\"IV\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
@@ -202,7 +202,7 @@
         },
         {
             "name": "lib.dr.canvas",
-            "version": 22,
+            "version": 23,
             "url": "$REPO$/lib/dr/canvas.lua",
             "install": "lib/dr/canvas.lua",
             "config": "",
@@ -215,7 +215,7 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 22,
+            "version": 23,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
