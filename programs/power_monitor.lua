@@ -148,11 +148,11 @@ else
         :fill({ left = 2, right = -2, top = 4 * 3 + 1, bottom = 5 * 3 }, true)
         :color(nil, "reset")
         :move({ x = 1, y = 6 })
-        :text("            ---.--- A  ---")
+        :text("           ---.--- A  ---")
 
     painter_state_pocket = paint.class.DeferredPixelPainter:new(26 * 3, 19 * 3, nil, nil, colors.white, colors.black, true)
     painter_state_pocket
-        :move({ x = 1 + #"Stored:  ", y = 1 })
+        :move({ x = 1 + #"Stored:             ", y = 1 })
         :clear({ count = #"--.--%" })
         :offset(painter_state_pocket:recall("OFFSET_STORED"))
         :color(painter_state_pocket:recall("COLOR_STORED"), nil)
@@ -161,7 +161,7 @@ else
         :color(nil, colors.brown)
         :fill(painter_state_pocket:recall("FILL_AREA_STORED"), false)
         :color("reset", "reset")
-        :move({ x = 1 + #"Trend: ", y = 3 })
+        :move({ x = 1 + #"Trend:            ", y = 3 })
         :clear({ count = #"+--.--%" })
         :offset(painter_state_pocket:recall("OFFSET_TREND"))
         :color(painter_state_pocket:recall("COLOR_TREND"), nil)
@@ -170,7 +170,7 @@ else
         :obj(painter_state_pocket:recall("TREND"))
         :text("%")
         :color("reset", nil)
-        :move({ x = 1 + #"Load:  ", y = 4 })
+        :move({ x = 1 + #"Load:             ", y = 4 })
         :clear({ count = #"---.--%" })
         :offset(painter_state_pocket:recall("OFFSET_LOAD"))
         :color(painter_state_pocket:recall("COLOR_LOAD"), nil)
@@ -180,13 +180,15 @@ else
         :color(nil, colors.brown)
         :fill(painter_state_pocket:recall("FILL_AREA_LOAD"), false)
         :color("reset", "reset")
-        :move({ x = 1, y = 6 })
+        :move({ x = 1 + #"           ", y = 6 })
         :clear({ count = #" ---.---" })
         :offset(painter_state_pocket:recall("OFFSET_AMPS"))
         :color(painter_state_pocket:recall("COLOR_AMPS"), nil)
         :text(painter_state_pocket:recall("AMPS_EXTREME"))
         :obj(painter_state_pocket:recall("AMPS"))
-        :move({ x = 1 + #" ---.--- A  ", y = 6 })
+        :color("reset", "reset")
+        :move({ x = 1 + #"           ---.--- A  ", y = 6 })
+        :clear({ count = 3 })
         :color(painter_state_pocket:recall("COLOR_AMPS_TIER"), nil)
         :text(painter_state_pocket:recall("TIER_AMPS"))
 end
@@ -234,8 +236,7 @@ local LOAD_SIGN = 0
 --- @param current number
 --- @param trend number
 --- @param load number
---- @param inner_space integer
-local function display(target, state_painter, current, trend, load, inner_space)
+local function display(target, state_painter, current, trend, load)
     local color_current
 
     if current < (ALARM_THRESHOLD * 100) then
@@ -282,7 +283,7 @@ local function display(target, state_painter, current, trend, load, inner_space)
 
     local out_amps, out_tier = metrics_outgoing:amps(PRECISION_AMPS)
 
-    state_painter:store("OFFSET_STORED", { x = offset_current + inner_space })
+    state_painter:store("OFFSET_STORED", { x = offset_current })
     state_painter:store("COLOR_STORED", color_current)
     state_painter:store("STORED", current)
 
@@ -300,7 +301,7 @@ local function display(target, state_painter, current, trend, load, inner_space)
 
     state_painter:store("FILL_AREA_STORED", area)
 
-    state_painter:store("OFFSET_TREND", { x = offset_trend + inner_space })
+    state_painter:store("OFFSET_TREND", { x = offset_trend })
     state_painter:store("COLOR_TREND", color_trend)
     state_painter:store("VERYSMALL_TREND", too_small and "<" or " ")
     state_painter:store("SIGN_TREND", TREND_SIGN > 0 and "+" or (TREND_SIGN < 0 and "" or " "))
@@ -339,7 +340,7 @@ local function display(target, state_painter, current, trend, load, inner_space)
         end
     end
 
-    state_painter:store("OFFSET_LOAD", { x = offset_load + inner_space })
+    state_painter:store("OFFSET_LOAD", { x = offset_load })
     state_painter:store("COLOR_LOAD", color_load)
     state_painter:store("LOAD_EXTREME", load_extreme and (load >= 100 and ">" or "<") or " ")
     state_painter:store("LOAD", load)
@@ -355,7 +356,7 @@ local function display(target, state_painter, current, trend, load, inner_space)
 
     local amps_offset, amps_value, extreme = process_amps_text(out_amps)
 
-    state_painter:store("OFFSET_AMPS", { x = amps_offset + inner_space })
+    state_painter:store("OFFSET_AMPS", { x = amps_offset })
     state_painter:store("COLOR_AMPS", out_amps > 0 and colors.green or (out_amps < 0 and colors.red or colors.white))
     state_painter:store("AMPS_EXTREME", extreme and (out_amps < 1 and "<" or ">") or " ")
     state_painter:store("AMPS", amps_value)
