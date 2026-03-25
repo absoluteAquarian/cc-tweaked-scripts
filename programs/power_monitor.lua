@@ -513,8 +513,8 @@ else
             elseif msg == COMMS_GENERATED_POWER then
                 local temp_eu_in = select(2, ...)
 
-                -- Report packet is in EU/t, but this script needs EU/s instead
-                if temp_eu_in then eu_in_value = temp_eu_in * 20 end
+                -- NOTE: The report is in EU/t
+                if temp_eu_in then eu_in_value = temp_eu_in end
             end
         end
     )
