@@ -241,13 +241,14 @@
         },
         {
             "name": "lib.gt.tiers",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/lib/gt/tiers.lua",
             "install": "lib/gt/tiers.lua",
             "config": "",
             "deps":
             [
                 "lib.class",
+                "lib.math",
                 "lib.string",
                 "lib.trace"
             ]
