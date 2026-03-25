@@ -282,8 +282,8 @@ local function display(target, state_painter, current, trend, load, inner_space)
 
     local out_amps, out_tier = metrics_outgoing:amps(PRECISION_AMPS)
 
-    state_painter:store("OFFSET_CURRENT", { x = offset_current + inner_space })
-    state_painter:store("COLOR_CURRENT", color_current)
+    state_painter:store("OFFSET_STORED", { x = offset_current + inner_space })
+    state_painter:store("COLOR_STORED", color_current)
     state_painter:store("STORED", current)
 
     local state_canvas = state_painter.canvas
