@@ -278,7 +278,7 @@ local function display(target, state_painter, current, trend, load)
     local offset_load
     local load_extreme = false
 
-    if load < 10 then
+    if load == 0 then
         offset_load = 2
 
         if LOAD_SIGN ~= 0 then
@@ -287,6 +287,8 @@ local function display(target, state_painter, current, trend, load)
             offset_load = offset_load - 1
             load_extreme = true
         end
+    elseif load < 10 then
+        offset_load = 2
     elseif load < 100 then
         offset_load = 1
     else
