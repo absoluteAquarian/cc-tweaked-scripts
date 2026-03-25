@@ -1074,9 +1074,9 @@ function FillAreaPixelPaintOperation:new(area, background)
             local iter_x, iter_y = l, t
             painter_canvas:set_pixel_many(
                 function()
-                    if iter_y > b then return nil end
-
                     ::again::
+
+                    if iter_y > b then return nil end
 
                     local pixel_x, pixel_y = iter_x, iter_y
 

@@ -303,7 +303,7 @@ local function display(target, state_painter, current, trend, load)
 
     area = {
         left = 3,
-        right = -3 - math.ceil((1 - math.min(100, load) / 100) * (w - 4)),
+        right = -3 - math.ceil((1 - math.min(100, load) / 100) * (w - 5)),  -- Leave at least 1 sliver of pixels, so use 5 instead of 4
         top = 7 * 3 - 2,
         height = 3
     }

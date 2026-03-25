@@ -100,7 +100,7 @@
         },
         {
             "name": "power_monitor",
-            "version": 14,
+            "version": 15,
             "url": "$REPO$/programs/power_monitor.lua",
             "install": "power_monitor.lua",
             "config": "{ MACHINE:\"power_substation\", POWER_OVERRIDE:\"IV\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
@@ -215,7 +215,7 @@
         },
         {
             "name": "lib.dr.paint",
-            "version": 24,
+            "version": 25,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
