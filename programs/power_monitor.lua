@@ -113,6 +113,7 @@ local function __init_painters(template_painter, state_painter)
         :obj(state_painter:recall("TREND"))
         :text("%")
         :color(state_painter:recall("COLOR_STORED"), colors.brown)
+        :fill({ left = 3, right = -3, top = 3 * 3 - 2, height = 3 }, true)  -- Ensures that the fill texels have a brown background, since the two painters have separate buffers
         :fill(state_painter:recall("FILL_AREA_STORED"), false)
         :color("reset", "reset")
         :move({ x = -#">---.--%", y = 5 })
@@ -134,6 +135,7 @@ local function __init_painters(template_painter, state_painter)
         :color(state_painter:recall("COLOR_AMPS_TIER"), nil)
         :text(state_painter:recall("TIER_AMPS"))
         :color(state_painter:recall("COLOR_LOAD"), colors.brown)
+        :fill({ left = 3, right = -3, top = 7 * 3 - 2, height = 3 }, true)  -- Ensures that the fill texels have a brown background, since the two painters have separate buffers
         :fill(state_painter:recall("FILL_AREA_LOAD"), false)
         :color("reset", "reset")
 end
