@@ -71,128 +71,84 @@ local painter_state_monitor
 local painter_template_pocket
 local painter_state_pocket
 
+--- @param template_painter DeferredPixelPainter
+--- @param state_painter DeferredPixelPainter
+local function __init_painters(template_painter, state_painter)
+    template_painter
+        :move({ x = 1, y = 1 })
+        :text("Stored:")
+        :move({ x = -1, y = 1 })
+        :text("--.--%", { tail_align = true })
+        :move({ x = 1, y = 2 })
+        :text("Trend:")
+        :move({ x = -1, y = 2 })
+        :text(">+--.--%", { tail_align = true })
+        :color(nil, colors.brown)
+        :fill({ left = 2, right = -2, top = 3 * 3 - 2, height = 3 }, true)
+        :color(nil, "reset")
+        :move({ x = 1, y = 5 })
+        :text("Load:")
+        :move({ x = -1, y = 5 })
+        :text(">---.--%", { tail_align = true })
+        :move({ x = -2, y = 6 })
+        :text(">---.--- A ---", { tail_align = true })
+        :color(nil, colors.brown)
+        :fill({ left = 2, right = -2, top = 7 * 3 - 2, height = 3 }, true)
+        :color("reset", "reset")
+
+    state_painter
+        :move({ x = -#"--.--%", y = 1 })
+        :clear({ count = #"--.--%" })
+        :offset(state_painter:recall("OFFSET_STORED"))
+        :color(state_painter:recall("COLOR_STORED"), nil)
+        :obj(state_painter:recall("STORED"))
+        :text("%")
+        :color("reset", nil)
+        :move({ x = -#">+--.--%", y = 3 })
+        :clear({ count = #">+--.--%" })
+        :offset(state_painter:recall("OFFSET_TREND"))
+        :color(state_painter:recall("COLOR_TREND"), nil)
+        :text(state_painter:recall("VERYSMALL_TREND"))
+        :text(state_painter:recall("SIGN_TREND"))
+        :obj(state_painter:recall("TREND"))
+        :text("%")
+        :color(state_painter:recall("COLOR_STORED"), colors.brown)
+        :fill(state_painter:recall("FILL_AREA_STORED"), false)
+        :color("reset", "reset")
+        :move({ x = -#">---.--%", y = 5 })
+        :clear({ count = #">---.--%" })
+        :offset(state_painter:recall("OFFSET_LOAD"))
+        :color(state_painter:recall("COLOR_LOAD"), nil)
+        :text(state_painter:recall("LOAD_EXTREME"))
+        :obj(state_painter:recall("LOAD"))
+        :text("%")
+        :color("reset", nil)
+        :move({ x = -1 - #">---.--- A ---", y = 6 })
+        :clear({ count = #">---.---" })
+        :offset(state_painter:recall("OFFSET_AMPS"))
+        :color(state_painter:recall("COLOR_AMPS"), nil)
+        :text(state_painter:recall("AMPS_EXTREME"))
+        :obj(state_painter:recall("AMPS"))
+        :color("reset", "reset")
+        :move({ x = -1 - #"---", y = 6 })
+        :clear({ count = 3 })
+        :color(state_painter:recall("COLOR_AMPS_TIER"), nil)
+        :text(state_painter:recall("TIER_AMPS"))
+        :color(state_painter:recall("COLOR_LOAD"), colors.brown)
+        :fill(state_painter:recall("FILL_AREA_LOAD"), false)
+        :color("reset", "reset")
+end
+
 if not pocket then
     painter_template_monitor = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, colors.white, colors.black, colors.white, colors.black, false)
-    painter_template_monitor
-        :move({ x = 1, y = 1 })
-        :text("Stored:  --.--%")
-        :move({ x = 1, y = 2 })
-        :color(nil, colors.brown)
-        :fill({ left = 2, right = -2, top = 1 * 3 + 1, bottom = 2 * 3 }, true)
-        :color(nil, "reset")
-        :move({ x = 1, y = 3 })
-        :text("Trend: >+--.--%")
-        :move({ x = 1, y = 4 })
-        :text("Load:  >---.--%")
-        :move({ x = 1, y = 5 })
-        :color(nil, colors.brown)
-        :fill({ left = 2, right = -2, top = 4 * 3 + 1, bottom = 5 * 3 }, true)
-        :color(nil, "reset")
-        :move({ x = 1, y = 6 })
-        :text(">---.--- A  ---")
-
     painter_state_monitor = paint.class.DeferredPixelPainter:new(15 * 2, 10 * 3, nil, nil, colors.white, colors.black, true)
-    painter_state_monitor
-        :move({ x = 1 + #"Stored:  ", y = 1 })
-        :clear({ count = #"--.--%" })
-        :offset(painter_state_monitor:recall("OFFSET_STORED"))
-        :color(painter_state_monitor:recall("COLOR_STORED"), nil)
-        :obj(painter_state_monitor:recall("STORED"))
-        :text("%")
-        :color(nil, colors.brown)
-        :fill(painter_state_monitor:recall("FILL_AREA_STORED"), false)
-        :color("reset", "reset")
-        :move({ x = 1 + #"Trend: ", y = 3 })
-        :clear({ count = #">+--.--%" })
-        :offset(painter_state_monitor:recall("OFFSET_TREND"))
-        :color(painter_state_monitor:recall("COLOR_TREND"), nil)
-        :text(painter_state_monitor:recall("VERYSMALL_TREND"))
-        :text(painter_state_monitor:recall("SIGN_TREND"))
-        :obj(painter_state_monitor:recall("TREND"))
-        :text("%")
-        :color("reset", nil)
-        :move({ x = 1 + #"Load:  ", y = 4 })
-        :clear({ count = #">---.--%" })
-        :offset(painter_state_monitor:recall("OFFSET_LOAD"))
-        :color(painter_state_monitor:recall("COLOR_LOAD"), nil)
-        :text(painter_state_monitor:recall("LOAD_EXTREME"))
-        :obj(painter_state_monitor:recall("LOAD"))
-        :text("%")
-        :color(nil, colors.brown)
-        :fill(painter_state_monitor:recall("FILL_AREA_LOAD"), false)
-        :color("reset", "reset")
-        :move({ x = 1, y = 6 })
-        :clear({ count = #">---.---" })
-        :offset(painter_state_monitor:recall("OFFSET_AMPS"))
-        :color(painter_state_monitor:recall("COLOR_AMPS"), nil)
-        :text(painter_state_monitor:recall("AMPS_EXTREME"))
-        :obj(painter_state_monitor:recall("AMPS"))
-        :color("reset", "reset")
-        :move({ x = 1 + #">---.--- A  ", y = 6 })
-        :clear({ count = 3 })
-        :color(painter_state_monitor:recall("COLOR_AMPS_TIER"), nil)
-        :text(painter_state_monitor:recall("TIER_AMPS"))
+
+    __init_painters(painter_template_monitor, painter_state_monitor)
 else
     painter_template_pocket = paint.class.DeferredPixelPainter:new(26 * 3, 19 * 3, colors.white, colors.black, colors.white, colors.black, false)
-    painter_template_pocket
-        :move({ x = 1, y = 1 })
-        :text("Stored:             --.--%")
-        :move({ x = 1, y = 2 })
-        :color(nil, colors.brown)
-        :fill({ left = 2, right = -2, top = 1 * 3 + 1, bottom = 2 * 3 }, true)
-        :color(nil, "reset")
-        :move({ x = 1, y = 3 })
-        :text("Trend:            >+--.--%")
-        :move({ x = 1, y = 4 })
-        :text("Load:             >---.--%")
-        :move({ x = 1, y = 5 })
-        :color(nil, colors.brown)
-        :fill({ left = 2, right = -2, top = 4 * 3 + 1, bottom = 5 * 3 }, true)
-        :color(nil, "reset")
-        :move({ x = 1, y = 6 })
-        :text("          >---.--- A  ---")
-
     painter_state_pocket = paint.class.DeferredPixelPainter:new(26 * 3, 19 * 3, nil, nil, colors.white, colors.black, true)
-    painter_state_pocket
-        :move({ x = 1 + #"Stored:             ", y = 1 })
-        :clear({ count = #"--.--%" })
-        :offset(painter_state_pocket:recall("OFFSET_STORED"))
-        :color(painter_state_pocket:recall("COLOR_STORED"), nil)
-        :obj(painter_state_pocket:recall("STORED"))
-        :text("%")
-        :color(nil, colors.brown)
-        :fill(painter_state_pocket:recall("FILL_AREA_STORED"), false)
-        :color("reset", "reset")
-        :move({ x = 1 + #"Trend:            ", y = 3 })
-        :clear({ count = #">+--.--%" })
-        :offset(painter_state_pocket:recall("OFFSET_TREND"))
-        :color(painter_state_pocket:recall("COLOR_TREND"), nil)
-        :text(painter_state_pocket:recall("VERYSMALL_TREND"))
-        :text(painter_state_pocket:recall("SIGN_TREND"))
-        :obj(painter_state_pocket:recall("TREND"))
-        :text("%")
-        :color("reset", nil)
-        :move({ x = 1 + #"Load:             ", y = 4 })
-        :clear({ count = #">---.--%" })
-        :offset(painter_state_pocket:recall("OFFSET_LOAD"))
-        :color(painter_state_pocket:recall("COLOR_LOAD"), nil)
-        :text(painter_state_pocket:recall("LOAD_EXTREME"))
-        :obj(painter_state_pocket:recall("LOAD"))
-        :text("%")
-        :color(nil, colors.brown)
-        :fill(painter_state_pocket:recall("FILL_AREA_LOAD"), false)
-        :color("reset", "reset")
-        :move({ x = 1 + #"          ", y = 6 })
-        :clear({ count = #">---.---" })
-        :offset(painter_state_pocket:recall("OFFSET_AMPS"))
-        :color(painter_state_pocket:recall("COLOR_AMPS"), nil)
-        :text(painter_state_pocket:recall("AMPS_EXTREME"))
-        :obj(painter_state_pocket:recall("AMPS"))
-        :color("reset", "reset")
-        :move({ x = 1 + #"          >---.--- A  ", y = 6 })
-        :clear({ count = 3 })
-        :color(painter_state_pocket:recall("COLOR_AMPS_TIER"), nil)
-        :text(painter_state_pocket:recall("TIER_AMPS"))
+
+    __init_painters(painter_template_pocket, painter_state_pocket)
 end
 
 --- @type Metrics
@@ -437,9 +393,12 @@ if pocket then
                 __force_config_values()
                 __set_display_consts()
 
-                if POWER_OVERRIDE and #POWER_OVERRIDE > 0 and R_table.has_value(tiers.def, POWER_OVERRIDE) then
-                    SUBSTATION_TIER = POWER_OVERRIDE
+                if (not POWER_OVERRIDE) or #POWER_OVERRIDE < 2 or (not R_table.has_value(tiers.def, POWER_OVERRIDE)) then
+                    POWER_OVERRIDE = "IV"
+                    __force_config_values()
                 end
+
+                SUBSTATION_TIER = POWER_OVERRIDE
 
                 metrics_outgoing.tier = SUBSTATION_TIER
             elseif msg == COMMS_SUBSTATION_VALUES then
@@ -536,11 +495,6 @@ if pocket then
         nil
     )
 else
-    if (not POWER_OVERRIDE) or #POWER_OVERRIDE < 2 or (not R_table.has_value(tiers.def, POWER_OVERRIDE)) then
-        SUBSTATION_TIER = "IV"
-        __force_config_values()
-    end
-
     comms_api.register_data_callback(
         function(sender, ...)
             local msg = select(1, ...)
@@ -560,6 +514,7 @@ else
             elseif msg == COMMS_GENERATED_POWER then
                 local temp_eu_in = select(2, ...)
 
+                -- Report packet is in EU/t, but this script needs EU/s instead
                 if temp_eu_in then eu_in_value = temp_eu_in * 20 end
             end
         end
@@ -572,6 +527,13 @@ else
         1,
         -- init
         function()
+            if (not POWER_OVERRIDE) or #POWER_OVERRIDE < 2 or (not R_table.has_value(tiers.def, POWER_OVERRIDE)) then
+                POWER_OVERRIDE = "IV"
+                __force_config_values()
+            end
+
+            SUBSTATION_TIER = POWER_OVERRIDE
+
             SUBSTATION = wait_for_substation()
 
             eu_out:clear()
@@ -610,7 +572,7 @@ else
 
                 local rounded_current = R_math.round(percentage * 100, PRECISION_PERCENTS)
                 local rounded_trend = R_math.round(trend * 100, PRECISION_PERCENTS)
-                load_value = eu_out_value == 0 and 0 or eu_in_value / eu_out_value
+                load_value = eu_in_value == 0 and 0 or eu_out_value / eu_in_value
 
                 LOAD_SIGN = load_value > 0 and 1 or 0
 
