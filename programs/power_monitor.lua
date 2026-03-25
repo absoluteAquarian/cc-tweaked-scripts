@@ -346,7 +346,7 @@ local function display(target, state_painter, current, trend, load, inner_space)
 
     area = {
         left = 2,
-        right = -2 - math.ceil((math.min(100, load) / 100) * (w - 4)),
+        right = -2 - math.ceil((1 - math.min(100, load) / 100) * (w - 4)),
         top = 4 * 3 + 1,
         bottom = 5 * 3
     }
