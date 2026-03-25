@@ -146,8 +146,8 @@ if not pocket then
 
     __init_painters(painter_template_monitor, painter_state_monitor)
 else
-    painter_template_pocket = paint.class.DeferredPixelPainter:new(26 * 3, 19 * 3, colors.white, colors.black, colors.white, colors.black, false)
-    painter_state_pocket = paint.class.DeferredPixelPainter:new(26 * 3, 19 * 3, nil, nil, colors.white, colors.black, true)
+    painter_template_pocket = paint.class.DeferredPixelPainter:new(26 * 2, 19 * 3, colors.white, colors.black, colors.white, colors.black, false)
+    painter_state_pocket = paint.class.DeferredPixelPainter:new(26 * 2, 19 * 3, nil, nil, colors.white, colors.black, true)
 
     __init_painters(painter_template_pocket, painter_state_pocket)
 end
