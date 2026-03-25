@@ -401,7 +401,7 @@ local COMMS_SUBSTATION_DISCONNECT = "pm:disconnect"
 local COMMS_GENERATED_POWER = "tr:report"
 
 --- @type integer, integer
-local eu_in_value, eu_out_value = 0, 0
+local eu_in_value, eu_out_value, load_value = 0, 0, 0
 
 if pocket then
     --- @type integer
@@ -448,14 +448,16 @@ if pocket then
                 --- @type number, number
                 local percentage, trend
 
-                local temp_percentage, temp_trend, temp_eu_in, temp_eu_out = select(2, ...)
+                local temp_percentage, temp_trend, temp_eu_in, temp_eu_out, temp_load_value = select(2, ...)
 
                 percentage = temp_percentage or 0
                 trend = temp_trend or 0
                 eu_in_value = temp_eu_in or 0
                 eu_out_value = temp_eu_out or 0
+                load_value = temp_load_value or 0
 
                 TREND_SIGN = trend > 0 and 1 or (trend < 0 and -1 or 0)
+                LOAD_SIGN = load_value > 0 and 1 or 0
 
                 metrics_outgoing.tier = SUBSTATION_TIER
 
@@ -475,7 +477,7 @@ if pocket then
                     painter_state_pocket,
                     R_math.round(percentage * 100, PRECISION_PERCENTS),
                     R_math.round(trend * 100, PRECISION_PERCENTS),
-                    (eu_out_value == 0 and 0 or eu_in_value / eu_out_value) * 100
+                    R_math.round(load_value * 100, PRECISION_PERCENTS)
                 )
             elseif msg == COMMS_SUBSTATION_DISCONNECT then
                 __on_target_disconnected()
@@ -608,7 +610,11 @@ else
 
                 local rounded_current = R_math.round(percentage * 100, PRECISION_PERCENTS)
                 local rounded_trend = R_math.round(trend * 100, PRECISION_PERCENTS)
-                local load_value = (eu_out_value == 0 and 0 or eu_in_value / eu_out_value) * 100
+                load_value = eu_out_value == 0 and 0 or eu_in_value / eu_out_value
+
+                LOAD_SIGN = load_value > 0 and 1 or 0
+
+                local rounded_load = R_math.round(load_value * 100, PRECISION_PERCENTS)
 
                 R_monitor.foreach_monitor(
                     function(monitor)
@@ -617,13 +623,13 @@ else
                             painter_state_monitor,
                             rounded_current,
                             rounded_trend,
-                            load_value
+                            rounded_load
                         )
                     end
                 )
 
                 -- comms API
-                comms_api.broadcast(COMMS_SUBSTATION_VALUES, percentage, trend, eu_in_value, eu_out_value)
+                comms_api.broadcast(COMMS_SUBSTATION_VALUES, percentage, trend, eu_in_value, eu_out_value, load_value)
 
                 LAST_PERCENTAGE = percentage
             end
