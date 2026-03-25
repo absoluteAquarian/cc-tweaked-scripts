@@ -473,8 +473,7 @@ if pocket then
                     painter_state_pocket,
                     R_math.round(percentage * 100, PRECISION_PERCENTS),
                     R_math.round(trend * 100, PRECISION_PERCENTS),
-                    (eu_out_value == 0 and 0 or eu_in_value / eu_out_value) * 100,
-                    26 - 15
+                    (eu_out_value == 0 and 0 or eu_in_value / eu_out_value) * 100
                 )
             elseif msg == COMMS_SUBSTATION_DISCONNECT then
                 __on_target_disconnected()
@@ -616,8 +615,7 @@ else
                             painter_state_monitor,
                             rounded_current,
                             rounded_trend,
-                            load_value,
-                            0
+                            load_value
                         )
                     end
                 )
