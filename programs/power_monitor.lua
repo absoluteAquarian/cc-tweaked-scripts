@@ -104,7 +104,7 @@ local function __init_painters(template_painter, state_painter)
         :obj(state_painter:recall("STORED"))
         :text("%")
         :color("reset", nil)
-        :move({ x = -#">+--.--%", y = 3 })
+        :move({ x = -#">+--.--%", y = 2 })
         :clear({ count = #">+--.--%" })
         :offset(state_painter:recall("OFFSET_TREND"))
         :color(state_painter:recall("COLOR_TREND"), nil)
@@ -228,7 +228,6 @@ local function display(target, state_painter, current, trend, load)
         if TREND_SIGN ~= 0 then
             -- Not actually zero, just too small
             trend = TREND_SIGN * (current == 100 and TREND_MINIMUM_AT_100 or TREND_MINIMUM)
-            offset_trend = offset_trend - 1
             too_small = true
         end
     elseif math.abs(trend) < 10 then
@@ -253,8 +252,8 @@ local function display(target, state_painter, current, trend, load)
     local area = {
         left = 2,
         right = -2 - math.ceil((1 - current / 100) * (w - 4)),
-        top = 1 * 3 + 1,
-        bottom = 2 * 3
+        top = 3 * 3 - 2,
+        height = 3
     }
 
     state_painter:store("FILL_AREA_STORED", area)
@@ -306,8 +305,8 @@ local function display(target, state_painter, current, trend, load)
     area = {
         left = 2,
         right = -2 - math.ceil((1 - math.min(100, load) / 100) * (w - 4)),
-        top = 4 * 3 + 1,
-        bottom = 5 * 3
+        top = 7 * 3 - 2,
+        height = 3
     }
 
     state_painter:store("FILL_AREA_LOAD", area)
