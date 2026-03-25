@@ -1076,6 +1076,8 @@ function FillAreaPixelPaintOperation:new(area, background)
                 function()
                     if iter_y > b then return nil end
 
+                    ::again::
+
                     local pixel_x, pixel_y = iter_x, iter_y
 
                     iter_x = iter_x + 1
@@ -1083,6 +1085,7 @@ function FillAreaPixelPaintOperation:new(area, background)
                     if iter_x > r then
                         iter_x = l
                         iter_y = iter_y + 1
+                        goto again
                     end
 
                     return pixel_x, pixel_y, iter_color, pixel_active

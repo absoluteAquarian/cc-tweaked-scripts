@@ -84,7 +84,7 @@ local function __init_painters(template_painter, state_painter)
         :move({ x = -1, y = 2 })
         :text(">+--.--%", { tail_align = true })
         :color(nil, colors.brown)
-        :fill({ left = 2, right = -2, top = 3 * 3 - 2, height = 3 }, true)
+        :fill({ left = 3, right = -3, top = 3 * 3 - 2, height = 3 }, true)
         :color(nil, "reset")
         :move({ x = 1, y = 5 })
         :text("Load:")
@@ -93,7 +93,7 @@ local function __init_painters(template_painter, state_painter)
         :move({ x = -2, y = 6 })
         :text(">---.--- A ---", { tail_align = true })
         :color(nil, colors.brown)
-        :fill({ left = 2, right = -2, top = 7 * 3 - 2, height = 3 }, true)
+        :fill({ left = 3, right = -3, top = 7 * 3 - 2, height = 3 }, true)
         :color("reset", "reset")
 
     state_painter
@@ -126,7 +126,6 @@ local function __init_painters(template_painter, state_painter)
         :move({ x = -1 - #">---.--- A ---", y = 6 })
         :clear({ count = #">---.---" })
         :offset(state_painter:recall("OFFSET_AMPS"))
-        :color(state_painter:recall("COLOR_AMPS"), nil)
         :text(state_painter:recall("AMPS_EXTREME"))
         :obj(state_painter:recall("AMPS"))
         :color("reset", "reset")
@@ -250,8 +249,8 @@ local function display(target, state_painter, current, trend, load)
 
     --- @type CanvasArea
     local area = {
-        left = 2,
-        right = -2 - math.ceil((1 - current / 100) * (w - 4)),
+        left = 3,
+        right = -3 - math.ceil((1 - current / 100) * (w - 4)),
         top = 3 * 3 - 2,
         height = 3
     }
@@ -303,8 +302,8 @@ local function display(target, state_painter, current, trend, load)
     state_painter:store("LOAD", load)
 
     area = {
-        left = 2,
-        right = -2 - math.ceil((1 - math.min(100, load) / 100) * (w - 4)),
+        left = 3,
+        right = -3 - math.ceil((1 - math.min(100, load) / 100) * (w - 4)),
         top = 7 * 3 - 2,
         height = 3
     }
@@ -314,7 +313,6 @@ local function display(target, state_painter, current, trend, load)
     local amps_offset, amps_value, extreme = process_amps_text(out_amps)
 
     state_painter:store("OFFSET_AMPS", { x = amps_offset })
-    state_painter:store("COLOR_AMPS", out_amps > 0 and colors.green or (out_amps < 0 and colors.red or colors.white))
     state_painter:store("AMPS_EXTREME", extreme and (out_amps < 1 and "<" or ">") or " ")
     state_painter:store("AMPS", amps_value)
     state_painter:store("COLOR_AMPS_TIER", tiers.get_color(out_tier))
