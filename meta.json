@@ -100,10 +100,10 @@
         },
         {
             "name": "power_monitor",
-            "version": 20,
+            "version": 21,
             "url": "$REPO$/programs/power_monitor.lua",
             "install": "power_monitor.lua",
-            "config": "{ MACHINE:\"power_substation\", POWER_OVERRIDE:\"IV\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
+            "config": "{ MACHINE:\"power_substation\", POWER_OVERRIDE:\"IV\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5, MAX_INPUT_POWER_OVERRIDE:-1 }",
             "deps":
             [
                 "lib.api.comms",

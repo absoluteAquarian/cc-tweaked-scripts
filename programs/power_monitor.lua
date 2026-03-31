@@ -24,6 +24,7 @@ local PRECISION_DISPLAYED = cfg_file:getNumber("PRECISION_DISPLAYED") or 2
 local RENDER_TICK_DELAY = cfg_file:getNumber("RENDER_TICK_DELAY") or 5
 local MACHINE = cfg_file:getString("MACHINE") or "power_substation"
 local POWER_OVERRIDE = cfg_file:getString("POWER_OVERRIDE") or "IV"
+local MAX_INPUT_POWER_OVERRIDE = cfg_file:getNumber("MAX_INPUT_POWER_OVERRIDE") or -1  -- Measured in EU/t
 
 local function __force_config_values()
     cfg_file:setNumber("CHARGE_THRESHOLD", CHARGE_THRESHOLD)
@@ -32,6 +33,7 @@ local function __force_config_values()
     cfg_file:setNumber("RENDER_TICK_DELAY", RENDER_TICK_DELAY)
     cfg_file:setString("MACHINE", MACHINE)
     cfg_file:setString("POWER_OVERRIDE", POWER_OVERRIDE)
+    cfg_file:setNumber("MAX_INPUT_POWER_OVERRIDE", MAX_INPUT_POWER_OVERRIDE)
     cfg_file:save()
 end
 
@@ -353,7 +355,8 @@ end
 
 local COMMS_CONFIG_REQUEST = "pm:config_request"
 local COMMS_CONFIG_RESPONSE = "pm:config_response"
-local COMMS_SUBSTATION_VALUES = "pm:values"
+local COMMS_SUBSTATION_VALUES_REQUEST = "pm:values_request"
+local COMMS_SUBSTATION_VALUES_RESPONSE = "pm:values_response"
 local COMMS_SUBSTATION_DISCONNECT = "pm:disconnect"
 local COMMS_GENERATED_POWER = "pm:generated"
 
@@ -382,7 +385,7 @@ if pocket then
 
             if msg == COMMS_CONFIG_RESPONSE then
                 -- Force the config on this program to match the sender's config
-                local temp_charge_threshold, temp_alarm_threshold, temp_precision_displayed, temp_render_tick_delay, temp_machine, temp_power_override = select(2, ...)
+                local temp_charge_threshold, temp_alarm_threshold, temp_precision_displayed, temp_render_tick_delay, temp_machine, temp_power_override, temp_max_input_power = select(2, ...)
 
                 if temp_charge_threshold then CHARGE_THRESHOLD = temp_charge_threshold end
                 if temp_alarm_threshold then ALARM_THRESHOLD = temp_alarm_threshold end
@@ -390,6 +393,7 @@ if pocket then
                 if temp_render_tick_delay then RENDER_TICK_DELAY = temp_render_tick_delay end
                 if temp_machine then MACHINE = temp_machine end
                 if temp_power_override then POWER_OVERRIDE = temp_power_override end
+                if temp_max_input_power then MAX_INPUT_POWER_OVERRIDE = temp_max_input_power end
 
                 __force_config_values()
                 __set_display_consts()
@@ -402,7 +406,7 @@ if pocket then
                 SUBSTATION_TIER = POWER_OVERRIDE
 
                 metrics_outgoing.tier = SUBSTATION_TIER
-            elseif msg == COMMS_SUBSTATION_VALUES then
+            elseif msg == COMMS_SUBSTATION_VALUES_RESPONSE then
                 -- Update the display with the received values
 
                 --- @type number, number
@@ -462,6 +466,8 @@ if pocket then
         end
     )
 
+    local tick = 1
+
     exec.loop_forever(
         -- wait_interval
         1,
@@ -487,7 +493,14 @@ if pocket then
             painted_template = false
         end,
         -- body
-        function() end,
+        function()
+            if tick == 1 then
+                -- Request the latest values from the target computer, which will trigger a display update via the data callback
+                comms_api.send(target_id, COMMS_SUBSTATION_VALUES_REQUEST)
+            end
+
+            tick = tick == RENDER_TICK_DELAY and 1 or tick + 1
+        end,
         -- sleep_watchers
         exec.class.EventWatcher:new()
             :add(comms_api.get_event_contexts())
@@ -496,6 +509,12 @@ if pocket then
         nil
     )
 else
+    --- @type number, number
+    local percentage, trend
+
+    --- @type table<integer, integer>
+    local generated_per_computer = {}
+
     comms_api.register_data_callback(
         function(sender, ...)
             local msg = select(1, ...)
@@ -510,14 +529,36 @@ else
                     PRECISION_DISPLAYED,
                     RENDER_TICK_DELAY,
                     MACHINE,
-                    POWER_OVERRIDE
+                    POWER_OVERRIDE,
+                    MAX_INPUT_POWER_OVERRIDE
+                )
+            elseif msg == COMMS_SUBSTATION_VALUES_REQUEST then
+                -- Send the displayed metrics to the requester
+                comms_api.send(
+                    sender,
+                    COMMS_SUBSTATION_VALUES_RESPONSE,
+                    percentage,
+                    trend,
+                    eu_in_value,
+                    eu_out_value,
+                    load_value
                 )
             elseif msg == COMMS_GENERATED_POWER then
                 local temp_eu_in = select(2, ...)
 
                 -- NOTE: The report is in EU/t
-                if temp_eu_in then eu_in_value = temp_eu_in end
+                if temp_eu_in then
+                    generated_per_computer[sender] = temp_eu_in
+                else
+                    generated_per_computer[sender] = nil
+                end
             end
+        end
+    )
+
+    comms_api.register_disconnect_callback(
+        function(id)
+            generated_per_computer[id] = nil
         end
     )
 
@@ -566,8 +607,20 @@ else
             if tick == 1 then
                 eu_out_value = eu_out:get()
 
-                local percentage = SUBSTATION.getEnergyStored() / SUBSTATION.getEnergyCapacity()
-                local trend = percentage - LAST_PERCENTAGE
+                eu_in_value = 0
+
+                if not MAX_INPUT_POWER_OVERRIDE or MAX_INPUT_POWER_OVERRIDE <= 0 then
+                    -- Calculate the total input power, for calculating the load
+                    for _, generated in pairs(generated_per_computer) do
+                        eu_in_value = eu_in_value + generated
+                    end
+                else
+                    -- The total input power is known and constant
+                    eu_in_value = MAX_INPUT_POWER_OVERRIDE
+                end
+
+                percentage = SUBSTATION.getEnergyStored() / SUBSTATION.getEnergyCapacity()
+                trend = percentage - LAST_PERCENTAGE
 
                 TREND_SIGN = trend > 0 and 1 or (trend < 0 and -1 or 0)
 
@@ -592,7 +645,7 @@ else
                 )
 
                 -- comms API
-                comms_api.broadcast(COMMS_SUBSTATION_VALUES, percentage, trend, eu_in_value, eu_out_value, load_value)
+                --comms_api.broadcast(COMMS_SUBSTATION_VALUES_RESPONSE, percentage, trend, eu_in_value, eu_out_value, load_value)
 
                 LAST_PERCENTAGE = percentage
             end
