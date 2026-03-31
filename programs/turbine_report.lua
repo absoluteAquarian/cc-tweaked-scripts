@@ -49,8 +49,8 @@ exec.loop_forever(
         print(string.format("Total EU/t: %d", total_eu))
 
         -- Broadcast the total EU/t to the network
-
-        comms_api.broadcast("tr:report", total_eu)
+        -- Paired program "power_monitor" uses this message string
+        comms_api.broadcast("pm:generated", total_eu)
     end,
     -- sleep_watcher
     exec.class.EventWatcher:new()

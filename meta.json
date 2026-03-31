@@ -85,7 +85,7 @@
         },
         {
             "name": "turbine_report",
-            "version": 1,
+            "version": 2,
             "url": "$REPO$/programs/turbine_report.lua",
             "install": "turbine_report.lua",
             "config": "",
@@ -100,7 +100,7 @@
         },
         {
             "name": "power_monitor",
-            "version": 19,
+            "version": 20,
             "url": "$REPO$/programs/power_monitor.lua",
             "install": "power_monitor.lua",
             "config": "{ MACHINE:\"power_substation\", POWER_OVERRIDE:\"IV\", ALARM_THRESHOLD:0.3, CHARGE_THRESHOLD:0.6, PRECISION_DISPLAYED:2, RENDER_TICK_DELAY:5 }",
@@ -119,6 +119,21 @@
                 "lib.exec",
                 "lib.math",
                 "lib.table"
+            ]
+        },
+        {
+            "name": "generator_report",
+            "version": 1,
+            "url": "$REPO$/programs/generator_report.lua",
+            "install": "generator_report.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.api.comms",
+                "lib.cc.terminal",
+                "lib.gt.machine",
+                "lib.exec",
+                "lib.string"
             ]
         }
     ],

@@ -355,7 +355,7 @@ local COMMS_CONFIG_REQUEST = "pm:config_request"
 local COMMS_CONFIG_RESPONSE = "pm:config_response"
 local COMMS_SUBSTATION_VALUES = "pm:values"
 local COMMS_SUBSTATION_DISCONNECT = "pm:disconnect"
-local COMMS_GENERATED_POWER = "tr:report"
+local COMMS_GENERATED_POWER = "pm:generated"
 
 --- @type integer, integer
 local eu_in_value, eu_out_value, load_value = 0, 0, 0
