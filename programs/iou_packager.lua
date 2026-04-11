@@ -53,8 +53,14 @@ local ouput_drive
 
 --- @type integer
 local progress_stage = -1
+--- @type integer
+local last_progress = -1
 
 local function __report_progress()
+    if last_progress == progress_stage then return end
+
+    last_progress = progress_stage
+
     if progress_stage == 0 then
         print("Waiting for items from a crafting job...")
     elseif progress_stage == 1 then
