@@ -1,3 +1,4 @@
+local R_monitor = require "lib.cc.monitor"
 local R_terminal = require "lib.cc.terminal"
 
 local config = require "lib.config"
@@ -65,7 +66,7 @@ local function __report_progress()
         print("Filling the cell with the crafting items...")
     elseif progress_stage == 2 then
         print("Moving the filled cell to the output drive...")
-    elseif progress_stage == 4 then
+    elseif progress_stage == 3 then
         print("Done!")
         print("")
 
@@ -148,6 +149,16 @@ exec.loop_forever(
             print("All peripherals found! Starting IOU Packager...")
             print("")
             progress_stage = 0
+
+            R_monitor.foreach_monitor(
+                function(monitor)
+                    monitor.setTextScale(0.5)
+                    monitor.setTextColor(colors.white)
+                    monitor.setBackgroundColor(colors.black)
+                    monitor.clear()
+                    monitor.setCursorPos(1, 1)
+                end
+            )
         end
     end,
     -- body
@@ -178,21 +189,24 @@ exec.loop_forever(
                         progress_stage = progress_stage + 1
                     end
                 end
+            else
+                -- A cell was already in the ME Chest
+                progress_stage = progress_stage + 1
             end
-        elseif progress_stage == 1 or progress_stage == 2 then
+        elseif progress_stage == 1 then
             -- Fill the cell with the crafting items
-            -- NOTE: not specifying a name, nbt nor tag will make the "search item" filter match any item
 
-            local moved = bridge.importItem({ count = 65535 }, CRAFT_ITEMS)
+            local moved
+
+            repeat
+                -- NOTE: not specifying a name, nbt nor tag will make the "search item" filter match any item
+                moved = bridge.exportItem({ count = 65535 }, CRAFT_ITEMS)
+            until (not moved) or (moved < 1)
 
             if moved and moved > 0 then
                 progress_stage = progress_stage + 1
             end
-
-            if progress_stage == 2 and ((not moved) or (moved == 0)) then
-                progress_stage = progress_stage + 1
-            end
-        elseif progress_stage == 3 then
+        elseif progress_stage == 2 then
             -- Move the filled cell to the output drive
 
             local moved = filling_chest.pushItems(peripheral.getName(ouput_drive), 2, 1)
