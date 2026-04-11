@@ -69,7 +69,7 @@ local function __report_progress()
         print("Filling the cell with the crafting items...")
     elseif progress_stage == 3 then
         print("Moving the filled cell to the output drive...")
-    elseif progress_stage == 4 then
+    elseif progress_stage == 5 then
         print("Done!")
         print("")
 
@@ -175,9 +175,7 @@ exec.loop_forever(
                     break
                 end
             end
-        end
-
-        if progress_stage == 1 then
+        elseif progress_stage == 1 then
             -- Try to move a new cell into the ME Chest
 
             if filling_chest.list()[2] == nil then
@@ -199,26 +197,26 @@ exec.loop_forever(
                     end
                 end
             end
-        end
-
-        if progress_stage == 2 then
+        elseif progress_stage == 2 or progress_stage == 3 then
             -- Fill the cell with the crafting items
             -- NOTE: not specifying a name, nbt nor tag will make the "search item" filter match any item
 
             local moved = bridge.importItem({ count = 65535 }, CRAFT_ITEMS)
 
-            if (not moved) or (moved == 0) then
+            if moved and moved > 0 then
                 progress_stage = math.max(3, progress_stage)
             end
-        end
 
-        if progress_stage == 3 then
+            if progress_stage == 3 and ((not moved) or (moved == 0)) then
+                progress_stage = math.max(4, progress_stage)
+            end
+        elseif progress_stage == 4 then
             -- Move the filled cell to the output drive
 
             local moved = filling_chest.pushItems(peripheral.getName(ouput_drive), 2, 1)
 
             if moved > 0 then
-                progress_stage = math.max(4, progress_stage)
+                progress_stage = math.max(5, progress_stage)
             end
         end
 
