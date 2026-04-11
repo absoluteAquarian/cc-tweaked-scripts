@@ -53,14 +53,8 @@ local ouput_drive
 
 --- @type integer
 local progress_stage = -1
---- @type integer
-local last_progress = -1
 
 local function __report_progress()
-    if last_progress ~= progress_stage then
-        R_terminal.reset_terminal()
-    end
-
     if progress_stage < 1 then
         print("Waiting for items from a crafting job...")
     end
@@ -150,12 +144,17 @@ exec.loop_forever(
                 print(string.format("Error: no ME Drive peripheral was found on the '%s' modem network", MODEM_OUTPUT))
             end
         end
+
+        if disk_storage and craft_inputs and bridge and filling_chest and ouput_drive then
+            print("All peripherals found! Starting IOU Packager...")
+            print("")
+            progress_stage = 0
+        end
     end,
     -- body
     function()
         if (not disk_storage) or (not craft_inputs) or (not bridge) or (not filling_chest) or (not ouput_drive) then
             progress_stage = -1
-            last_progress = -1
             return false
         end
 
@@ -217,8 +216,6 @@ exec.loop_forever(
         end
 
         __report_progress()
-
-        last_progress = progress_stage
     end,
     -- sleep_watcher
     nil,
