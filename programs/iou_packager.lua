@@ -55,23 +55,15 @@ local ouput_drive
 local progress_stage = -1
 
 local function __report_progress()
-    if progress_stage < 1 then
+    if progress_stage == 0 then
         print("Waiting for items from a crafting job...")
-    end
-
-    if progress_stage < 2 then
+    elseif progress_stage == 1 then
         print("Waiting for a cell to be moved to the subnet ME Chest...")
-    end
-
-    if progress_stage < 3 then
+    elseif progress_stage == 2 then
         print("Filling the cell with the crafting items...")
-    end
-
-    if progress_stage < 4 then
+    elseif progress_stage == 3 then
         print("Moving the filled cell to the output drive...")
-    end
-
-    if progress_stage == 4 then
+    elseif progress_stage == 4 then
         print("Done!")
         print("")
 
