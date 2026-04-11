@@ -200,7 +200,7 @@ exec.loop_forever(
 
             repeat
                 -- NOTE: not specifying a name, nbt nor tag will make the "search item" filter match any item
-                moved = bridge.exportItem({ count = 65535 }, CRAFT_ITEMS)
+                moved = bridge.importItem({ count = 65535 }, CRAFT_ITEMS)
             until (not moved) or (moved < 1)
 
             if moved and moved > 0 then
