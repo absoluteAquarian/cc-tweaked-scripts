@@ -6,13 +6,13 @@ local R_string = require "lib.string"
 
 local cfg_file = config.class.ConfigFile:new("iou_packager")
 
-local DISK_STORAGE = cfg_file:getString("SIDE_DISK_STORAGE") or "left"
+local DISK_STORAGE = cfg_file:getString("DISK_STORAGE_TARGET") or "steel_crate"
 local CRAFT_ITEMS = cfg_file:getString("SIDE_INPUTS") or "top"
 local AP_MEBRIDGE = cfg_file:getString("SIDE_BRIDGE") or "bottom"
 local MODEM_OUTPUT = cfg_file:getString("SIDE_MODEM_TO_OUTPUTS") or "right"
 
 local function __force_config_values()
-    cfg_file:setString("SIDE_DISK_STORAGE", DISK_STORAGE)
+    cfg_file:setString("DISK_STORAGE_TARGET", DISK_STORAGE)
     cfg_file:setString("SIDE_INPUTS", CRAFT_ITEMS)
     cfg_file:setString("SIDE_BRIDGE", AP_MEBRIDGE)
     cfg_file:setString("SIDE_MODEM_TO_OUTPUTS", MODEM_OUTPUT)
@@ -87,12 +87,6 @@ exec.loop_forever(
         R_terminal.reset_terminal()
         print("Scanning for peripherals...")
 
-        if (not disk_storage) or (not peripheral.isPresent(DISK_STORAGE)) then
-            disk_storage = peripheral.wrap(DISK_STORAGE)
-        else
-            print(string.format("Error: no inventory peripheral was found on the '%s' side", DISK_STORAGE))
-        end
-
         if (not craft_inputs) or (not peripheral.isPresent(CRAFT_ITEMS)) then
             craft_inputs = peripheral.wrap(CRAFT_ITEMS)
         else
@@ -107,8 +101,8 @@ exec.loop_forever(
 
         if peripheral.isPresent(MODEM_OUTPUT) then
             local modem = peripheral.wrap(MODEM_OUTPUT)
-            local possible_chest, possible_drive
-            local too_many_chests, too_many_drives = false, false
+            local possible_chest, possible_drive, possible_storage
+            local too_many_chests, too_many_drives, too_many_disk_storage = false, false, false
 
             for _, name in ipairs(modem.getNamesRemote()) do
                 if R_string.starts_with(name, "ae2:chest") then
@@ -129,6 +123,15 @@ exec.loop_forever(
                     else
                         possible_drive = name
                     end
+                elseif R_string.contains(name, DISK_STORAGE) then
+                    if possible_storage then
+                        if not too_many_disk_storage then
+                            too_many_disk_storage = true
+                            print(string.format("Error: more than one '%s' peripheral was found on the '%s' modem network", DISK_STORAGE, MODEM_OUTPUT))
+                        end
+                    else
+                        possible_storage = name
+                    end
                 end
             end
 
@@ -142,6 +145,12 @@ exec.loop_forever(
                 ouput_drive = peripheral.wrap(possible_drive)
             else
                 print(string.format("Error: no ME Drive peripheral was found on the '%s' modem network", MODEM_OUTPUT))
+            end
+
+            if possible_storage then
+                disk_storage = peripheral.wrap(possible_storage)
+            else
+                print(string.format("Error: no '%s' peripheral was found on the '%s' modem network", DISK_STORAGE, MODEM_OUTPUT))
             end
         end
 
