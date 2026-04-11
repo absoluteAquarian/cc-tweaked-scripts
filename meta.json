@@ -135,6 +135,20 @@
                 "lib.exec",
                 "lib.string"
             ]
+        },
+        {
+            "name": "iou_packager",
+            "version": 1,
+            "url": "$REPO$/programs/iou_packager.lua",
+            "install": "iou_packager.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.cc.terminal",
+                "lib.config",
+                "lib.exec",
+                "lib.string"
+            ]
         }
     ],
     "lib":
@@ -307,7 +321,7 @@
         },
         {
             "name": "lib.exec",
-            "version": 15,
+            "version": 16,
             "url": "$REPO$/lib/exec.lua",
             "install": "lib/exec.lua",
             "config": "",

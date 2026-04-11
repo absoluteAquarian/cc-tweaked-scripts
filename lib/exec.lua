@@ -143,8 +143,6 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
         handler.try {
             -- try
             function()
-                ::start::
-
                 if not has_init then
                     if init then init() end
                     has_init = true
@@ -153,7 +151,6 @@ local function loop_forever(wait_interval, init, body, sleep_watcher, quit)
                 if body() == false then
                     -- Reinitialize
                     has_init = false
-                    goto start
                 end
 
                 local ticks
