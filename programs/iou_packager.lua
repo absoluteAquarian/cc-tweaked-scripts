@@ -7,7 +7,7 @@ local R_string = require "lib.string"
 local cfg_file = config.class.ConfigFile:new("iou_packager")
 
 local DISK_STORAGE = cfg_file:getString("DISK_STORAGE_TARGET") or "steel_crate"
-local CRAFT_ITEMS = cfg_file:getString("SIDE_INPUTS") or "top"
+local CRAFT_ITEMS = cfg_file:getString("SIDE_INPUTS") or "front"  -- NOTE: side is relative to the ME Bridge, not the computer
 local AP_MEBRIDGE = cfg_file:getString("SIDE_BRIDGE") or "bottom"
 local MODEM_OUTPUT = cfg_file:getString("SIDE_MODEM_TO_OUTPUTS") or "right"
 

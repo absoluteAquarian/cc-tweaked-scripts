@@ -138,10 +138,10 @@
         },
         {
             "name": "iou_packager",
-            "version": 6,
+            "version": 7,
             "url": "$REPO$/programs/iou_packager.lua",
             "install": "iou_packager.lua",
-            "config": "{ DISK_STORAGE_TARGET:\"steel_crate\", SIDE_INPUTS:\"top\", SIDE_BRIDGE:\"bottom\", SIDE_MODEM_TO_OUTPUTS:\"right\" }",
+            "config": "{ DISK_STORAGE_TARGET:\"steel_crate\", SIDE_INPUTS:\"front\", SIDE_BRIDGE:\"bottom\", SIDE_MODEM_TO_OUTPUTS:\"right\" }",
             "deps":
             [
                 "lib.cc.terminal",
