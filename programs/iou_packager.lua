@@ -43,8 +43,6 @@ __force_config_values()
 
 --- @type PeripheralInventory
 local disk_storage
---- @type PeripheralInventory
-local craft_inputs
 local bridge
 --- @type PeripheralInventory
 local filling_chest
@@ -84,12 +82,6 @@ exec.loop_forever(
     function()
         R_terminal.reset_terminal()
         print("Scanning for peripherals...")
-
-        if (not craft_inputs) or (not peripheral.isPresent(CRAFT_ITEMS)) then
-            craft_inputs = peripheral.wrap(CRAFT_ITEMS)
-        else
-            print(string.format("Error: no inventory peripheral was found on the '%s' side", CRAFT_ITEMS))
-        end
 
         if (not bridge) or (not peripheral.isPresent(AP_MEBRIDGE)) or peripheral.getType(AP_MEBRIDGE) ~= "meBridge" then
             bridge = peripheral.wrap(AP_MEBRIDGE)
