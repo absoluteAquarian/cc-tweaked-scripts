@@ -196,14 +196,20 @@ exec.loop_forever(
         elseif progress_stage == 1 then
             -- Fill the cell with the crafting items
 
+            --- @type number
             local moved
+            --- @type number
+            local total_moved = 0
 
             repeat
                 -- NOTE: not specifying a name, nbt nor tag will make the "search item" filter match any item
+
                 moved = bridge.importItem({ count = 65535 }, CRAFT_ITEMS)
+
+                if moved then total_moved = total_moved + moved end
             until (not moved) or (moved < 1)
 
-            if moved and moved > 0 then
+            if total_moved and total_moved > 0 then
                 progress_stage = progress_stage + 1
             end
         elseif progress_stage == 2 then
