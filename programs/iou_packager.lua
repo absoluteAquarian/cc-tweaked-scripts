@@ -60,14 +60,12 @@ local function __report_progress()
     last_progress = progress_stage
 
     if progress_stage == 0 then
-        print("Waiting for items from a crafting job...")
-    elseif progress_stage == 1 then
         print("Waiting for a cell to be moved to the subnet ME Chest...")
-    elseif progress_stage == 2 then
+    elseif progress_stage == 1 then
         print("Filling the cell with the crafting items...")
-    elseif progress_stage == 3 then
+    elseif progress_stage == 2 then
         print("Moving the filled cell to the output drive...")
-    elseif progress_stage == 5 then
+    elseif progress_stage == 4 then
         print("Done!")
         print("")
 
@@ -83,10 +81,12 @@ exec.loop_forever(
         R_terminal.reset_terminal()
         print("Scanning for peripherals...")
 
-        if (not bridge) or (not peripheral.isPresent(AP_MEBRIDGE)) or peripheral.getType(AP_MEBRIDGE) ~= "meBridge" then
-            bridge = peripheral.wrap(AP_MEBRIDGE)
-        else
-            print(string.format("Error: no Advanced Peripherals ME Bridge peripheral was found on the '%s' side", AP_MEBRIDGE))
+        if (not bridge) or (not peripheral.isPresent(AP_MEBRIDGE)) then
+            if peripheral.getType(AP_MEBRIDGE) == "meBridge" then
+                bridge = peripheral.wrap(AP_MEBRIDGE)
+            else
+                print(string.format("Error: no Advanced Peripherals ME Bridge peripheral was found on the '%s' side", AP_MEBRIDGE))
+            end
         end
 
         if peripheral.isPresent(MODEM_OUTPUT) then
@@ -144,7 +144,7 @@ exec.loop_forever(
             end
         end
 
-        if disk_storage and craft_inputs and bridge and filling_chest and ouput_drive then
+        if disk_storage and bridge and filling_chest and ouput_drive then
             print("All peripherals found! Starting IOU Packager...")
             print("")
             progress_stage = 0
@@ -152,22 +152,12 @@ exec.loop_forever(
     end,
     -- body
     function()
-        if (not disk_storage) or (not craft_inputs) or (not bridge) or (not filling_chest) or (not ouput_drive) then
+        if (not disk_storage) or (not bridge) or (not filling_chest) or (not ouput_drive) then
             progress_stage = -1
             return false
         end
 
-        progress_stage = math.max(0, progress_stage)
-
         if progress_stage == 0 then
-            -- Wait for the craft items storage to not be empty
-            for slot, item in pairs(craft_inputs.list()) do
-                if item then
-                    progress_stage = math.max(1, progress_stage)
-                    break
-                end
-            end
-        elseif progress_stage == 1 then
             -- Try to move a new cell into the ME Chest
 
             if filling_chest.list()[2] == nil then
@@ -185,30 +175,30 @@ exec.loop_forever(
                     local moved = disk_storage.pushItems(peripheral.getName(filling_chest), slot, 1, 2)
 
                     if moved > 0 then
-                        progress_stage = math.max(2, progress_stage)
+                        progress_stage = progress_stage + 1
                     end
                 end
             end
-        elseif progress_stage == 2 or progress_stage == 3 then
+        elseif progress_stage == 1 or progress_stage == 2 then
             -- Fill the cell with the crafting items
             -- NOTE: not specifying a name, nbt nor tag will make the "search item" filter match any item
 
             local moved = bridge.importItem({ count = 65535 }, CRAFT_ITEMS)
 
             if moved and moved > 0 then
-                progress_stage = math.max(3, progress_stage)
+                progress_stage = progress_stage + 1
             end
 
-            if progress_stage == 3 and ((not moved) or (moved == 0)) then
-                progress_stage = math.max(4, progress_stage)
+            if progress_stage == 2 and ((not moved) or (moved == 0)) then
+                progress_stage = progress_stage + 1
             end
-        elseif progress_stage == 4 then
+        elseif progress_stage == 3 then
             -- Move the filled cell to the output drive
 
             local moved = filling_chest.pushItems(peripheral.getName(ouput_drive), 2, 1)
 
             if moved > 0 then
-                progress_stage = math.max(5, progress_stage)
+                progress_stage = progress_stage + 1
             end
         end
 
