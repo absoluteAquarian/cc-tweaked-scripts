@@ -1,37 +1,7 @@
 local class = require "lib.class"
+local native = require "lib.native"
 local R_string = require "lib.string"
 local R_table = require "lib.table"
-
-local native = {
-    bit32 = {
-        bor = bit32.bor,
-        btest = bit32.btest,
-        bxor = bit32.bxor,
-        lshift = bit32.lshift
-    },
-    colors = {
-        --- @type fun(color: number) : string
-        toBlit = colors.toBlit,
-        --- @type fun(blit: string) : number
-        fromBlit = colors.fromBlit
-    },
-    math = {
-        ceil = math.ceil,
-        floor = math.floor,
-        max = math.max,
-        min = math.min
-    },
-    table = {
-        concat = table.concat
-    },
-    string = {
-        byte = string.byte,
-        char = string.char,
-        gsub = string.gsub,
-        sub = string.sub,
-        reverse = string.reverse
-    }
-}
 
 --- @class TexelCanvasDefinition : ClassDefinition
 --- @field base nil

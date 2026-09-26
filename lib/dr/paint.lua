@@ -2,20 +2,9 @@ local canvas = require "lib.dr.canvas"
 
 local class = require "lib.class"
 local R_math = require "lib.math"
+local native = require "lib.native"
 local R_string = require "lib.string"
 
-local native = {
-    math = {
-        abs = math.abs,
-        huge = math.huge,
-        max = math.max,
-        min = math.min
-    },
-    string = {
-        sub = string.sub,
-        reverse = string.reverse
-    }
-}
 
 --- @class PainterDefinition : ClassDefinition
 --- @field base nil

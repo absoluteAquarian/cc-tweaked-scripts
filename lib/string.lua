@@ -1,10 +1,4 @@
-local native = {
-    string = {
-        rep = string.rep,
-        find = string.find,
-        sub = string.sub,
-    }
-}
+local native = require "lib.native"
 
 --- @private
 --- @class __StringRepCache

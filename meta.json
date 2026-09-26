@@ -57,7 +57,7 @@
         },
         {
             "name": "comms",
-            "version": 18,
+            "version": 19,
             "url": "$REPO$/programs/comms.lua",
             "install": "comms.lua",
             "config": "",
@@ -66,6 +66,7 @@
                 "lib.api.comms",
                 "lib.cc.terminal",
                 "lib.exec",
+                "lib.native",
                 "lib.table"
             ]
         },
@@ -168,11 +169,14 @@
         },
         {
             "name": "lib.cc.filesystem",
-            "version": 4,
+            "version": 5,
             "url": "$REPO$/lib/cc/filesystem.lua",
             "install": "lib/cc/filesystem.lua",
             "config": "",
-            "deps": []
+            "deps":
+            [
+                "lib.native"
+            ]
         },
         {
             "name": "lib.cc.fmt",
@@ -184,23 +188,25 @@
         },
         {
             "name": "lib.cc.monitor",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/cc/monitor.lua",
             "install": "lib/cc/monitor.lua",
             "config": "",
             "deps":
             [
-                "lib.cc.terminal"
+                "lib.cc.terminal",
+                "lib.native"
             ]
         },
         {
             "name": "lib.cc.terminal",
-            "version": 3,
+            "version": 4,
             "url": "$REPO$/lib/cc/terminal.lua",
             "install": "lib/cc/terminal.lua",
             "config": "",
             "deps":
             [
+                "lib.native",
                 "lib.trace"
             ]
         },
@@ -232,20 +238,21 @@
         },
         {
             "name": "lib.dr.canvas",
-            "version": 23,
+            "version": 24,
             "url": "$REPO$/lib/dr/canvas.lua",
             "install": "lib/dr/canvas.lua",
             "config": "",
             "deps":
             [
                 "lib.class",
+                "lib.native",
                 "lib.string",
                 "lib.table"
             ]
         },
         {
             "name": "lib.dr.paint",
-            "version": 26,
+            "version": 27,
             "url": "$REPO$/lib/dr/paint.lua",
             "install": "lib/dr/paint.lua",
             "config": "",
@@ -253,6 +260,7 @@
             [
                 "lib.class",
                 "lib.math",
+                "lib.native",
                 "lib.string",
                 "lib.table"
             ]
@@ -366,9 +374,20 @@
         },
         {
             "name": "lib.math",
-            "version": 2,
+            "version": 3,
             "url": "$REPO$/lib/math.lua",
             "install": "lib/math.lua",
+            "config": "",
+            "deps":
+            [
+                "lib.native"
+            ]
+        },
+        {
+            "name": "lib.native",
+            "version": 1,
+            "url": "$REPO$/lib/native.lua",
+            "install": "lib/native.lua",
             "config": "",
             "deps": []
         },
@@ -386,20 +405,24 @@
         },
         {
             "name": "lib.string",
-            "version": 5,
+            "version": 6,
             "url": "$REPO$/lib/string.lua",
             "install": "lib/string.lua",
             "config": "",
-            "deps": []
+            "deps":
+            [
+                "lib.native"
+            ]
         },
         {
             "name": "lib.table",
-            "version": 7,
+            "version": 8,
             "url": "$REPO$/lib/table.lua",
             "install": "lib/table.lua",
             "config": "",
             "deps":
             [
+                "lib.native",
                 "lib.trace"
             ]
         },

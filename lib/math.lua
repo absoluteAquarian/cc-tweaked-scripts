@@ -1,11 +1,4 @@
-local native = {
-    math = {
-        ceil = math.ceil,
-        floor = math.floor,
-        huge = math.huge,
-        pow = math.pow
-    }
-}
+local native = require "lib.native"
 
 --- Returns the integer part of a number via truncation
 --- @param num number  The number to truncate

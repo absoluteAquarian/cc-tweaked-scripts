@@ -1,8 +1,6 @@
 local R_terminal = require "lib.cc.terminal"
 
-local native = {
-    pairs = pairs
-}
+local native = require "lib.native"
 
 --- Writes a string of text to the monitor with the specified color
 --- @param monitor table  The monitor to write to

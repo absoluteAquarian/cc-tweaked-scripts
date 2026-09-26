@@ -1,13 +1,5 @@
+local native = require "lib.native"
 local trace = require "lib.trace"
-
-local native = {
-    colors = {
-        --- @type fun(color: number) : string
-        toBlit = colors.toBlit,
-        --- @type fun(blit: string) : number
-        fromBlit = colors.fromBlit
-    }
-}
 
 --- @param terminal table
 --- @param text string

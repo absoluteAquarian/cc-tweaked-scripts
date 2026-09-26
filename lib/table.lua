@@ -1,21 +1,5 @@
+local native = require "lib.native"
 local trace = require "lib.trace"
-
-local native = {
-    pairs = pairs,
-    ipairs = ipairs,
-    type = type,
-    next = next,
-    debug = {
-        getmetatable = debug.getmetatable,
-        setmetatable = debug.setmetatable
-    },
-    table = {
-        insert = table.insert,
-        pack = table.pack,
-        remove = table.remove,
-        unpack = table.unpack
-    }
-}
 
 --- @param tbl table
 --- @return function

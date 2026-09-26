@@ -1,15 +1,4 @@
-local native = {
-    pairs = pairs,
-    ipairs = ipairs,
-    fs = {
-        list = fs.list,
-        isDir = fs.isDir
-    },
-    table = {
-        insert = table.insert,
-        remove = table.remove
-    },
-}
+local native = require "lib.native"
 
 --- Returns a list of file paths for every file in the directory and its subdirectories
 --- @param dir string  The absolute directory to list files from

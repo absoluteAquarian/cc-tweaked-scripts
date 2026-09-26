@@ -3,20 +3,9 @@ local comms_api = require "lib.api.comms"
 local R_terminal = require "lib.cc.terminal"
 
 local exec = require "lib.exec"
+local native = require "lib.native"
 local R_table = require "lib.table"
 
-local native = {
-    math = {
-        max = math.max,
-        min = math.min,
-        floor = math.floor
-    },
-    table = {
-        insert = table.insert,
-        remove = table.remove,
-        concat = table.concat,
-    }
-}
 
 local w, h = term.getSize()
 
